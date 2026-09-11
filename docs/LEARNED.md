@@ -67,3 +67,24 @@ Invites are matched by email address, so an unconfirmed sign-up could otherwise 
 ## Average 0 means "has not bowled yet"
 
 A bowler who joins mid-season is listed at average 0 on the sheets before his first night. Charted literally that is a cliff from 0 to 151, and a "+177 since week 22" that never happened. Treat 0 as absent, not as a number.
+
+## Verifying a members-only page needs a minted session, not a real sign-in
+
+Every page redirects to `/login`, so `pw-verify` on a bare URL only ever proves the login page renders. Real sign-in would mail a code nobody can read from here. Mint one instead and let the Supabase library write the cookies in its own format:
+
+```bash
+# 1. OTP without sending mail (service key, from web/.env.local)
+curl -s -X POST "$SUPABASE_URL/auth/v1/admin/generate_link" \
+  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"magiclink","email":"dougkvamme@gmail.com"}' | jq -r .email_otp
+# 2. verify it in page context, then save the state
+playwright-cli open http://localhost:3000/login
+playwright-cli eval "async () => { const m = await import('https://esm.sh/@supabase/ssr@0.12.7'); \
+  const c = m.createBrowserClient(URL, ANON); \
+  return (await c.auth.verifyOtp({ email:'dougkvamme@gmail.com', token:'<otp>', type:'email' })).error?.message ?? 'OK'; }"
+playwright-cli state-save auth.json
+# 3. pw-verify <url> --state auth.json
+```
+
+Hand-writing the cookie is the tempting shortcut and the wrong one: `@supabase/ssr` chunks it and prefixes `base64-`, so the format is the library's business. Only dougkvamme@gmail.com is ever used as a test recipient.
