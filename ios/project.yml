@@ -1,0 +1,19 @@
+name: StrikeCeiling
+options:
+  bundleIdPrefix: com.dougkvamme
+  deploymentTarget:
+    iOS: '17.0'
+targets:
+  StrikeCeiling:
+    type: application
+    platform: iOS
+    sources: [Sources]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Strike Ceiling
+        SWIFT_VERSION: '5.0'
+        TARGETED_DEVICE_FAMILY: '1,2'
+        CODE_SIGNING_ALLOWED: NO

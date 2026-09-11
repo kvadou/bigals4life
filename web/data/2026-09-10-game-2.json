@@ -1,0 +1,12 @@
+{
+  "date": "2026-09-10",
+  "game": 2,
+  "source": "User-supplied scoreboard photograph; frame marks manually verified against displayed cumulative scores",
+  "bowlers": [
+    {"name":"Doug","rolls":[10,10,10,9,0,0,0,5,2,6,3,10,10,10,10,8],"score":191,"maximum":191},
+    {"name":"Mustafa","scoreboardName":"STAFA","rolls":[9,0,7,3,5,1,10,1,7,9,1,8,2,10,6,0,8],"score":116,"maximum":136},
+    {"name":"Kyle","rolls":[7,3,9,1,8,2,7,2,7,3,10,0,10,9,1,7,2],"score":148,"maximum":178},
+    {"name":"Pete","rolls":[8,2,10,10,10,8,2,8,1,10,10,5,3],"score":176,"maximum":206}
+  ],
+  "drinkTargets": {"high":173,"low":109,"qualificationRule":null}
+}

@@ -1,0 +1,20 @@
+import { database } from "../lib/scorebook-server";
+import { nightSchema } from "../lib/scorebook";
+const id="6f71e01f-9681-4d19-8649-909d2ad03593";
+const players=[{name:"Jeff",score:156},{name:"Angela",score:150},{name:"Brian",score:140},{name:"Kyle",score:237}];
+const total=players.reduce((sum,p)=>sum+p.score,0);
+if(total!==683)throw Error("Photo total mismatch");
+const imported=await database(`imported_team_results?scorebook_id=eq.${id}&team_number=eq.8&game_number=eq.2&select=team_total`);
+if(!imported.length)await database("imported_team_results",{method:"POST",body:JSON.stringify({scorebook_id:id,team_number:8,game_number:2,players,team_total:total,source:"User-supplied Team 8 Game 2 scoreboard photograph, 2026-09-10. Distinct from Doug/Mustafa/Kyle/Pete team."})});
+const [saved]=await database(`scorebooks?id=eq.${id}&select=state,revision`);
+const current=nightSchema.parse(saved.state);
+if(current.game===2){
+  if(current.history.some(h=>h.game===2))throw Error("Game 2 already in history; needs review.");
+  const next=nightSchema.parse({...current,game:3,rolls:[[],[],[],[]],finals:undefined,history:[...current.history,{game:2,rolls:current.rolls,finals:current.finals}]});
+  const updated=await database(`scorebooks?id=eq.${id}&revision=eq.${saved.revision}&select=revision`,{method:"PATCH",body:JSON.stringify({state:next,revision:saved.revision+1,updated_at:new Date().toISOString()})});
+  if(!updated.length)throw Error("Concurrent edit detected. No scores overwritten; retry after reading latest.");
+}else if(current.game!==3)throw Error("Unexpected current game; left unchanged.");
+const [verified]=await database(`scorebooks?id=eq.${id}&select=state,revision`);
+const [result]=await database(`imported_team_results?scorebook_id=eq.${id}&team_number=eq.8&game_number=eq.2&select=players,team_total`);
+if(verified.state.game!==3||result.team_total!==683)throw Error("Read-back failed");
+console.log(JSON.stringify({game:verified.state.game,revision:verified.revision,rollCounts:verified.state.rolls.map((r:number[])=>r.length),game2:verified.state.history.find((h:{game:number})=>h.game===2),team8:result}));

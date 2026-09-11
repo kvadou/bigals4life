@@ -1,0 +1,14 @@
+{
+  "date": "2026-09-10",
+  "game": 1,
+  "source": "User-supplied handwritten league score sheet",
+  "complete": true,
+  "bowlers": [
+    {"name":"Doug","score":168,"rolls":null},
+    {"name":"Mustafa","score":90,"rolls":null},
+    {"name":"Kyle","score":138,"rolls":null},
+    {"name":"Pete","score":156,"rolls":null}
+  ],
+  "teamTotal": 552,
+  "note": "Final scores only; individual rolls were not supplied. Stored locally, not synced to the web app."
+}

@@ -1,0 +1,14 @@
+# web
+web/node_modules/
+web/.next/
+web/.vercel/
+web/.playwright-cli/
+web/*.tsbuildinfo
+web/.env*
+# ios
+ios/StrikeCeiling.xcodeproj/project.xcworkspace/
+ios/StrikeCeiling.xcodeproj/xcuserdata/
+ios/**/xcuserdata/
+ios/build/
+ios/DerivedData/
+.DS_Store
