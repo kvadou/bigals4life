@@ -8,7 +8,7 @@ Local mode works without a connection. Shared edits are backed up atomically bef
 
 Original iPhone scorecards remain in their existing local archive. On an empty local scorebook, **Original device scorecards** offers explicit import by bowler name. Additional names remain in the archive. Existing shared team scores are not migrated or overwritten.
 
-Phase 1 is implemented. Native league standings, photo import, and voice entry remain later phases. The web match metadata (lineups, handicaps, and opponent scores) is preserved through native edits and new games; native match entry is not part of this phase. No Supabase credentials are bundled; the native client uses the same HTTPS API and team-link access as the web app.
+Phase 1 is implemented, plus camera scoreboard scanning (`ScoreboardScan.swift`): a photo goes to the web app's `/api/scoreboard` reader, rows are re-validated against `BowlingGame`, assigned to bowlers, and applied through `store.change`. Camera and photo-library usage strings are set in `project.yml`. Native league standings and voice entry remain later phases. The web match metadata (lineups, handicaps, and opponent scores) is preserved through native edits and new games; native match entry is not part of this phase. No Supabase credentials are bundled; the native client uses the same HTTPS API and team-link access as the web app.
 
 Open `BA4L.xcodeproj` in Xcode. Automatic signing uses the same Apple Developer team as PMV and Jot. The bundle identifier remains `com.dougkvamme.StrikeCeiling` so the name change preserves existing device data. Display name, Xcode target/scheme, and product name are BA4L.
 

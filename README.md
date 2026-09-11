@@ -21,7 +21,7 @@ cd web && bun scripts/ingest-standings.ts ../league-pdfs/*.pdf
 
 Re-running is safe; each week upserts.
 
-Automatic: `web/scripts/gmail-ingest.ts` pulls new standings PDFs from Gmail every hour (launchd job `com.dpk.bafl-gmail-ingest`, install with `bash web/scripts/install-launchd.sh`). After ingest, any shared night set up for that week is checked against Gary's sheet and differences appear on `/league`.
+Automatic: `web/scripts/gmail-ingest.ts` pulls new standings PDFs from Gmail every hour (launchd job `com.dpk.bafl-gmail-ingest`, install with `bash web/scripts/install-launchd.sh`). After ingest, any shared night set up for that week is checked against Gary's sheet and differences appear on `/league`, and an AI recap of the week is written from the sheet (copy it into the league email). The night page shows each bowler's series-to-raise-average and whether the chalkboard number is still reachable.
 
 ## Learning with AI
 
