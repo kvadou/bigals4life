@@ -9,6 +9,7 @@ export function Topbar({ right }: { right?: ReactNode }) {
     <nav className="topbar-right" aria-label="Sections">
       <Link className="league-tag" href="/season"><span/> SEASON</Link>
       <Link className="league-tag" href="/league"><span/> STANDINGS</Link>
+      <Link className="league-tag" href="/records"><span/> RECORDS</Link>
       {right}
     </nav>
   </header>;

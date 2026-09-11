@@ -55,3 +55,15 @@ Invites are matched by email address, so an unconfirmed sign-up could otherwise 
 ## The iOS client pins the team-link shape
 
 `ScorebookClient.teamID(from:)` requires `https://strike-ceiling-web.vercel.app/?night=<uuid>` with an empty path. Moving the live scorebook to `/night` kept a redirect at `/` for exactly this reason. Any change to that URL shape needs a native release first.
+
+## PostgREST stops at 1000 rows and says nothing
+
+`league_bowler_weeks?select=*&limit=20000` returned exactly 1000 of 2039 rows. Nothing errors; the page just renders a smaller number as if it were the record. The record book showed Ryan's high game as 246 when the real one is 279. Anything that reads a whole table pages through `databaseAll()` in `lib/scorebook-server.ts`, which requires an `order=` because offset paging without one skips and repeats rows. A `limit=` larger than 1000 is a bug, not a safeguard.
+
+## A cumulative column resets at the season boundary
+
+`league_bowler_weeks.games` and `.pins` are running totals within a season. Reading the newest row for a career total silently reports the current season only (90 games instead of 114). A career figure is the sum of each season's last row.
+
+## Average 0 means "has not bowled yet"
+
+A bowler who joins mid-season is listed at average 0 on the sheets before his first night. Charted literally that is a cliff from 0 to 151, and a "+177 since week 22" that never happened. Treat 0 as absent, not as a number.

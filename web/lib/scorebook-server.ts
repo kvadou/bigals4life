@@ -15,3 +15,19 @@ export async function readUpdate(request:Request){
   const data=JSON.parse(body);
   return {state:nightSchema.parse(data.state),revision:data.revision};
 }
+
+/**
+ * PostgREST answers at most 1000 rows and says nothing about the rest, so a plain `limit=20000`
+ * silently truncates. Pages until a short page arrives. The path must carry a stable `order=`,
+ * or offset paging can skip and repeat rows.
+ */
+export async function databaseAll(path:string,pageSize=1000){
+  if(!/[?&]order=/.test(path))throw new Error(`databaseAll needs a stable order: ${path}`);
+  const rows:any[]=[];
+  for(let offset=0;offset<200_000;offset+=pageSize){
+    const page=await database(`${path}${path.includes("?")?"&":"?"}limit=${pageSize}&offset=${offset}`);
+    rows.push(...page);
+    if(page.length<pageSize)return rows;
+  }
+  throw new Error(`databaseAll read 200k rows without reaching the end: ${path}`);
+}

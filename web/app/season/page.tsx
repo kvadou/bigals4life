@@ -1,13 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
-import { CalendarDays, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronRight, CircleDot } from "lucide-react";
 import { Topbar } from "../components/topbar";
 import { Crumbs } from "../components/crumbs";
 import Link from "next/link";
+import { fmt, title } from "../components/format";
 import { BOWLERS, type WeekSummary } from "@/lib/season";
 
-const fmt = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1).replace(".5", "½");
-const title = (s: string) => s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()).replace(/'S\b/i, "'s");
 const day = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 
 export default function SeasonPage() {
@@ -15,7 +14,7 @@ export default function SeasonPage() {
   const [error, setError] = useState("");
   useEffect(() => { void (async () => { try { const r = await fetch("/api/season", { cache: "no-store" }); const d = await r.json(); if (!r.ok) throw Error(d.error); setData(d); } catch (e) { setError(e instanceof Error ? e.message : "Could not load the season."); } })(); }, []);
   return <main>
-    <Topbar right={<Link className="secondary" href="/night">Live scorebook</Link>}/>
+    <Topbar right={<Link className="secondary" href="/night"><CircleDot size={16}/>Live scorebook</Link>}/>
     <Crumbs items={[{ label: "Season" }]}/>
     <section className="intro"><div><div className="eyebrow"><CalendarDays size={14}/> OUR SEASON {data?.season ?? ""}</div><h1>Every <em>Thursday.</em></h1><p>Each week is a night. Open a week for all three games, then any game for the frame-by-frame.</p></div></section>
     {error && <p className="photo-error" role="alert">{error}</p>}

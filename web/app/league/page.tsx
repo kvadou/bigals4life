@@ -2,13 +2,12 @@ import { Trophy } from "lucide-react";
 import { Topbar } from "../components/topbar";
 import { Crumbs } from "../components/crumbs";
 import Link from "next/link";
+import { fmt, title } from "../components/format";
 import { loadStandings } from "@/lib/league/standings-server";
 import Recap from "./recap";
 
 export const dynamic = "force-dynamic";
-const fmt = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1).replace(".5", "½");
 const ordinal = (n: number) => `${n}${["st", "nd", "rd"][n - 1] ?? "th"}`;
-const title = (s: string) => s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()).replace(/'S\b/i, "'s");
 
 export default async function LeaguePage({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season } = await searchParams;
