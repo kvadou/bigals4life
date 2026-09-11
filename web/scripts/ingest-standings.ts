@@ -2,6 +2,8 @@
 import { basename } from "node:path";
 import { database } from "../lib/scorebook-server";
 import { matchRosterName, parseStandings } from "../lib/league/bls-parse";
+import { reconcileNight } from "../lib/league/reconcile";
+import { nightSchema } from "../lib/scorebook";
 
 const files = process.argv.slice(2);
 if (!files.length) { console.error("Usage: bun scripts/ingest-standings.ts <pdf...>"); process.exit(1); }
@@ -34,6 +36,17 @@ for (const file of files) {
     week_id: row.id, bowler_id: bowlerId(b.blsId), team_id: teamId(b.teamNumber), average: b.average, handicap: b.handicap, pins: b.pins, games: b.games, to_raise: b.toRaise, to_drop: b.toDrop,
     scratch_games: b.scratchGames, scratch_total: b.scratchTotal, hdcp_total: b.hdcpTotal, match_points_ytd: points.get(b.name) ?? null, warning: b.warning ?? null })), "week_id,bowler_id");
 
-  const us = week.teams.find(t => /BIG AL/.test(t.name));
-  console.log(`${basename(file)}: ${week.season} week ${week.week}/${week.weeksTotal}, ${week.teams.length} teams, ${rosterRows.length} bowlers${us ? `, Big Al's ${us.place}${["st","nd","rd"][us.place - 1] ?? "th"} (${us.pointsWon}-${us.pointsLost}), last week ${week.results.find(r => r.number === us.number)?.pointsWon ?? "?"} pts` : ""}${week.warnings.length ? `, ${week.warnings.length} warning(s): ${week.warnings.join("; ")}` : ""}`);
+  // Reconcile any live scorebook for this week against Gary's sheet. Gary stays canonical; differences are stored for the league page.
+  const ourNumber = week.rosters.find(r => r.bowlers.some(b => /^DOUG KVAMME$/i.test(b.name)))?.number;
+  let reconciled = "";
+  if (ourNumber) {
+    const nights: { id: string; state: unknown }[] = await database(`scorebooks?select=id,state&state->match->>season=eq.${encodeURIComponent(week.season)}&state->match->>week=eq.${week.week}`);
+    const results = nights.flatMap(n => { const parsed = nightSchema.safeParse(n.state); if (!parsed.success) return []; const r = reconcileNight(n.id, parsed.data, week, ourNumber); return r ? [r] : []; });
+    if (results.length) {
+      await database(`league_team_weeks?week_id=eq.${row.id}&team_id=eq.${teamId(ourNumber)}`, { method: "PATCH", body: JSON.stringify({ discrepancies: results }) });
+      reconciled = `, reconciled ${results.length} night(s): ${results.reduce((s, r) => s + r.discrepancies.length, 0)} difference(s)`;
+    }
+  }
+  const us = week.teams.find(t => t.number === ourNumber);
+  console.log(`${basename(file)}: ${week.season} week ${week.week}/${week.weeksTotal}, ${week.teams.length} teams, ${rosterRows.length} bowlers${us ? `, Big Al's ${us.place}${["st","nd","rd"][us.place - 1] ?? "th"} (${us.pointsWon}-${us.pointsLost}), last week ${week.results.find(r => r.number === us.number)?.pointsWon ?? "?"} pts` : ""}${week.warnings.length ? `, ${week.warnings.length} warning(s): ${week.warnings.join("; ")}` : ""}${reconciled}`);
 }

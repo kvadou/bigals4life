@@ -1,5 +1,6 @@
 import { database } from "@/lib/scorebook-server";
 import { displayName } from "./bls-parse";
+import type { Reconciliation } from "./reconcile";
 
 export const OUR_BOWLER = /^DOUG KVAMME$/i; // "our team" is whichever roster Doug is on that season
 type Row = Record<string, any>;
@@ -12,6 +13,7 @@ export type LeagueStandings = {
   roster: { name: string; average: number; handicap: number; toRaise: number; toDrop: number; games: number[] | null; total: number | null; matchPoints: number | null }[];
   leaderboard: { name: string; team: string; points: number; ours: boolean }[];
   history: { week: number; points: number | null; opponent: string | null; place: number | null }[];
+  reconciliation: { week: number; nights: Reconciliation[] }[];
 };
 
 export async function loadStandings(seasonName?: string): Promise<LeagueStandings | null> {
@@ -28,8 +30,9 @@ export async function loadStandings(seasonName?: string): Promise<LeagueStanding
   const teamName = (id: string | null) => teams.find(t => t.id === id)?.name ?? "";
   const me = bowlers.find(b => OUR_BOWLER.test(b.name));
   const ours = teams.find(t => t.id === (bowlerWeeks.find(bw => bw.bowler_id === me?.id)?.team_id ?? me?.team_id));
-  const history = ours ? (await database(`league_team_weeks?select=week_id,week_points_won,opponent_team_id,place&team_id=eq.${ours.id}`) as Row[]).map(r => ({
-    week: weeks.find(w => w.id === r.week_id)?.week ?? 0, points: r.week_points_won, opponent: teamName(r.opponent_team_id) || null, place: r.place })).sort((a, b) => a.week - b.week) : [];
+  const ourWeeks: Row[] = ours ? await database(`league_team_weeks?select=week_id,week_points_won,opponent_team_id,place,discrepancies&team_id=eq.${ours.id}`) : [];
+  const history = ourWeeks.map(r => ({ week: weeks.find(w => w.id === r.week_id)?.week ?? 0, points: r.week_points_won, opponent: teamName(r.opponent_team_id) || null, place: r.place })).sort((a, b) => a.week - b.week);
+  const reconciliation = ourWeeks.filter(r => Array.isArray(r.discrepancies) && r.discrepancies.length).map(r => ({ week: weeks.find(w => w.id === r.week_id)?.week ?? 0, nights: r.discrepancies as Reconciliation[] })).sort((a, b) => b.week - a.week);
   return {
     season: { id: season.id, name: season.name, house: season.house, weeksTotal: season.weeks_total },
     seasons: seasons.map(s => ({ name: s.name })),
@@ -42,5 +45,6 @@ export async function loadStandings(seasonName?: string): Promise<LeagueStanding
     leaderboard: bowlerWeeks.filter(bw => bw.match_points_ytd != null).map(bw => { const b = bowlers.find(x => x.id === bw.bowler_id); return {
       name: displayName(b?.name ?? ""), team: teamName(bw.team_id), points: Number(bw.match_points_ytd), ours: bw.team_id === ours?.id }; }).sort((a, b) => b.points - a.points),
     history,
+    reconciliation,
   };
 }
