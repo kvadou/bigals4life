@@ -1,12 +1,15 @@
 import { sameOrigin } from "@/lib/scorebook-server";
 import { writeRecap } from "@/lib/league/recap";
+import { enforcing, identify, unauthorized } from "@/lib/auth-server";
 
 export const maxDuration = 60;
 const attempts = new Map<string, number>();
 
 export async function POST(request: Request) {
-  if (!sameOrigin(request)) return Response.json({ error: "Use the website to write the recap." }, { status: 403 });
-  const ip = request.headers.get("x-vercel-forwarded-for")?.split(",")[0] ?? "local";
+  const identity = await identify(request);
+  if ((!identity || identity.viaCookie) && !sameOrigin(request)) return Response.json({ error: "Use the website to write the recap." }, { status: 403 });
+  if (!identity && enforcing()) return unauthorized("Sign in to write the recap.");
+  const ip = identity?.user.id ?? request.headers.get("x-vercel-forwarded-for")?.split(",")[0] ?? "local";
   const hour = Math.floor(Date.now() / 3_600_000); const key = `${ip}:${hour}`;
   if ((attempts.get(key) ?? 0) >= 10) return Response.json({ error: "Recap writing is busy. Try again later." }, { status: 429 });
   attempts.set(key, (attempts.get(key) ?? 0) + 1);

@@ -1,0 +1,28 @@
+{
+  "description": "Shared web/native auth contract for /api/nights and paid endpoints. Native tests may load this file. Roles: owner, editor, viewer, legacy (unclaimed scorebook), none (claimed, not a member), missing.",
+  "headers": { "bearer": "Authorization: Bearer <supabase access token>", "unauthorized": { "WWW-Authenticate": "Bearer" } },
+  "errorBody": { "error": "string" },
+  "decisions": [
+    { "kind": "read", "role": "legacy", "identified": false, "status": 200 },
+    { "kind": "write", "role": "legacy", "identified": false, "status": 200 },
+    { "kind": "read", "role": "none", "identified": false, "status": 401 },
+    { "kind": "write", "role": "none", "identified": false, "status": 401 },
+    { "kind": "read", "role": "none", "identified": true, "status": 404 },
+    { "kind": "write", "role": "none", "identified": true, "status": 404 },
+    { "kind": "read", "role": "viewer", "identified": true, "status": 200 },
+    { "kind": "write", "role": "viewer", "identified": true, "status": 403 },
+    { "kind": "write", "role": "editor", "identified": true, "status": 200 },
+    { "kind": "write", "role": "owner", "identified": true, "status": 200 },
+    { "kind": "read", "role": "missing", "identified": true, "status": 404 }
+  ],
+  "examples": {
+    "401": { "status": 401, "headers": { "WWW-Authenticate": "Bearer" }, "body": { "error": "Sign in to open this team scorebook." } },
+    "403": { "status": 403, "body": { "error": "You can view this scorebook but not change it. Ask the owner for edit access." } },
+    "404": { "status": 404, "body": { "error": "Team scorebook not found." } },
+    "409": { "status": 409, "body": { "error": "Another phone updated this game. Your edit was not saved. Reload the latest scores before continuing." } },
+    "getNight": { "status": 200, "body": { "state": "<night>", "revision": 7, "role": "owner | editor | viewer | legacy" } },
+    "postNight": { "status": 201, "body": { "id": "<uuid>", "state": "<night>", "revision": 1, "role": "owner | legacy" } },
+    "me": { "status": 200, "body": { "user": { "id": "<uuid>", "email": "x@y.z" }, "profile": { "displayName": "x", "bowlerName": "Doug | Mustafa | Kyle | Pete | null" }, "scorebooks": [{ "id": "<uuid>", "role": "owner", "updatedAt": "<iso>" }] } }
+  },
+  "enforcement": { "flag": "BAFL_AUTH_ENFORCE", "off": "identity verified when present, nothing rejected for missing identity", "on": "POST /api/nights, POST /api/scoreboard, POST /api/league/recap return 401 without identity; claimed scorebooks follow the decisions table either way" }
+}

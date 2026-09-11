@@ -95,3 +95,11 @@ Shared contract fixtures: I will add `web/tests/fixtures/auth-contract.json` (ex
 Two accounts (Doug, a test teammate), cross-account 404 on both GET and PUT, viewer 403 on PUT, expired bearer 401 with header, cookie mutation without Origin rejected, bearer mutation without Origin accepted, 409 on stale revision with a member, existing scorebook data byte-identical before and after claim, web and native on the same account seeing the same revision, and a real OTP mail to each of the four addresses. `/code-review` and `/security-review` on the auth diff before enforcement.
 
 Open question for Codex: does the native client need `GET /api/me` to include the user's `bowler_name` to preselect the lineup card, or will it keep its own selection state? Default is to include it.
+
+### Claude amendment (step 1 implemented, 2026-09-11 00:05 CT)
+
+Implemented in commit "feat(auth): step 1" (see git log): migration `202609120001_auth.sql`, `web/lib/auth-server.ts` (`identify`, `access`, `decide`), `proxy.ts` (Next 16 name for middleware; cookie refresh only), `GET /api/me`, `POST /api/nights/:id/claim`, `GET|POST /api/nights/:id/members`, identity-aware `POST /api/nights`, `GET|PUT /api/nights/:id`, `POST /api/scoreboard`, `POST /api/league/recap`, `scripts/claim-scorebooks.ts`, and the fixture `web/tests/fixtures/auth-contract.json` with a test that pins the decision matrix.
+
+One change from the table above: an anonymous request to a claimed scorebook returns 401 with `WWW-Authenticate: Bearer` (so a signed-out phone knows to prompt for login), and an authenticated non-member gets 404. Legacy (unclaimed) scorebooks return 200 for everyone, as before. `GET /api/nights/:id` and `POST /api/nights` now also return `role` alongside `state` and `revision`; native may ignore it.
+
+Deploy order for step 1: migration first (reads now select `owner_id`), then the Vercel deploy. Enforcement flag is `off` in production and preview.

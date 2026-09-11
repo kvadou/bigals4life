@@ -2,6 +2,7 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import { validRolls } from "@/lib/bowling";
 import { sameOrigin } from "@/lib/scorebook-server";
+import { enforcing, identify, unauthorized } from "@/lib/auth-server";
 
 export const maxDuration = 60;
 const attempts = new Map<string, { count: number; until: number }>();
@@ -15,9 +16,11 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
-  if (!sameOrigin(request)) return Response.json({error:"Please use the photo button on this website."},{status:403});
+  const identity = await identify(request);
+  if ((!identity || identity.viaCookie) && !sameOrigin(request)) return Response.json({error:"Please use the photo button on this website."},{status:403});
+  if (!identity && enforcing()) return unauthorized("Sign in to use photo reading.");
   if (Number(request.headers.get("content-length") || 0) > 3_000_000) return Response.json({error:"That photo is too large. Try a closer crop."},{status:413});
-  const ip = request.headers.get("x-vercel-forwarded-for")?.split(",")[0] ?? "local";
+  const ip = identity?.user.id ?? request.headers.get("x-vercel-forwarded-for")?.split(",")[0] ?? "local";
   const now = Date.now();
   for (const [key,entry] of attempts) if (entry.until < now) attempts.delete(key);
   const usage = attempts.get(ip) ?? {count:0,until:now+3_600_000};

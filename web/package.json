@@ -9,6 +9,8 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.116.0",
     "ai": "^7.0.97",
     "lucide-react": "latest",
     "next": "latest",
