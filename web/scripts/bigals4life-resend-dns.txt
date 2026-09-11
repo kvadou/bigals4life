@@ -1,0 +1,4 @@
+TXT    name: resend._domainkey    value: p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC7wMZ19eEr6pQpDX/ht55lvDB2b9+ij076EiNUMMUm2v168jvUK9ntoVmyCsk8PIJprWFobR8BJ1V7902DS+irpvBcJg+arbC/nzTbt8YpoRtFYZj85SraaH1U7QtvE978G+YNcWPeT8AMTmzaYZoiOO5e2W0+RIHmEr3nn1n5QQIDAQAB
+MX     name: send                 value: feedback-smtp.us-east-1.amazonses.com   priority: 10
+TXT    name: send                 value: v=spf1 include:amazonses.com ~all
+CNAME  name: rsend                value: send.forge.rmta.net
