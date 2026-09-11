@@ -40,7 +40,7 @@ export async function writeRecap(seasonName: string, weekNumber: number, force =
   if (facts.week.recap && !force) return { recap: facts.week.recap, cached: true };
   const { text } = await generateText({
     model: "google/gemini-2.5-flash",
-    maxOutputTokens: 900,
+    maxOutputTokens: 4000,
     maxRetries: 1,
     abortSignal: AbortSignal.timeout(45_000),
     system: `You write a short, funny, warm weekly recap for a four-man bowling team (${facts.ourTeamName || "our team"}) in a Thursday night league. Audience: the four teammates, later the whole league. Plain text only, no markdown, no headers, no bullet symbols. 120 to 180 words. Use only the numbers given; never invent scores, names, or events. Lead with our result and where we sit. Call out one or two standout games (ours or anyone's) with the actual numbers. One light joke at most, never mean. End with one concrete thing to aim for next week that comes from the numbers (a series needed to raise an average, points needed to move up a place). Sign off as "BA4L Recap".`,
