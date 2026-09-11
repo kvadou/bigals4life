@@ -217,6 +217,14 @@ otp_length = 6
 otp_expiry = 600
 
 # Use a production-ready SMTP server
+[auth.email.template.magic_link]
+subject = "Your Big Al's 4 Life sign-in code"
+content_path = "./supabase/templates/otp.html"
+
+[auth.email.template.confirmation]
+subject = "Your Big Al's 4 Life sign-in code"
+content_path = "./supabase/templates/otp.html"
+
 [auth.email.smtp]
 enabled = true
 host = "smtp.resend.com"
