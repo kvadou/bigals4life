@@ -1,6 +1,7 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import { validRolls } from "@/lib/bowling";
+import { sameOrigin } from "@/lib/scorebook-server";
 
 export const maxDuration = 60;
 const attempts = new Map<string, { count: number; until: number }>();
@@ -14,8 +15,7 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) return Response.json({error:"Please use the photo button on this website."},{status:403});
+  if (!sameOrigin(request)) return Response.json({error:"Please use the photo button on this website."},{status:403});
   if (Number(request.headers.get("content-length") || 0) > 3_000_000) return Response.json({error:"That photo is too large. Try a closer crop."},{status:413});
   const ip = request.headers.get("x-vercel-forwarded-for")?.split(",")[0] ?? "local";
   const now = Date.now();
