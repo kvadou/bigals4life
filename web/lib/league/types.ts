@@ -12,6 +12,7 @@ export type RosterBowler = {
   blsId: number; hand: "L" | "R"; name: string; teamNumber: number;
   average: number; handicap: number; pins: number; games: number; toRaise: number; toDrop: number;
   scratchGames: [number, number, number] | null; scratchTotal: number | null; hdcpTotal: number | null;
+  absent?: boolean;
   warning?: string;
 };
 export type StandingsWeek = {

@@ -7,12 +7,13 @@ const fmt = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1).replac
 const ordinal = (n: number) => `${n}${["st", "nd", "rd"][n - 1] ?? "th"}`;
 const title = (s: string) => s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()).replace(/'S\b/i, "'s");
 
-export default async function LeaguePage() {
-  const s = await loadStandings().catch(() => null);
+export default async function LeaguePage({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
+  const { season } = await searchParams;
+  const s = await loadStandings(season).catch(() => null);
   return <main>
     <header className="topbar"><Link className="brand" href="/" aria-label="Strike Ceiling home"><span className="brand-icon"><CircleDot size={23}/></span>STRIKE<span>CEILING</span></Link><span className="league-tag"><span/> STANDINGS</span></header>
     {!s ? <section className="intro"><div><div className="eyebrow">LEAGUE</div><h1>No standings <em>yet.</em></h1><p>Ingest Gary&rsquo;s weekly PDF and this page fills in.</p></div></section> : <>
-      <section className="intro"><div><div className="eyebrow">{s.season.name.toUpperCase()} · WEEK {s.week.number} OF {s.season.weeksTotal}</div><h1>{s.teams.find(t => t.ours) ? <>Big Al&rsquo;s sit <em>{ordinal(s.teams.find(t => t.ours)!.place)}.</em></> : <>League <em>standings.</em></>}</h1><p>{s.season.house}. Updated from the standings sheet dated {s.week.bowledOn}.</p></div><Link className="secondary" href="/">Tonight&rsquo;s scorebook</Link></section>
+      <section className="intro"><div><div className="eyebrow">{s.season.name.toUpperCase()} · WEEK {s.week.number} OF {s.season.weeksTotal}</div><h1>{s.teams.find(t => t.ours) ? <>{title(s.teams.find(t => t.ours)!.name).replace(/ 4 Life$/, "")} sit <em>{ordinal(s.teams.find(t => t.ours)!.place)}.</em></> : <>League <em>standings.</em></>}</h1><p>{s.season.house}. Updated from the standings sheet dated {s.week.bowledOn}.</p>{s.seasons.length > 1 && <nav className="season-nav" aria-label="Season">{s.seasons.map(x => <Link key={x.name} href={x.name === s.seasons[0].name ? "/league" : `/league?season=${encodeURIComponent(x.name)}`} className={x.name === s.season.name ? "active" : ""}>{x.name.replace(/^Thursday Men's Early /, "")}</Link>)}</nav>}</div><Link className="secondary" href="/">Tonight&rsquo;s scorebook</Link></section>
 
       <section className="league-section" aria-label="Team standings">
         <div className="eyebrow"><Trophy size={16}/> TEAM STANDINGS</div>
@@ -40,7 +41,7 @@ export default async function LeaguePage() {
           <ol className="leaderboard">{s.leaderboard.map((b, i) => <li key={b.name} className={b.ours ? "ours" : ""}><span className="rank">{i + 1}</span><span className="who"><strong>{title(b.name)}</strong><small>{title(b.team)}</small></span><span className="pts">{fmt(b.points)}</span></li>)}</ol>
         </section>
         <section className="league-section" aria-label="Big Al's week by week">
-          <div className="eyebrow">BIG AL&rsquo;S WEEK BY WEEK · POINTS OF 36</div>
+          <div className="eyebrow">OUR WEEK BY WEEK · POINTS OF 36</div>
           {s.history.length ? <div className="week-bars">{s.history.map(h => <div key={h.week} className="week-bar" title={h.opponent ? `Week ${h.week}: ${fmt(h.points ?? 0)} vs ${title(h.opponent)}` : `Week ${h.week}`}><span style={{ height: `${((h.points ?? 0) / 36) * 100}%` }} className={(h.points ?? 0) >= 18 ? "win" : ""}/><small>{h.week}</small></div>)}</div> : <p className="score-note">Ingest more weeks to see the trend.</p>}
           <p className="score-note">Bars above the line are winning weeks (18 or more).</p>
         </section>

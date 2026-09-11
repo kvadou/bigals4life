@@ -1,11 +1,12 @@
 import { database } from "@/lib/scorebook-server";
 import { displayName } from "./bls-parse";
 
-export const OUR_TEAM = /BIG AL/;
+export const OUR_BOWLER = /^DOUG KVAMME$/i; // "our team" is whichever roster Doug is on that season
 type Row = Record<string, any>;
 
 export type LeagueStandings = {
   season: { id: string; name: string; house: string; weeksTotal: number };
+  seasons: { name: string }[];
   week: { number: number; bowledOn: string; ingestedAt: string };
   teams: { number: number; name: string; place: number; percentWon: number; pointsWon: number; pointsLost: number; ytdWon: number; ytdLost: number; scratchPins: number; ours: boolean; lastWeek: { opponent: string; points: number; hdcpGames: number[]; hdcpTotal: number } | null }[];
   roster: { name: string; average: number; handicap: number; toRaise: number; toDrop: number; games: number[] | null; total: number | null; matchPoints: number | null }[];
@@ -14,8 +15,8 @@ export type LeagueStandings = {
 };
 
 export async function loadStandings(seasonName?: string): Promise<LeagueStandings | null> {
-  const seasons: Row[] = await database(`league_seasons?select=*&order=created_at.desc${seasonName ? `&name=eq.${encodeURIComponent(seasonName)}` : ""}&limit=1`);
-  const season = seasons[0]; if (!season) return null;
+  const seasons: Row[] = await database(`league_seasons?select=*&order=name.desc`);
+  const season = seasonName ? seasons.find(s => s.name === seasonName) : seasons[0]; if (!season) return null;
   const weeks: Row[] = await database(`league_weeks?select=*&season_id=eq.${season.id}&order=week.desc`);
   const latest = weeks[0]; if (!latest) return null;
   const [teams, teamWeeks, bowlers, bowlerWeeks]: Row[][] = await Promise.all([
@@ -25,11 +26,13 @@ export async function loadStandings(seasonName?: string): Promise<LeagueStanding
     database(`league_bowler_weeks?select=*&week_id=eq.${latest.id}`),
   ]);
   const teamName = (id: string | null) => teams.find(t => t.id === id)?.name ?? "";
-  const ours = teams.find(t => OUR_TEAM.test(t.name));
+  const me = bowlers.find(b => OUR_BOWLER.test(b.name));
+  const ours = teams.find(t => t.id === (bowlerWeeks.find(bw => bw.bowler_id === me?.id)?.team_id ?? me?.team_id));
   const history = ours ? (await database(`league_team_weeks?select=week_id,week_points_won,opponent_team_id,place&team_id=eq.${ours.id}`) as Row[]).map(r => ({
     week: weeks.find(w => w.id === r.week_id)?.week ?? 0, points: r.week_points_won, opponent: teamName(r.opponent_team_id) || null, place: r.place })).sort((a, b) => a.week - b.week) : [];
   return {
     season: { id: season.id, name: season.name, house: season.house, weeksTotal: season.weeks_total },
+    seasons: seasons.map(s => ({ name: s.name })),
     week: { number: latest.week, bowledOn: latest.bowled_on, ingestedAt: latest.ingested_at },
     teams: teamWeeks.map(tw => { const t = teams.find(x => x.id === tw.team_id); return {
       number: t?.number ?? 0, name: t?.name ?? "", place: tw.place, percentWon: Number(tw.percent_won), pointsWon: Number(tw.points_won), pointsLost: Number(tw.points_lost), ytdWon: Number(tw.ytd_won), ytdLost: Number(tw.ytd_lost), scratchPins: tw.scratch_pins, ours: t?.id === ours?.id,

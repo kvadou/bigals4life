@@ -54,3 +54,23 @@ describe("BLS standings parser", () => {
     for (const m of week.matchPoints) expect(matchRosterName(m.name, names)).not.toBeNull();
   });
 });
+
+const old = parseStandings(await Bun.file(new URL("./fixtures/2024-25-sheet-16.txt", import.meta.url)).text());
+describe("2024-25 sheet (8 teams, blank columns, absent scores)", () => {
+  test("header with single-digit month", () => { expect(old.week).toBe(16); expect(old.date).toBe("2024-12-26"); expect(old.season).toBe("Thursday Men's Early 2024-25"); });
+  test("rows with blank %won, unearned, or games-won columns", () => {
+    expect(old.teams).toHaveLength(8);
+    expect(old.teams[0]).toMatchObject({ name: "GUTTER WHORE'S", percentWon: 94.4, pointsWon: 34, pointsLost: 2, unearnedPoints: 2, ytdPercentWon: 53.2, ytdWon: 268, ytdLost: 236, gamesWon: 3, scratchPins: 20785, pinsPlusHdcp: 34639 });
+    expect(old.teams[6]).toMatchObject({ name: "HOWLING HOOK-AH", percentWon: 22.2, pointsWon: 8, gamesWon: 0, scratchPins: 26088 });
+    expect(old.teams[7]).toMatchObject({ name: "LIL' EXPLODERS", percentWon: 0, pointsWon: 0, pointsLost: 36, ytdPercentWon: 46.2, ytdWon: 199.5, ytdLost: 232.5, gamesWon: 0, scratchPins: 16881, pinsPlusHdcp: 26940 });
+    expect(old.results).toHaveLength(8); expect(old.results.reduce((s, r) => s + r.pointsWon, 0)).toBe(142);
+  });
+  test("absent scores, blank hand, and book averages", () => {
+    const us = old.rosters.find(r => r.name === "LIL' EXPLODERS")!;
+    const doug = us.bowlers.find(b => b.name === "DOUG KVAMME")!;
+    expect(doug).toMatchObject({ blsId: 19, average: 117, handicap: 83, absent: true, scratchGames: null, scratchTotal: 321, hdcpTotal: 570 });
+    expect(us.bowlers.find(b => b.name === "KYLE A. DICKHAUS")).toMatchObject({ scratchGames: [113, 156, 138], scratchTotal: 407, hdcpTotal: 614 });
+    expect(us.bowlers.find(b => b.name === "MITCH D. LABORDE")!.hand).toBe("R");
+    expect(old.warnings).toEqual([]);
+  });
+});

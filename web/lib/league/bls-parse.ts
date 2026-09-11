@@ -1,34 +1,78 @@
 import type { RosterBowler, StandingsWeek, TeamStanding, TeamWeekResult } from "./types";
 
 // Parses `pdftotext -layout` output of a BLS-2013 league standings sheet.
+// Columns are recognised by token shape (decimals are percentages, ½ marks points, a107 is an absent score,
+// bk127 is a book average) rather than by character position, because the layout shifts between seasons.
 const num = (s: string) => { const m = s.match(/^(\d+)?(½)?$/); if (!m) return Number(s); return Number(m[1] ?? 0) + (m[2] ? 0.5 : 0); };
-const isNum = (s: string) => /^\d+(?:½|\.\d+)?$/.test(s) || s === "½";
+const isNum = (s: string) => /^(?:a|bk)?\d+(?:½|\.\d+)?$/.test(s) || s === "½";
+const isPct = (s: string) => /^\d+\.\d$/.test(s);
 const tokens = (line: string) => line.trim().split(/\s+/).filter(Boolean);
+const numericFrom = (t: string[], from: number) => { let i = t.length; while (i > from && isNum(t[i - 1])) i--; return i; }; // first index where the rest is all numeric
 const section = (lines: string[], start: RegExp, end: RegExp) => {
   const i = lines.findIndex(l => start.test(l)); if (i < 0) return [];
   const rest = lines.slice(i + 1); const j = rest.findIndex(l => end.test(l));
   return j < 0 ? rest : rest.slice(0, j);
 };
 
+function teamRow(l: string, warnings: string[]): TeamStanding | null {
+  const t = tokens(l); if (t.length < 8 || !/^\d+$/.test(t[0]) || !/^\d+$/.test(t[1])) return null;
+  const place = Number(t[0]), number = Number(t[1]);
+  const i = numericFrom(t, 2);
+  const name = t.slice(2, i).join(" "); const n = t.slice(i);
+  const pcts = n.map((v, k) => isPct(v) ? k : -1).filter(k => k >= 0);
+  const row: TeamStanding = { place, number, name, percentWon: 0, pointsWon: 0, pointsLost: 0, unearnedPoints: null, ytdPercentWon: 0, ytdWon: 0, ytdLost: 0, gamesWon: 0, scratchPins: 0, pinsPlusHdcp: 0 };
+  let ytdAt: number;
+  if (pcts.length === 2) { row.percentWon = Number(n[pcts[0]]); ytdAt = pcts[1]; }
+  else if (pcts.length === 1 && pcts[0] === 0) { row.percentWon = Number(n[0]); ytdAt = -1; }
+  else if (pcts.length === 1) { ytdAt = pcts[0]; }
+  else { warnings.push(`${name}: cannot read standings row`); return null; }
+  const mid = n.slice(pcts.length === 2 || ytdAt === -1 ? 1 : 0, ytdAt === -1 ? undefined : ytdAt);
+  if (ytdAt === -1) { warnings.push(`${name}: no year-to-date columns`); return null; }
+  row.pointsWon = num(mid[0]); row.pointsLost = num(mid[1]); row.unearnedPoints = mid[2] == null ? null : num(mid[2]);
+  row.ytdPercentWon = Number(n[ytdAt]);
+  const tail = n.slice(ytdAt + 1); // ytdWon ytdLost [gamesWon] scratchPins pinsPlusHdcp
+  row.ytdWon = num(tail[0]); row.ytdLost = num(tail[1]);
+  row.pinsPlusHdcp = Number(tail[tail.length - 1]); row.scratchPins = Number(tail[tail.length - 2]);
+  row.gamesWon = tail.length >= 5 ? Number(tail[2]) : 0;
+  return row;
+}
+
+function rosterRow(l: string, teamNumber: number, warnings: string[]): RosterBowler | null {
+  const t = tokens(l); if (t.length < 8 || !/^\d+$/.test(t[0])) return null;
+  let i = 1; let hand: "L" | "R" | null = null;
+  if (/^[LR]$/.test(t[i])) { hand = t[i] as "L" | "R"; i++; }
+  const start = i; i = numericFrom(t, start);
+  const name = t.slice(start, i).join(" "); if (!name || t.length - i < 6) return null;
+  const n = t.slice(i);
+  const bookAverage = /^bk/.test(n[0]);
+  const [average, handicap, pins, games, toRaise, toDrop] = n.slice(0, 6).map(v => Number(v.replace(/^bk/, "")));
+  const rest = n.slice(6);
+  const absent = rest.some(v => /^a\d/.test(v));
+  const values = rest.map(v => Number(v.replace(/^a/, "")));
+  const b: RosterBowler = { blsId: Number(t[0]), hand: hand ?? "R", name, teamNumber, average, handicap, pins, games, toRaise, toDrop, scratchGames: null, scratchTotal: null, hdcpTotal: null };
+  if (bookAverage) b.warning = "book average";
+  if (absent) { b.absent = true; b.hdcpTotal = values.at(-1) ?? null; b.scratchTotal = values.at(-2) ?? null; }
+  else if (values.length === 5) {
+    const hdcpTotal = values[4]; const four = values.slice(0, 4);
+    const totalIndex = four.findIndex((v, k) => v === four.filter((_, j) => j !== k).reduce((s, x) => s + x, 0));
+    if (totalIndex >= 0) { b.scratchTotal = four[totalIndex]; b.scratchGames = four.filter((_, j) => j !== totalIndex) as [number, number, number]; b.hdcpTotal = hdcpTotal; }
+    else { b.warning = `Could not separate games from total: ${rest.join(" ")}`; warnings.push(`${name}: ${b.warning}`); b.hdcpTotal = hdcpTotal; }
+  } else if (values.length === 4) { // two games bowled: g1 g2 total hdcpTotal
+    b.hdcpTotal = values[3]; b.scratchTotal = values[2]; b.warning = "two games only";
+  } else if (values.length && values.some(v => v !== 0)) { b.warning = `Unexpected game columns: ${rest.join(" ")}`; warnings.push(`${name}: ${b.warning}`); }
+  return b;
+}
+
 export function parseStandings(text: string): StandingsWeek {
   const lines = text.split("\n");
   const warnings: string[] = [];
   const head = lines.find(l => /Week \d+ of \d+/.test(l)) ?? "";
-  const h = head.match(/(\d\d)\/(\d\d)\/(\d{4})\s+Week (\d+) of (\d+)\s+(.+?)\s+Page/);
+  const h = head.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+Week (\d+) of (\d+)\s+(.+?)\s+Page/);
   if (!h) throw new Error("Not a BLS standings sheet: header missing.");
-  const date = `${h[3]}-${h[1]}-${h[2]}`;
-  const house = (lines.find(l => /Thursday\s+\d/.test(l))?.replace(/^.*?M\s+/, "").replace(/\s+Lanes.*$/, "").trim()) ?? "";
+  const date = `${h[3]}-${h[1].padStart(2, "0")}-${h[2].padStart(2, "0")}`;
+  const house = (lines.find(l => /^Thursday\s+\d/i.test(l))?.replace(/^.*?M\s+/i, "").replace(/\s+Lanes.*$/, "").trim()) ?? "";
 
-  const teams: TeamStanding[] = section(lines, /Top \d+ Teams/, /Review of Last Week/)
-    .filter(l => /^\s*\d+\s+\d+\s+\S/.test(l)).map(l => {
-      const t = tokens(l); const place = Number(t[0]), number = Number(t[1]);
-      let i = 2; while (i < t.length && !/^\d+\.\d$/.test(t[i])) i++;
-      const name = t.slice(2, i).join(" "); const n = t.slice(i);
-      // %won won lost [unearned] ytd% ytdWon ytdLost gamesWon scratch pinsHdcp
-      const unearned = n.length === 10 ? num(n[3]) : null; const o = n.length === 10 ? 1 : 0;
-      return { place, number, name, percentWon: Number(n[0]), pointsWon: num(n[1]), pointsLost: num(n[2]), unearnedPoints: unearned,
-        ytdPercentWon: Number(n[3 + o]), ytdWon: num(n[4 + o]), ytdLost: num(n[5 + o]), gamesWon: Number(n[6 + o]), scratchPins: Number(n[7 + o]), pinsPlusHdcp: Number(n[8 + o]) };
-    });
+  const teams = section(lines, /Top \d+ Teams/, /Review of Last Week/).map(l => teamRow(l, warnings)).filter((t): t is TeamStanding => !!t);
   const fullName = (short: string) => teams.find(t => t.name === short || t.name.startsWith(short.replace(/\s+$/, "")))?.name ?? short;
   const numberOf = (name: string) => teams.find(t => t.name === fullName(name))?.number ?? 0;
 
@@ -48,7 +92,7 @@ export function parseStandings(text: string): StandingsWeek {
 
   const matchPoints: { name: string; points: number }[] = [];
   for (const l of section(lines, /High Individual Match Points/, /Last Week's Top Scores/)) {
-    for (const m of l.matchAll(/(\d+(?:\.5)?)\s+([A-Z][A-Z .'-]*?)(?=\s{2,}|\s*$)/g)) matchPoints.push({ points: Number(m[1]), name: m[2].trim() });
+    for (const m of l.matchAll(/(\d+(?:\.5)?)\s+([A-Z][A-Za-z .'-]*?)(?=\s{2,}|\s*$)/g)) matchPoints.push({ points: Number(m[1]), name: m[2].trim() });
   }
 
   const rosters: StandingsWeek["rosters"] = [];
@@ -57,18 +101,7 @@ export function parseStandings(text: string): StandingsWeek {
     const team = l.match(/^\s*(\d+) - (.+?) Lane (\d+)\s*$/);
     if (team) { rosters.push({ number: Number(team[1]), name: team[2].trim(), lane: Number(team[3]), bowlers: [] }); continue; }
     const current = rosters.at(-1); if (!current) continue;
-    const t = tokens(l); if (t.length < 9 || !/^\d+$/.test(t[0]) || !/^[LR]$/.test(t[1])) continue;
-    let i = 2; while (i < t.length && !isNum(t[i])) i++;
-    const name = t.slice(2, i).join(" "); const n = t.slice(i).map(Number);
-    const [average, handicap, pins, games, toRaise, toDrop, ...rest] = n;
-    const b: RosterBowler = { blsId: Number(t[0]), hand: t[1] as "L" | "R", name, teamNumber: current.number, average, handicap, pins, games, toRaise, toDrop, scratchGames: null, scratchTotal: null, hdcpTotal: null };
-    if (rest.length === 5) {
-      const hdcpTotal = rest[4]; const four = rest.slice(0, 4);
-      const totalIndex = four.findIndex((v, k) => v === four.filter((_, j) => j !== k).reduce((s, x) => s + x, 0));
-      if (totalIndex >= 0) { b.scratchTotal = four[totalIndex]; b.scratchGames = four.filter((_, j) => j !== totalIndex) as [number, number, number]; b.hdcpTotal = hdcpTotal; }
-      else { b.warning = `Could not separate games from total: ${rest.join(" ")}`; warnings.push(`${name}: ${b.warning}`); b.hdcpTotal = hdcpTotal; }
-    } else if (rest.length && rest.some(v => v !== 0)) { b.warning = `Unexpected game columns: ${rest.join(" ")}`; warnings.push(`${name}: ${b.warning}`); }
-    current.bowlers.push(b);
+    const b = rosterRow(l, current.number, warnings); if (b) current.bowlers.push(b);
   }
 
   return { season: h[6].trim(), date, week: Number(h[4]), weeksTotal: Number(h[5]), house, teams, results, rosters, matchPoints, warnings };
@@ -77,7 +110,7 @@ export function parseStandings(text: string): StandingsWeek {
 /** "GARY D. DORUMSGAARD" -> "GARY DORUMSGAARD"; used to join match-point rows (which may be truncated) to roster names. */
 export const displayName = (rosterName: string) => rosterName.replace(/\s+[A-Z]\.\s+/g, " ").replace(/\s+/g, " ").trim();
 export function matchRosterName(short: string, rosterNames: string[]): string | null {
-  const s = short.replace(/\s+/g, " ").trim();
-  const hits = rosterNames.filter(n => { const d = displayName(n); return d === s || d.startsWith(s); });
+  const s = short.replace(/\s+/g, " ").trim().toUpperCase();
+  const hits = [...new Set(rosterNames)].filter(n => { const d = displayName(n).toUpperCase(); return d === s || d.startsWith(s); });
   return hits.length === 1 ? hits[0] : null;
 }
