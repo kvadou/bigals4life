@@ -1,0 +1,31 @@
+# Big Al's 4 Life
+
+Bowling tools for the Thursday Men's Early league at Big Al's Bar and Bowling. Built by Doug Kvamme with Claude Code; Mustafa, Kyle, and Pete are welcome to hack on it.
+
+## What's here
+
+| Folder | What it is | Run it |
+|--------|------------|--------|
+| `web/` | Next.js + Supabase app. Live scorebook (tap pins, photo, voice), shared night links, league standings. Deployed at https://strike-ceiling-web.vercel.app | `cd web && bun install && bun dev` |
+| `ios/` | SwiftUI prototype of the scorebook. | `cd ios && xcodegen && open StrikeCeiling.xcodeproj` |
+
+Tests: `cd web && bun test`. Type check: `bunx tsc --noEmit`.
+
+## League data
+
+Gary's weekly standings PDFs go in `league-pdfs/` (not committed). Ingest with:
+
+```
+cd web && bun scripts/ingest-standings.ts ../league-pdfs/*.pdf
+```
+
+Re-running is safe; each week upserts.
+
+## Learning with AI
+
+1. Install [Claude Code](https://claude.com/claude-code) or Codex, clone this repo, open `web/`.
+2. Ask it to explain `web/lib/bowling.ts` (the scoring engine) and `web/lib/league/points.ts` (how match points work).
+3. Pick something small: a stat you want on the `/league` page, a new voice phrase, a joke in the recap. Ask the AI to plan it first, then build it, then run `bun test`.
+4. Commit with a clear message and push to `main`.
+
+Secrets live in `web/.env.local` and are never committed. Ask Doug for the Supabase keys.

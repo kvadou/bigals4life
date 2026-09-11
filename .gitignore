@@ -12,3 +12,4 @@ ios/**/xcuserdata/
 ios/build/
 ios/DerivedData/
 .DS_Store
+league-pdfs/
