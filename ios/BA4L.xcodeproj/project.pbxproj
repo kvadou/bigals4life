@@ -11,10 +11,12 @@
 		30FC21369A61A02A2EC6A518 /* StrikeCeilingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B33F7EF1FD008BC8E6191A /* StrikeCeilingApp.swift */; };
 		48B9113A6D80EC7ACA9DC506 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9D59FD0C883D0D1A492D7B16 /* Assets.xcassets */; };
 		4FE1835D1327378CE3C5A928 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 21D9127AD2739D1BC5EBFE54 /* PrivacyInfo.xcprivacy */; };
+		F36065580D9D48C599D7A24E /* ScoreboardScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4950602E37FA9B9887F22AD9 /* ScoreboardScan.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		21D9127AD2739D1BC5EBFE54 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		4950602E37FA9B9887F22AD9 /* ScoreboardScan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreboardScan.swift; sourceTree = "<group>"; };
 		989053A7A8B4FDC93729C522 /* BA4L.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BA4L.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9D59FD0C883D0D1A492D7B16 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingGame.swift; sourceTree = "<group>"; };
@@ -35,6 +37,7 @@
 			isa = PBXGroup;
 			children = (
 				EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */,
+				4950602E37FA9B9887F22AD9 /* ScoreboardScan.swift */,
 				F6B33F7EF1FD008BC8E6191A /* StrikeCeilingApp.swift */,
 			);
 			path = Sources;
@@ -130,6 +133,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2D4B4EE47B862B0A40AAE868 /* BowlingGame.swift in Sources */,
+				F36065580D9D48C599D7A24E /* ScoreboardScan.swift in Sources */,
 				30FC21369A61A02A2EC6A518 /* StrikeCeilingApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

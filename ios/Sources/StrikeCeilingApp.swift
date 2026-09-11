@@ -15,6 +15,7 @@ struct ScoreboardView: View {
     @State private var showDiscard = false
     @State private var showTeam = false
     @State private var showLegacy = false
+    @State private var showScan = false
     @State private var link = ""
     @State private var sheetError: String?
 
@@ -28,6 +29,11 @@ struct ScoreboardView: View {
                 teamSection
                 scoreSection
                 if !complete { entrySection }
+                Section {
+                    Button("Scan the scoreboard", systemImage: "camera.viewfinder") { showScan = true }
+                        .disabled(!store.canEdit)
+                        .accessibilityIdentifier("scanButton")
+                } footer: { Text("Take a photo of the lane monitor. Review the rolls, then apply them to the current game.") }
                 framesSection
                 Section {
                     Button("Undo last roll", systemImage: "arrow.uturn.backward") {
@@ -87,6 +93,7 @@ struct ScoreboardView: View {
             }
             .sheet(isPresented: $showTeam) { teamSheet }
             .sheet(isPresented: $showLegacy) { legacySheet }
+            .sheet(isPresented: $showScan) { ScanSheet(store: store) }
         }
     }
 

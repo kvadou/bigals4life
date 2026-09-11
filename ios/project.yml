@@ -5,7 +5,7 @@ options:
 settings:
   base:
     MARKETING_VERSION: '1.0'
-    CURRENT_PROJECT_VERSION: '2'
+    CURRENT_PROJECT_VERSION: '3'
     SWIFT_VERSION: '5.0'
     DEVELOPMENT_TEAM: FM45AMFBNY
     CODE_SIGN_STYLE: Automatic
@@ -33,6 +33,8 @@ targets:
       properties:
         CFBundleDisplayName: BA4L
         ITSAppUsesNonExemptEncryption: false
+        NSCameraUsageDescription: BA4L photographs the lane scoreboard to read your rolls.
+        NSPhotoLibraryUsageDescription: BA4L reads a scoreboard photo you choose to fill in rolls.
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
