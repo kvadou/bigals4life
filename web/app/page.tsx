@@ -18,6 +18,13 @@ const key = "strike-ceiling-web-v1";
 export default function Home() {
   const {night,setNight,ready,status,error,shared,share,shareMessage,role,needsSignIn,id,retry,reload} = useScorebook(fresh,key);
   const me = useMe();
+  // Signed in with no scorebook selected: open the latest one you belong to (or, for the admin, the fullest unclaimed one).
+  useEffect(() => {
+    if (!ready || shared || !me) return;
+    if (new URLSearchParams(window.location.search).has("night")) return;
+    const target = me.scorebooks[0]?.id ?? me.legacy?.[0]?.id;
+    if (target) window.location.replace(`/?night=${target}`);
+  }, [ready, shared, me]);
   const [selected, setSelected] = useState(0);
   const [modal, setModal] = useState<"new" | "history" | null>(null);
   const [beforePhoto, setBeforePhoto] = useState<Night | null>(null);

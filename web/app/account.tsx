@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { LogIn, LogOut, Users, X } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
-export type Me = { user: { id: string; email: string }; admin: boolean; profile: { displayName: string; bowlerName: string | null }; scorebooks: { id: string; role: string }[] };
+export type Me = { user: { id: string; email: string }; admin: boolean; profile: { displayName: string; bowlerName: string | null }; scorebooks: { id: string; role: string; updatedAt: string | null }[]; legacy: { id: string; updatedAt: string; games: number }[] };
 type Members = { role: string; members: { userId: string; role: string }[]; invites: { email: string; role: string }[] };
 
 /** Loads the signed-in account once. Null while loading, false when signed out. */
