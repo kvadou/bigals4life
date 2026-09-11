@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "strike-ceiling",
+      "name": "ba4l",
       "dependencies": {
         "ai": "^7.0.97",
         "lucide-react": "latest",

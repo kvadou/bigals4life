@@ -7,106 +7,137 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4E81FC9CD87DCF978D88BD9A /* BowlingGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE4C7A24F9ECEA928A72477F /* BowlingGame.swift */; };
-		6717FF7C9D7AF7566D6DAB95 /* StrikeCeilingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3FE7FD1108DF41B216644EE /* StrikeCeilingApp.swift */; };
+		2D4B4EE47B862B0A40AAE868 /* BowlingGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */; };
+		30FC21369A61A02A2EC6A518 /* StrikeCeilingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B33F7EF1FD008BC8E6191A /* StrikeCeilingApp.swift */; };
+		48B9113A6D80EC7ACA9DC506 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9D59FD0C883D0D1A492D7B16 /* Assets.xcassets */; };
+		4FE1835D1327378CE3C5A928 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 21D9127AD2739D1BC5EBFE54 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		AD56CFAC50E7DEF68570E53B /* StrikeCeiling.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = StrikeCeiling.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		BE4C7A24F9ECEA928A72477F /* BowlingGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingGame.swift; sourceTree = "<group>"; };
-		E3FE7FD1108DF41B216644EE /* StrikeCeilingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikeCeilingApp.swift; sourceTree = "<group>"; };
+		21D9127AD2739D1BC5EBFE54 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		989053A7A8B4FDC93729C522 /* BA4L.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BA4L.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9D59FD0C883D0D1A492D7B16 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingGame.swift; sourceTree = "<group>"; };
+		F6B33F7EF1FD008BC8E6191A /* StrikeCeilingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikeCeilingApp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
-		0C732BBB5C25D52C60A11CE6 /* Sources */ = {
+		2B19E23A300FFF6C53E605FA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				BE4C7A24F9ECEA928A72477F /* BowlingGame.swift */,
-				E3FE7FD1108DF41B216644EE /* StrikeCeilingApp.swift */,
+				9D59FD0C883D0D1A492D7B16 /* Assets.xcassets */,
+				21D9127AD2739D1BC5EBFE54 /* PrivacyInfo.xcprivacy */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		9419FF954E7237E913D9ED87 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */,
+				F6B33F7EF1FD008BC8E6191A /* StrikeCeilingApp.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
 		};
-		2D96A6C6469F1ADD5C8D159A /* Products */ = {
+		D9B6259F78F11346C8215D11 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				AD56CFAC50E7DEF68570E53B /* StrikeCeiling.app */,
+				989053A7A8B4FDC93729C522 /* BA4L.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		CD6B7A01A85529F04D6922D9 = {
+		E01CC4E5C6F96774AACB91D4 = {
 			isa = PBXGroup;
 			children = (
-				0C732BBB5C25D52C60A11CE6 /* Sources */,
-				2D96A6C6469F1ADD5C8D159A /* Products */,
+				2B19E23A300FFF6C53E605FA /* Resources */,
+				9419FF954E7237E913D9ED87 /* Sources */,
+				D9B6259F78F11346C8215D11 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		3189A57009329B7CC089C551 /* StrikeCeiling */ = {
+		37B9A1272612E686C7C1AF07 /* BA4L */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A9E2A990A9DE98F92FC5933C /* Build configuration list for PBXNativeTarget "StrikeCeiling" */;
+			buildConfigurationList = 91FB30D6240604F0A36B6606 /* Build configuration list for PBXNativeTarget "BA4L" */;
 			buildPhases = (
-				5EA9D45924252CA118414977 /* Sources */,
+				228033E82DDB0ABF04D3D689 /* Sources */,
+				76FAAD49165876CFE9643B63 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = StrikeCeiling;
+			name = BA4L;
 			packageProductDependencies = (
 			);
-			productName = StrikeCeiling;
-			productReference = AD56CFAC50E7DEF68570E53B /* StrikeCeiling.app */;
+			productName = BA4L;
+			productReference = 989053A7A8B4FDC93729C522 /* BA4L.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		942B1BE311631FE9B85E2F21 /* Project object */ = {
+		9D49459091F58DAB51692FE2 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					37B9A1272612E686C7C1AF07 = {
+						DevelopmentTeam = FM45AMFBNY;
+						ProvisioningStyle = Automatic;
+					};
 				};
 			};
-			buildConfigurationList = 4AD6DD3267C6798E46D28301 /* Build configuration list for PBXProject "StrikeCeiling" */;
+			buildConfigurationList = 8A78F30AA7EA025F05461F66 /* Build configuration list for PBXProject "BA4L" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
 				en,
 			);
-			mainGroup = CD6B7A01A85529F04D6922D9;
+			mainGroup = E01CC4E5C6F96774AACB91D4;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 2D96A6C6469F1ADD5C8D159A /* Products */;
+			productRefGroup = D9B6259F78F11346C8215D11 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				3189A57009329B7CC089C551 /* StrikeCeiling */,
+				37B9A1272612E686C7C1AF07 /* BA4L */,
 			);
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		76FAAD49165876CFE9643B63 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				48B9113A6D80EC7ACA9DC506 /* Assets.xcassets in Resources */,
+				4FE1835D1327378CE3C5A928 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
-		5EA9D45924252CA118414977 /* Sources */ = {
+		228033E82DDB0ABF04D3D689 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4E81FC9CD87DCF978D88BD9A /* BowlingGame.swift in Sources */,
-				6717FF7C9D7AF7566D6DAB95 /* StrikeCeilingApp.swift in Sources */,
+				2D4B4EE47B862B0A40AAE868 /* BowlingGame.swift in Sources */,
+				30FC21369A61A02A2EC6A518 /* StrikeCeilingApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		391B8069C3654FBC404FB58D /* Debug */ = {
+		08D8A66035A0D42E4EA4D2BD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -139,8 +170,11 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = FM45AMFBNY;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -158,6 +192,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -169,14 +204,15 @@
 			};
 			name = Debug;
 		};
-		6048509B4ADE9DFF6FF08704 /* Debug */ = {
+		38F4C159BF0FFC88BD5019E6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Strike Ceiling";
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BA4L;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -184,34 +220,13 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.dougkvamme.StrikeCeiling;
+				PRODUCT_NAME = BA4L;
 				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		66D413DD17754A2C50330300 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Strike Ceiling";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.dougkvamme.StrikeCeiling;
-				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
-		8DF1FA13FA966CD1BF6F4D5E /* Release */ = {
+		4360C3FE18E18CA6B21D3B17 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -244,8 +259,11 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = FM45AMFBNY;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -257,6 +275,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -267,28 +286,50 @@
 			};
 			name = Release;
 		};
+		8D7E4689B8A655BA4E3E68A0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BA4L;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dougkvamme.StrikeCeiling;
+				PRODUCT_NAME = BA4L;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		4AD6DD3267C6798E46D28301 /* Build configuration list for PBXProject "StrikeCeiling" */ = {
+		8A78F30AA7EA025F05461F66 /* Build configuration list for PBXProject "BA4L" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				391B8069C3654FBC404FB58D /* Debug */,
-				8DF1FA13FA966CD1BF6F4D5E /* Release */,
+				08D8A66035A0D42E4EA4D2BD /* Debug */,
+				4360C3FE18E18CA6B21D3B17 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		A9E2A990A9DE98F92FC5933C /* Build configuration list for PBXNativeTarget "StrikeCeiling" */ = {
+		91FB30D6240604F0A36B6606 /* Build configuration list for PBXNativeTarget "BA4L" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				6048509B4ADE9DFF6FF08704 /* Debug */,
-				66D413DD17754A2C50330300 /* Release */,
+				8D7E4689B8A655BA4E3E68A0 /* Debug */,
+				38F4C159BF0FFC88BD5019E6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = 942B1BE311631FE9B85E2F21 /* Project object */;
+	rootObject = 9D49459091F58DAB51692FE2 /* Project object */;
 }

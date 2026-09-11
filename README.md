@@ -1,4 +1,4 @@
-# Big Al's 4 Life
+# BA4L · Big Al's 4 Life
 
 Bowling tools for the Thursday Men's Early league at Big Al's Bar and Bowling. Built by Doug Kvamme with Claude Code; Mustafa, Kyle, and Pete are welcome to hack on it.
 
@@ -7,7 +7,7 @@ Bowling tools for the Thursday Men's Early league at Big Al's Bar and Bowling. B
 | Folder | What it is | Run it |
 |--------|------------|--------|
 | `web/` | Next.js + Supabase app. Live scorebook (tap pins, photo, voice), shared night links, league standings. Deployed at https://strike-ceiling-web.vercel.app | `cd web && bun install && bun dev` |
-| `ios/` | Native SwiftUI scorebook with shared web scores, team totals, and game history. | `cd ios && xcodegen && open StrikeCeiling.xcodeproj` |
+| `ios/` | Native SwiftUI scorebook with shared web scores, team totals, and game history. | `cd ios && xcodegen && open BA4L.xcodeproj` |
 
 Tests: `cd web && bun test`. Type check: `bunx tsc --noEmit`.
 

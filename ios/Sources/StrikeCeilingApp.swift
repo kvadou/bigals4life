@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct StrikeCeilingApp: App {
+struct BA4LApp: App {
     var body: some Scene { WindowGroup { ScoreboardView() } }
 }
 
@@ -49,7 +49,7 @@ struct ScoreboardView: View {
                     } footer: { Text("Your original iPhone scorecards are preserved separately.") }
                 }
             }
-            .navigationTitle("Strike Ceiling")
+            .navigationTitle("BA4L")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { sheetError = nil; showTeam = true } label: { Label("Team", systemImage: "person.2") }

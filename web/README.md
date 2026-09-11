@@ -1,4 +1,6 @@
-# Strike Ceiling web
+# BA4L web
+
+Big Al's 4 Life.
 
 Next.js, React, TypeScript. Four-bowler score tracking for Doug, Mustafa, Kyle, and Pete. Shared scorebooks persist in Supabase and sync through team links. Root pages without a team link retain device-local mode until Save & share is selected.
 
