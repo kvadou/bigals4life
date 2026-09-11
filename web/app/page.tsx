@@ -30,7 +30,7 @@ export default function Home() {
   const teamMax = ceilings.reduce((a,b)=>a+b,0);
 
   return <main>
-    <header className="topbar"><a className="brand" href="/" aria-label="Strike Ceiling home"><span className="brand-icon"><CircleDot size={23}/></span>STRIKE<span>CEILING</span></a><span className="league-tag"><span/> LEAGUE NIGHT</span></header>
+    <header className="topbar"><a className="brand" href="/" aria-label="Strike Ceiling home"><span className="brand-icon"><CircleDot size={23}/></span>STRIKE<span>CEILING</span></a><a className="league-tag" href="/league"><span/> LEAGUE STANDINGS</a></header>
     <section className="intro"><div><div className="eyebrow">EVERY PIN. EVERY POSSIBILITY.</div><h1>There’s still a <em>chance.</em></h1><p>Your score so far. Your best possible finish. All night long.</p></div><button className="secondary history-button" onClick={()=>setModal("history")}><History size={17}/> Game history</button></section>
     <div className="session-bar"><div><span className="live-dot"/> GAME {night.game}<span className="muted"> / </span>4 BOWLERS</div><span className="save-status" role="status"><Check size={14}/>{status}</span></div>
     <div className="sharing-bar"><button className="secondary" disabled={!ready} onClick={()=>void share()}>{shared?"Share team link":"Save & share with team"}</button><span>{shared?"Phones with this link stay in sync.":"Create a shared scorebook for your team."}</span></div>
