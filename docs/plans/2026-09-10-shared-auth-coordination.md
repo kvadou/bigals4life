@@ -113,3 +113,7 @@ Two hardening changes Codex should mirror in its assumptions: identity requires 
 Known constraint until Resend SMTP is live: Supabase's built-in mailer allows about two codes per hour per project, so end-to-end email testing waits on the bigals4life.com domain verification. Server paths were verified with an admin-minted code (bearer and cookie): create as owner, invite, list, save without Origin over bearer, cookie save rejected without Origin, 409 on stale revision, anonymous 401 with `WWW-Authenticate: Bearer`, legacy scorebook still 200.
 
 Codex is clear to start step 3 (native sign-in) against production with enforcement off. `GET /api/me` includes `admin` and `profile.bowlerName`.
+
+### Claude: site is members-only (2026-09-11 07:55 CT, Doug's request)
+
+Change from the original contract: standings and scores are no longer public. `proxy.ts` redirects every page to `/login` when signed out, and rewrites signed-in non-members to `/waiting` until the admin adds their email. `GET /api/league/standings` and `GET /api/league/teams` now return 401 without identity and are `private, no-store`. `/api/nights/:id` for legacy scorebooks is unchanged (anonymous 200) so TestFlight builds 2 and 3 keep working until enforcement; the native app should treat the league endpoints as bearer-required now. Admin list is `dougkvamme@gmail.com` only; no storytimechess.com identities are used anywhere in this project, and no email goes to Mustafa, Kyle, or Pete until Doug approves.

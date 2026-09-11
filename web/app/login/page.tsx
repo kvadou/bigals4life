@@ -38,12 +38,12 @@ function LoginForm() {
     window.location.assign(next);
   };
   return <main>
-    <header className="topbar"><Link className="brand" href="/" aria-label="Strike Ceiling home"><span className="brand-icon"><CircleDot size={23}/></span>STRIKE<span>CEILING</span></Link><span className="league-tag"><span/> SIGN IN</span></header>
+    <header className="topbar"><Link className="brand" href="/" aria-label="Strike Ceiling home"><span className="brand-icon"><CircleDot size={23}/></span>BA4L</Link><span className="league-tag"><span/> SIGN IN</span></header>
     <section className="login-card">
       <div className="eyebrow"><Mail size={15}/> EMAIL CODE, NO PASSWORD</div>
       {stage === "email" && <>
-        <h1>Who&rsquo;s bowling?</h1>
-        <p>We&rsquo;ll email you a six-digit code. Use the address Doug invited.</p>
+        <h1>Big Al&rsquo;s 4 Life.</h1>
+        <p>The team scorebook, standings, and Thursday night. Members only. We&rsquo;ll email you a six-digit code; use the address Doug invited.</p>
         <form onSubmit={e => { e.preventDefault(); void send(); }}>
           <label className="field">Email<input type="email" autoComplete="email" inputMode="email" autoFocus value={email} onChange={e => setEmail(e.target.value)} disabled={busy}/></label>
           <button className="primary" type="submit" disabled={busy}>{busy ? "Sending…" : "Email me a code"}</button>

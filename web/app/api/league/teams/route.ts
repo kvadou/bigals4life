@@ -1,10 +1,12 @@
+import { identify, unauthorized } from "@/lib/auth-server";
 import { database } from "@/lib/scorebook-server";
 import { displayName } from "@/lib/league/bls-parse";
 import { handicapFor } from "@/lib/league/points";
 
 type Row = Record<string, any>;
 // Latest ingested week: every team with its bowlers, averages, and the handicap that average earns.
-export async function GET() {
+export async function GET(request: Request) {
+  if (!await identify(request)) return unauthorized("Sign in to see league standings.");
   try {
     const seasons: Row[] = await database("league_seasons?select=id,name&order=name.desc&limit=1");
     const season = seasons[0]; if (!season) return Response.json({ error: "No league data yet." }, { status: 404 });
@@ -21,7 +23,7 @@ export async function GET() {
         const b = bowlers.find(x => x.id === bw.bowler_id);
         return { name: displayName(b?.name ?? ""), average: bw.average, handicap: handicapFor(bw.average), games: bw.games, toRaise: bw.to_raise, toDrop: bw.to_drop, bowledLastWeek: !!bw.scratch_games };
       }).sort((a, b) => Number(b.bowledLastWeek) - Number(a.bowledLastWeek) || b.games - a.games) })),
-    }, { headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=3600" } });
+    }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Teams load failed", error instanceof Error ? error.message : "unknown");
     return Response.json({ error: "League data is unavailable right now." }, { status: 503 });
