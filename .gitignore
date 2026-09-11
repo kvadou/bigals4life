@@ -13,3 +13,5 @@ ios/build/
 ios/DerivedData/
 .DS_Store
 league-pdfs/
+.playwright-mcp/
+web/.playwright-mcp/
