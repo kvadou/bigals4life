@@ -26,7 +26,8 @@ export async function proxy(request: NextRequest) {
   if (!confirmed) {
     if (open) return response;
     const login = new URL("/login", request.url);
-    if (path !== "/" || request.nextUrl.search) login.searchParams.set("next", path + request.nextUrl.search);
+    const next = path + request.nextUrl.search; // login page re-validates this against our origin
+    if ((path !== "/" || request.nextUrl.search) && /^\/(?![\/\\])/.test(next)) login.searchParams.set("next", next);
     return NextResponse.redirect(login);
   }
   if (open) return NextResponse.redirect(new URL("/", request.url));
