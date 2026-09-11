@@ -29,9 +29,12 @@ export default function WeekPage({ params }: { params: Promise<{ id: string }> }
     <Topbar right={<Link className="secondary" href={`/night?night=${id}`}>Live scorebook <ArrowUpRight size={14}/></Link>}/>
     <Crumbs items={[{ label: "Season", href: "/season" }, { label: week ? `Week ${week.week}` : "Week" }]}/>
     {error && <p className="photo-error" role="alert">{error}</p>}
-    {week && <>
+    {week && <div className="home-layout">
+      <div className="home-main">
       <MatchHero week={week} setupHref={`/night?night=${id}`}/>
       <div className="card game-card"><GameRows week={week} hrefFor={g => `/season/${id}/game/${g}`}/></div>
+      </div>
+      <aside className="home-side">
       <section className="league-section"><div className="eyebrow">THE NIGHT AT A GLANCE · SCRATCH, HANDICAP IN GREY</div>
         <div className="league-scroll"><table className="league-table week-table"><thead><tr><th scope="col" className="left">Bowler</th>{week.games.map(g => <th key={g.game} scope="col">G{g.game}</th>)}<th scope="col">Series</th><th scope="col">Avg</th></tr></thead>
           <tbody>{BOWLERS.map((b, i) => { const s = finished.reduce((t, g) => t + (g.scores[i] ?? 0), 0); return <tr key={b}><td className="left"><strong>{b}</strong> {week.ourHandicaps && <span className="muted-cell">+{week.ourHandicaps[i]}</span>}</td>{week.games.map(g => <td key={g.game} className={g.complete[i] ? "" : "muted-cell"}>{g.scores[i] ?? "–"}</td>)}<td><strong>{finished.length ? s : "–"}</strong></td><td className="muted-cell">{finished.length ? Math.round(s / finished.length) : "–"}</td></tr>; })}
@@ -39,7 +42,8 @@ export default function WeekPage({ params }: { params: Promise<{ id: string }> }
             {week.points && <tr><td className="left muted-cell">{week.opponent ? week.opponent.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()) : "Opponent"} hdcp</td>{week.points.games.map(g => <td key={g.game} className="muted-cell">{g.theirs ?? "–"}</td>)}<td className="muted-cell">{week.points.series.theirs ?? "–"}</td><td></td></tr>}</tbody></table></div>
       </section>
       {week.points && <section className="league-section"><div className="eyebrow">HEAD-TO-HEAD · 1 POINT PER GAME, 1 FOR SERIES</div><HeadToHead week={week}/></section>}
-    </>}
+      </aside>
+    </div>}
     <footer><span>BA4L</span><span>Big Al&rsquo;s 4 Life.</span></footer>
   </main>;
 }

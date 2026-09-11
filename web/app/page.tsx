@@ -36,15 +36,18 @@ export default function Home() {
     <Crumbs items={[{ label: "Season", href: "/season" }, { label: week ? `Week ${week.week}` : "This week" }]}/>
     {error && <p className="photo-error" role="alert">{error}</p>}
     {weeks && !week && <section className="intro"><div><div className="eyebrow">NO GAMES YET</div><h1>First frame is <em>yours.</em></h1><p>Open the live scorebook and the week fills in here as games finish.</p></div><Link className="primary start-button" href="/night">Open the scorebook</Link></section>}
-    {week && <>
-      <MatchHero week={week} setupHref={`/night?night=${week.id}`}/>
-      <div className="card game-card"><GameRows week={week} hrefFor={g => `/season/${week.id}/game/${g}`}/></div>
-      <div className="home-grid">
+    {week && <div className="home-layout">
+      <div className="home-main">
+        <MatchHero week={week} setupHref={`/night?night=${week.id}`}/>
+        <div className="card game-card"><GameRows week={week} hrefFor={g => `/season/${week.id}/game/${g}`}/></div>
+      </div>
+      <aside className="home-side">
         <Link href="/league" className="card mini-card-link"><div><div className="eyebrow"><Trophy size={13}/> STANDINGS</div><strong className="d">{us ? `${us.place}${["st", "nd", "rd"][us.place - 1] ?? "th"} of ${standings!.teams.length}` : "–"}</strong><span>{us ? (ahead ? `${fmt(ahead.pointsWon - us.pointsWon)} behind ${ahead.name.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase())}` : `${fmt(us.pointsWon)}–${fmt(us.pointsLost)}, top of the league`) : "From Gary's sheet"}</span></div><span aria-hidden="true">›</span></Link>
         <Link href={`/season/${week.id}`} className="card mini-card-link"><div><div className="eyebrow">RECORDS · WEEK {week.week}</div><strong className="d">{highGame ? `${names[highGame.i]} ${highGame.s}` : "–"}</strong><span>{highSeries ? `high series ${names[highSeries.i]} ${highSeries.s} · team ${week.teamSeries}` : ""}</span></div><span aria-hidden="true">›</span></Link>
-      </div>
-      {weeks && weeks.length > 1 && <Link href="/season" className="text-button center-link">All {weeks.length} weeks ›</Link>}
-    </>}
+        <Link href={`/season/${week.id}`} className="card mini-card-link"><div><div className="eyebrow">THIS WEEK</div><strong className="d">All four scorecards</strong><span>Every frame, head-to-head, handicap</span></div><span aria-hidden="true">›</span></Link>
+        {weeks && weeks.length > 1 && <Link href="/season" className="text-button center-link">All {weeks.length} weeks ›</Link>}
+      </aside>
+    </div>}
     <div className="entry-bar" aria-label="Score tonight">
       <Link href={week ? `/night?night=${week.id}` : "/night"} className="entry-tile"><ListPlus size={18}/> Tap pins</Link>
       <Link href={week ? `/night?night=${week.id}` : "/night"} className="entry-tile accent"><Camera size={18}/> Scan board</Link>
