@@ -21,6 +21,8 @@ cd web && bun scripts/ingest-standings.ts ../league-pdfs/*.pdf
 
 Re-running is safe; each week upserts.
 
+Automatic: `web/scripts/gmail-ingest.ts` pulls new standings PDFs from Gmail every hour (launchd job `com.dpk.bafl-gmail-ingest`, install with `bash web/scripts/install-launchd.sh`). After ingest, any shared night set up for that week is checked against Gary's sheet and differences appear on `/league`.
+
 ## Learning with AI
 
 1. Install [Claude Code](https://claude.com/claude-code) or Codex, clone this repo, open `web/`.
