@@ -1,0 +1,15 @@
+{
+  "artboards": [
+    { "file": "OptionA.dc.html", "title": "A · Scoreboard hero + tabs", "x": 0, "y": 0, "w": 390, "h": 844 },
+    { "file": "OptionB.dc.html", "title": "B · Night timeline + sticky points", "x": 480, "y": 0, "w": 390, "h": 844 },
+    { "file": "OptionC.dc.html", "title": "C · Dashboard cards", "x": 960, "y": 0, "w": 390, "h": 844 },
+    { "file": "OptionD.dc.html", "title": "D · Matchup card + drill-in rows", "x": 1440, "y": 0, "w": 390, "h": 844 },
+    { "file": "Main.dc.html", "title": "Week 1 · drill-down (all directions)", "x": 0, "y": 1000, "w": 390, "h": 900 },
+    { "file": "Game.dc.html", "title": "Game 2 · frame-by-frame", "x": 480, "y": 1000, "w": 390, "h": 900 }
+  ],
+  "annotations": [
+    { "id": "brief", "x": 0, "y": -170, "w": 520, "text": "Four home directions, same data. Differences are information architecture, not color.\nA: points scoreboard hero, tabs underneath. B: the night as a feed, points pinned on top. C: everything at once as cards. D: sports-app matchup card, tap a row to drill in.\nBelow: Week 1 and Game 2 screens with breadcrumbs, shared by all four." },
+    { "id": "sample", "x": 960, "y": -120, "w": 420, "text": "Opponent scores and points for Week 1 are SAMPLE (Here 4 Beer's last-season numbers). Our four bowlers' scores are real." }
+  ],
+  "launch": { "view": "canvas" }
+}

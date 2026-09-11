@@ -1,8 +1,7 @@
 import { identify, isAdmin, isTeammate, unauthorized } from "@/lib/auth-server";
-import { nightMatchPoints } from "@/lib/league/night-points";
 import { database } from "@/lib/scorebook-server";
 import { nightSchema } from "@/lib/scorebook";
-import { summarizeWeek, type WeekSummary } from "@/lib/season";
+import { pointsSummary, summarizeWeek, type WeekSummary } from "@/lib/season";
 
 type Row = Record<string, any>;
 /** Every night this member can see, newest first, numbered as weeks of the current season. Test books with no finished game are hidden. */
@@ -23,7 +22,7 @@ export async function GET(request: Request) {
       const w = summarizeWeek(id, night, updatedAt, null);
       if (!w.finishedGames) continue;
       n += 1; if (w.week == null) w.week = n;
-      const p = nightMatchPoints(night); if (p) w.points = { ours: p.total[0], theirs: p.total[1] };
+      w.points = pointsSummary(night);
       weeks.push(w);
     }
     return Response.json({ season: "2026-27", weeks: weeks.reverse() }, { headers: { "Cache-Control": "private, no-store" } });

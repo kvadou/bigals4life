@@ -15,3 +15,5 @@ ios/DerivedData/
 league-pdfs/
 .playwright-mcp/
 web/.playwright-mcp/
+docs/design/ba4l-league-first.html
+docs/design/*.png
