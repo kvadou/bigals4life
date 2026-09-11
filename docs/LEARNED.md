@@ -1,0 +1,57 @@
+# Learned rules
+
+Defects that cost real time here, and the rule that prevents a repeat. Add to this file in the same commit as the fix.
+
+## DNS values are copied literally, not read
+
+A TXT record pasted from prose carried the sentence's trailing period: `v=spf1 include:amazonses.com ~all.` It resolved fine and looked right in every dashboard, and Resend reported "missing SPF records" for an hour. When a provider says a record is missing and `dig` shows it present, diff the live value against the provider's expected value character by character:
+
+```bash
+dig +short TXT send.bigals4life.com @ns1.vercel-dns.com
+```
+
+Hand DNS values in a fenced block, never in a sentence.
+
+## Thinking models spend maxOutputTokens before they answer
+
+`google/gemini-2.5-flash` truncated an 800-word recap to 20 words at `maxOutputTokens: 900`. The budget covers reasoning tokens too. Give any thinking model several times the visible output you expect (4000 for a 180-word recap).
+
+## Next 16 renamed middleware to proxy.ts
+
+`middleware.ts` is silently ignored. The convention and the export name are documented in `node_modules/next/dist/docs/01-app/01-getting-started/16-proxy.md`. Read the docs shipped in the installed package before writing against a framework version newer than your training data.
+
+## PostgREST writes with return=minimal have no body
+
+`response.json()` throws on an empty body, and the failure surfaces as an unrelated 503. `lib/scorebook-server.ts` reads text first and parses only when non-empty. The same helper also includes status and path in its error, because "Shared storage request failed." with no detail cost a debugging round trip.
+
+## The first request after a migration can fail on schema cache
+
+A `POST` seconds after `supabase db push` failed; the identical retry succeeded. Retry once before investigating.
+
+## supabase db push parses config.toml first
+
+An unrelated migration was blocked by SMTP keys sitting under `[auth.email]` because the `[auth.email.smtp]` header was still commented out in the template. A config edit can break a database push.
+
+## Supabase's built-in mailer allows about two emails an hour
+
+Use `POST /auth/v1/admin/generate_link` with the service key for test sign-ins: it returns `email_otp` directly and sends no mail. Real SMTP only for real delivery checks.
+
+## updated_at is not the date the thing happened
+
+A night that ran past midnight showed as the next day because the week was dated from the scorebook's last edit. Dates that mean "when this happened" come from the first revision (`scorebook_revisions` where `revision = 1`), not `updated_at`, and render in league-local time (`America/Chicago`), not UTC.
+
+## Identity is not authorization
+
+Anyone can create an account with any email, so a check for "signed in" unlocks nothing on its own. League routes check `isTeammate` (admin, a scorebook membership, or a pending invite), matching the page gate in `proxy.ts`. Every new route that reads league data needs both checks.
+
+## Email identity must be confirmed before invites are adopted
+
+Invites are matched by email address, so an unconfirmed sign-up could otherwise claim someone else's invite. `identify()` requires `email_confirmed_at`.
+
+## Redirect targets get resolved, not prefix-checked
+
+`startsWith("/") && !startsWith("//")` misses `/\evil.com`, which browsers normalize. Resolve the target against our own origin and compare origins (`app/login/page.tsx`, `proxy.ts`).
+
+## The iOS client pins the team-link shape
+
+`ScorebookClient.teamID(from:)` requires `https://strike-ceiling-web.vercel.app/?night=<uuid>` with an empty path. Moving the live scorebook to `/night` kept a redirect at `/` for exactly this reason. Any change to that URL shape needs a native release first.

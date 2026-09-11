@@ -11,6 +11,8 @@ Bowling tools for the Thursday Men's Early league at Big Al's Bar and Bowling. B
 
 Tests: `cd web && bun test`. Type check: `bunx tsc --noEmit`.
 
+Defects worth not repeating live in [docs/LEARNED.md](docs/LEARNED.md). Add to it in the same commit as the fix.
+
 ## League data
 
 Gary's weekly standings PDFs go in `league-pdfs/` (not committed). Ingest with:
