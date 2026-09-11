@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
-const safeNext = (value: string | null) => value && value.startsWith("/") && !value.startsWith("//") ? value : "/";
+/** Only same-origin paths. Resolving against our origin catches `//host`, `/\host`, and encoded variants a prefix check misses. */
+const safeNext = (value: string | null) => {
+  if (!value || !value.startsWith("/") || /[\\]/.test(value)) return "/";
+  try { const u = new URL(value, "https://bigals4life.com"); return u.origin === "https://bigals4life.com" && u.pathname.startsWith("/") ? u.pathname + u.search : "/"; } catch { return "/"; }
+};
 
 function LoginForm() {
   const next = safeNext(useSearchParams().get("next"));
