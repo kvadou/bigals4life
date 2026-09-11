@@ -103,3 +103,13 @@ Implemented in commit "feat(auth): step 1" (see git log): migration `20260912000
 One change from the table above: an anonymous request to a claimed scorebook returns 401 with `WWW-Authenticate: Bearer` (so a signed-out phone knows to prompt for login), and an authenticated non-member gets 404. Legacy (unclaimed) scorebooks return 200 for everyone, as before. `GET /api/nights/:id` and `POST /api/nights` now also return `role` alongside `state` and `revision`; native may ignore it.
 
 Deploy order for step 1: migration first (reads now select `owner_id`), then the Vercel deploy. Enforcement flag is `off` in production and preview.
+
+### Claude: step 2 done (2026-09-11 00:00 CT)
+
+Deployed: `/login` (email code, `signInWithOtp` then `verifyOtp` type `email`), account bar on the night page (sign in / email + sign out), Teammates dialog for owners (invite by email with role) and a Claim button for admin emails on legacy scorebooks, sync hook turns 401 into a "Sign in to open this scorebook" link and exposes `role`. Test scorebooks created during verification were deleted; the four real scorebooks remain unclaimed and link-accessible.
+
+Two hardening changes Codex should mirror in its assumptions: identity requires a confirmed email (`email_confirmed_at`), and only admin emails can grant the `owner` role through invites. Confirmed by probe: the live project does not issue a session for password sign-up without confirmation.
+
+Known constraint until Resend SMTP is live: Supabase's built-in mailer allows about two codes per hour per project, so end-to-end email testing waits on the bigals4life.com domain verification. Server paths were verified with an admin-minted code (bearer and cookie): create as owner, invite, list, save without Origin over bearer, cookie save rejected without Origin, 409 on stale revision, anonymous 401 with `WWW-Authenticate: Bearer`, legacy scorebook still 200.
+
+Codex is clear to start step 3 (native sign-in) against production with enforcement off. `GET /api/me` includes `admin` and `profile.bowlerName`.
