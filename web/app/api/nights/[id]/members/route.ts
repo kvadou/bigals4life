@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { access, identify, unauthorized } from "@/lib/auth-server";
+import { access, identify, isAdmin, unauthorized } from "@/lib/auth-server";
 import { database, sameOrigin } from "@/lib/scorebook-server";
 import { uuidSchema } from "@/lib/scorebook";
 
@@ -18,6 +18,7 @@ export async function POST(request: Request, context: Context) {
     const role = await access(identity, id.data);
     if (role === "missing" || role === "none") return Response.json({ error: "Team scorebook not found." }, { status: 404 });
     if (role !== "owner") return Response.json({ error: "Only the scorebook owner can add teammates." }, { status: 403 });
+    if (invite.role === "owner" && !isAdmin(identity.user.email)) return Response.json({ error: "Only the league admin can add another owner. Invite them as an editor." }, { status: 403 });
     await database("scorebook_invites?on_conflict=scorebook_id,email", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ scorebook_id: id.data, email: invite.email.toLowerCase(), role: invite.role, invited_by: identity.user.id }) });
     return Response.json({ id: id.data, email: invite.email.toLowerCase(), role: invite.role, status: "invited" }, { status: 201 });
   } catch (error) {

@@ -9,6 +9,8 @@ export function useScorebook(fresh:()=>Night,key:string){
   const [ready,setReady]=useState(false),[status,setStatus]=useState("Loading saved game…"),[error,setError]=useState("");
   const [shared,setShared]=useState(false);
   const [shareMessage,setShareMessage]=useState("");
+  const [role,setRole]=useState("");
+  const [needsSignIn,setNeedsSignIn]=useState(false);
   const show=(n:Night)=>{current.current=n;display(n)};
   const backup=(n:Night)=>{try{localStorage.setItem(id.current?`${key}:${id.current}`:key,JSON.stringify(n))}catch{/* Cloud saving remains available. */}};
   const load=async()=>{
@@ -16,10 +18,12 @@ export function useScorebook(fresh:()=>Night,key:string){
     busy.current=true;setReady(false);
     try{
       const response=await fetch(`/api/nights/${id.current}`,{cache:"no-store"});
-      const result=await response.json();if(!response.ok)throw Error(result.error);
+      const result=await response.json();
+      if(response.status===401){setNeedsSignIn(true);throw Error(result.error)}
+      if(!response.ok)throw Error(result.error);
       const parsed=nightSchema.parse(result.state);
-      revision.current=result.revision;show(parsed);backup(parsed);pending.current=null;
-      setError("");setStatus("Saved to team · Supabase");setReady(true);
+      revision.current=result.revision;setRole(result.role??"");show(parsed);backup(parsed);pending.current=null;
+      setNeedsSignIn(false);setError("");setStatus("Saved to team · Supabase");setReady(true);
     }catch(e){setError(e instanceof Error?e.message:"Could not load team scores.");setStatus("Team scores unavailable")}
     finally{busy.current=false}
   };
@@ -43,7 +47,7 @@ export function useScorebook(fresh:()=>Night,key:string){
         const response=await fetch(`/api/nights/${id.current}`,{cache:"no-store"});
         const result=await response.json();
         if(response.ok&&!busy.current&&!pending.current&&result.revision>revision.current){
-          revision.current=result.revision;const parsed=nightSchema.parse(result.state);show(parsed);backup(parsed);setReady(true);setError("");setStatus("Saved to team · Supabase");
+          revision.current=result.revision;setRole(result.role??"");const parsed=nightSchema.parse(result.state);show(parsed);backup(parsed);setReady(true);setError("");setStatus("Saved to team · Supabase");
         }
       }catch{/* A save still fails visibly if connectivity is lost. */}
     };
@@ -56,7 +60,9 @@ export function useScorebook(fresh:()=>Night,key:string){
     busy.current=true;setReady(false);setStatus("Saving to team…");pending.current=n;backup(n);
     try{
       const response=await fetch(`/api/nights/${id.current}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({state:n,revision:revision.current})});
-      const result=await response.json();if(!response.ok)throw Error(result.error);
+      const result=await response.json();
+      if(response.status===401)setNeedsSignIn(true);
+      if(!response.ok)throw Error(result.error);
       revision.current=result.revision;pending.current=null;setError("");setStatus("Saved to team · Supabase");setReady(true);
     }catch(e){setError(e instanceof Error?e.message:"Could not save to team.");setStatus("Not saved to team")}
     finally{busy.current=false}
@@ -75,7 +81,7 @@ export function useScorebook(fresh:()=>Night,key:string){
       if(!id.current){
         const response=await fetch("/api/nights",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({state:current.current})});
         const result=await response.json();if(!response.ok)throw Error(result.error);
-        id.current=result.id;revision.current=result.revision;setShared(true);
+        id.current=result.id;revision.current=result.revision;setRole(result.role??"");setShared(true);
         try{localStorage.setItem(`${key}:last-team`,id.current)}catch{}
         window.history.replaceState(null,"",`?night=${id.current}`);setStatus("Saved to team · Supabase");
       }
@@ -85,5 +91,5 @@ export function useScorebook(fresh:()=>Night,key:string){
     }catch(e){if(!(e instanceof DOMException&&e.name==="AbortError"))setError(e instanceof Error?e.message:"Could not share. Copy this page’s address.")}
     finally{busy.current=false;setReady(true)}
   };
-  return {night,setNight,ready,status,error,shared,share,shareMessage,retry:()=>pending.current?save(pending.current):load(),reload:load};
+  return {night,setNight,ready,status,error,shared,share,shareMessage,role,needsSignIn,id:id.current,retry:()=>pending.current?save(pending.current):load(),reload:load};
 }

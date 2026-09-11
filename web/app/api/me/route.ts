@@ -1,4 +1,4 @@
-import { identify, unauthorized } from "@/lib/auth-server";
+import { identify, isAdmin, unauthorized } from "@/lib/auth-server";
 import { database } from "@/lib/scorebook-server";
 
 type Row = Record<string, any>;
@@ -11,6 +11,7 @@ export async function GET(request: Request) {
     const members: Row[] = await database(`scorebook_members?user_id=eq.${identity.user.id}&select=role,scorebook_id,scorebooks(updated_at)`);
     return Response.json({
       user: identity.user,
+      admin: isAdmin(identity.user.email),
       profile: { displayName: profile.display_name, bowlerName: profile.bowler_name ?? null },
       scorebooks: members.map(m => ({ id: m.scorebook_id, role: m.role, updatedAt: m.scorebooks?.updated_at ?? null })),
     }, { headers: { "Cache-Control": "no-store" } });

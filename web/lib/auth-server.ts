@@ -19,14 +19,17 @@ export async function identify(request: Request): Promise<Identity | null> {
     if (header?.startsWith("Bearer ")) {
       const token = header.slice(7).trim(); if (!token || token.length > 4096) return null;
       const { data } = await createClient(url(), anon(), { auth: { persistSession: false, autoRefreshToken: false } }).auth.getUser(token);
-      return data.user?.email ? await adopt({ user: { id: data.user.id, email: data.user.email }, viaCookie: false }) : null;
+      return confirmed(data.user) ? await adopt({ user: { id: data.user!.id, email: data.user!.email! }, viaCookie: false }) : null;
     }
     const store = await cookies();
     const client = createServerClient(url(), anon(), { cookies: { getAll: () => store.getAll(), setAll: () => { /* refreshed in proxy.ts */ } } });
     const { data } = await client.auth.getUser();
-    return data.user?.email ? await adopt({ user: { id: data.user.id, email: data.user.email }, viaCookie: true }) : null;
+    return confirmed(data.user) ? await adopt({ user: { id: data.user!.id, email: data.user!.email! }, viaCookie: true }) : null;
   } catch { return null; }
 }
+
+/** Only an email the user has proven they control counts as identity. Invites are matched by email, so this is what stops takeover. */
+const confirmed = (user: { email?: string; email_confirmed_at?: string | null; confirmed_at?: string | null } | null) => !!user?.email && !!(user.email_confirmed_at ?? user.confirmed_at);
 
 /** Turn any invites addressed to this email into memberships. Runs on every identified request; cheap when there are none. */
 async function adopt(identity: Identity): Promise<Identity> {

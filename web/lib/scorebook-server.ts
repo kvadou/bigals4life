@@ -5,7 +5,8 @@ export async function database(path:string,init:RequestInit={}) {
   if(!url||!key)throw new Error("Shared scorebook is not configured.");
   const response=await fetch(`${url}/rest/v1/${path}`,{...init,cache:"no-store",headers:{apikey:key,Authorization:`Bearer ${key}`,"Content-Type":"application/json",Prefer:"return=representation",...init.headers},signal:AbortSignal.timeout(10_000)});
   if(!response.ok)throw new Error(`Shared storage request failed (${response.status} ${path.split("?")[0]}): ${(await response.text()).slice(0,300)}`);
-  return response.json();
+  const text=await response.text();
+  return text?JSON.parse(text):[];
 }
 export function sameOrigin(request:Request){return request.headers.get("origin")===new URL(request.url).origin;}
 export async function readUpdate(request:Request){

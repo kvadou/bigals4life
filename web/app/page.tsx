@@ -9,13 +9,15 @@ import type { Night } from "@/lib/scorebook";
 import VoiceEntry from "./voice-entry";
 import MatchPanel from "./match-panel";
 import TargetsPanel from "./targets-panel";
+import { AccountBar, useMe } from "./account";
 
 const names = ["Doug", "Mustafa", "Kyle", "Pete"];
 const fresh = (): Night => ({ rolls: names.map(() => []), game: 1, history: [] });
 const key = "strike-ceiling-web-v1";
 
 export default function Home() {
-  const {night,setNight,ready,status,error,shared,share,shareMessage,retry,reload} = useScorebook(fresh,key);
+  const {night,setNight,ready,status,error,shared,share,shareMessage,role,needsSignIn,id,retry,reload} = useScorebook(fresh,key);
+  const me = useMe();
   const [selected, setSelected] = useState(0);
   const [modal, setModal] = useState<"new" | "history" | null>(null);
   const [beforePhoto, setBeforePhoto] = useState<Night | null>(null);
@@ -32,12 +34,12 @@ export default function Home() {
   const teamMax = ceilings.reduce((a,b)=>a+b,0);
 
   return <main>
-    <header className="topbar"><a className="brand" href="/" aria-label="BA4L home"><span className="brand-icon"><CircleDot size={23}/></span>BA4L</a><a className="league-tag" href="/league"><span/> LEAGUE STANDINGS</a></header>
+    <header className="topbar"><a className="brand" href="/" aria-label="BA4L home"><span className="brand-icon"><CircleDot size={23}/></span>BA4L</a><div className="topbar-right"><a className="league-tag" href="/league"><span/> LEAGUE STANDINGS</a><AccountBar me={me} nightId={id} role={role} onClaimed={()=>void reload()}/></div></header>
     <section className="intro"><div><div className="eyebrow">EVERY PIN. EVERY POSSIBILITY.</div><h1>There’s still a <em>chance.</em></h1><p>Your score so far. Your best possible finish. All night long.</p></div><button className="secondary history-button" onClick={()=>setModal("history")}><History size={17}/> Game history</button></section>
     <div className="session-bar"><div><span className="live-dot"/> GAME {night.game}<span className="muted"> / </span>4 BOWLERS</div><span className="save-status" role="status"><Check size={14}/>{status}</span></div>
     <div className="sharing-bar"><button className="secondary" disabled={!ready} onClick={()=>void share()}>{shared?"Share team link":"Save & share with team"}</button><span>{shared?"Phones with this link stay in sync.":"Create a shared scorebook for your team."}</span></div>
     {shareMessage&&<p className="photo-success" role="status">{shareMessage}</p>}
-    {error&&<div className="sync-error" role="alert"><p>{error}</p><button className="secondary" onClick={()=>void retry()}>Retry save / load</button>{shared&&<button className="secondary" onClick={()=>void reload()}>Discard unsaved edits & reload team</button>}</div>}
+    {error&&<div className="sync-error" role="alert"><p>{error}</p>{needsSignIn&&<a className="secondary" href={`/login?next=${encodeURIComponent(typeof window==="undefined"?"/":window.location.pathname+window.location.search)}`}>Sign in to open this scorebook</a>}<button className="secondary" onClick={()=>void retry()}>Retry save / load</button>{shared&&<button className="secondary" onClick={()=>void reload()}>Discard unsaved edits & reload team</button>}</div>}
     <PhotoImport disabled={!ready} onApply={updates=>{setBeforePhoto(night);setNight(n=>({...n,finals:n.finals?.map((v,i)=>updates.some(u=>u.index===i)?null:v),rolls:n.rolls.map((r,i)=>updates.find(u=>u.index===i)?.rolls??r)}))}}/>
     <VoiceEntry night={night} disabled={!ready} onApply={review=>{setNight(n=>n.game!==review.game||JSON.stringify(n.rolls[review.index])!==review.before||n.finals?.[review.index]!=null?n:{...n,rolls:n.rolls.map((r,i)=>i===review.index?review.rolls:r)});setSelected(review.index)}}/>
     {beforePhoto&&<button disabled={!ready} className="text-button photo-undo" onClick={()=>{setNight(beforePhoto);setBeforePhoto(null)}}><RotateCcw size={15}/> Undo photo import and subsequent rolls</button>}
