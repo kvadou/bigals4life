@@ -15,7 +15,11 @@ export async function GET(request: Request) {
     const filters = [ids.length ? `id=in.(${ids.join(",")})` : null, isAdmin(identity.user.email) ? "owner_id=is.null" : null].filter(Boolean);
     const rows: Row[] = filters.length ? (await Promise.all(filters.map(f => database(`scorebooks?${f}&select=id,state,updated_at&order=updated_at.asc`)))).flat() : [];
     const seen = new Set<string>();
-    const nights = rows.filter(r => !seen.has(r.id) && seen.add(r.id)).map(r => ({ r, parsed: nightSchema.safeParse(r.state) })).filter(x => x.parsed.success).map(x => ({ id: x.r.id, updatedAt: x.r.updated_at, night: x.parsed.data! }));
+    const unique = rows.filter(r => !seen.has(r.id) && seen.add(r.id));
+    // A night's date is when it started (first saved revision), not when it was last edited.
+    const firsts: Row[] = unique.length ? await database(`scorebook_revisions?scorebook_id=in.(${unique.map(r => r.id).join(",")})&revision=eq.1&select=scorebook_id,recorded_at`) : [];
+    const startedAt = new Map(firsts.map(f => [f.scorebook_id, f.recorded_at]));
+    const nights = unique.map(r => ({ r, parsed: nightSchema.safeParse(r.state) })).filter(x => x.parsed.success).map(x => ({ id: x.r.id, updatedAt: startedAt.get(x.r.id) ?? x.r.updated_at, night: x.parsed.data! }));
     const weeks: WeekSummary[] = [];
     let n = 0;
     for (const { id, updatedAt, night } of nights.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt))) {
