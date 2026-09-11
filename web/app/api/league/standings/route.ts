@@ -1,8 +1,10 @@
-import { identify, unauthorized } from "@/lib/auth-server";
+import { identify, isTeammate, unauthorized } from "@/lib/auth-server";
 import { loadStandings } from "@/lib/league/standings-server";
 
 export async function GET(request: Request) {
-  if (!await identify(request)) return unauthorized("Sign in to see league standings.");
+  const identity = await identify(request);
+  if (!identity) return unauthorized("Sign in to see league standings.");
+  if (!await isTeammate(identity)) return Response.json({ error: "League data is for team members. Ask Doug to add you." }, { status: 403 });
   const season = new URL(request.url).searchParams.get("season") ?? undefined;
   try {
     const standings = await loadStandings(season);

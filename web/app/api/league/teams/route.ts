@@ -1,4 +1,4 @@
-import { identify, unauthorized } from "@/lib/auth-server";
+import { identify, isTeammate, unauthorized } from "@/lib/auth-server";
 import { database } from "@/lib/scorebook-server";
 import { displayName } from "@/lib/league/bls-parse";
 import { handicapFor } from "@/lib/league/points";
@@ -6,7 +6,9 @@ import { handicapFor } from "@/lib/league/points";
 type Row = Record<string, any>;
 // Latest ingested week: every team with its bowlers, averages, and the handicap that average earns.
 export async function GET(request: Request) {
-  if (!await identify(request)) return unauthorized("Sign in to see league standings.");
+  const identity = await identify(request);
+  if (!identity) return unauthorized("Sign in to see league standings.");
+  if (!await isTeammate(identity)) return Response.json({ error: "League data is for team members. Ask Doug to add you." }, { status: 403 });
   try {
     const seasons: Row[] = await database("league_seasons?select=id,name&order=name.desc&limit=1");
     const season = seasons[0]; if (!season) return Response.json({ error: "No league data yet." }, { status: 404 });

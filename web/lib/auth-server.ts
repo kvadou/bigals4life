@@ -54,6 +54,19 @@ export async function access(identity: Identity | null, scorebookId: string): Pr
   return members[0]?.role ?? "none";
 }
 
+/** On the team: admin, a member of any scorebook, or holding an invite. Gate for league-wide data. */
+export async function isTeammate(identity: Identity | null): Promise<boolean> {
+  if (!identity) return false;
+  if (isAdmin(identity.user.email)) return true;
+  try {
+    const [members, invites]: unknown[][] = await Promise.all([
+      database(`scorebook_members?user_id=eq.${identity.user.id}&select=scorebook_id&limit=1`),
+      database(`scorebook_invites?email=eq.${encodeURIComponent(identity.user.email)}&select=scorebook_id&limit=1`),
+    ]);
+    return members.length > 0 || invites.length > 0;
+  } catch { return false; }
+}
+
 /** Pure decision so it can be tested and mirrored by the native client. */
 export function decide(kind: "read" | "write", role: Role, identified: boolean): { status: 200 | 401 | 403 | 404; error?: string } {
   if (role === "missing") return { status: 404, error: "Team scorebook not found." };
