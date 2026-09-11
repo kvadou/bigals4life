@@ -7,4 +7,4 @@ supabase db push --yes
 shopt -s nullglob
 pdfs=(../league-pdfs/*.pdf "$HOME"/Downloads/TME*Standings*.pdf)
 [ ${#pdfs[@]} -gt 0 ] || { echo "No PDFs found in ~/BAFL/league-pdfs or ~/Downloads"; exit 1; }
-bun --env-file=.env.local scripts/ingest-standings.ts "${pdfs[@]}"
+BAFL_RECAP_ORIGIN=off bun --env-file=.env.local scripts/ingest-standings.ts "${pdfs[@]}"

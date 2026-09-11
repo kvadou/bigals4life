@@ -8,7 +8,7 @@ type Row = Record<string, any>;
 export type LeagueStandings = {
   season: { id: string; name: string; house: string; weeksTotal: number };
   seasons: { name: string }[];
-  week: { number: number; bowledOn: string; ingestedAt: string };
+  week: { number: number; bowledOn: string; ingestedAt: string; recap: string | null };
   teams: { number: number; name: string; place: number; percentWon: number; pointsWon: number; pointsLost: number; ytdWon: number; ytdLost: number; scratchPins: number; ours: boolean; lastWeek: { opponent: string; points: number; hdcpGames: number[]; hdcpTotal: number } | null }[];
   roster: { name: string; average: number; handicap: number; toRaise: number; toDrop: number; games: number[] | null; total: number | null; matchPoints: number | null }[];
   leaderboard: { name: string; team: string; points: number; ours: boolean }[];
@@ -36,7 +36,7 @@ export async function loadStandings(seasonName?: string): Promise<LeagueStanding
   return {
     season: { id: season.id, name: season.name, house: season.house, weeksTotal: season.weeks_total },
     seasons: seasons.map(s => ({ name: s.name })),
-    week: { number: latest.week, bowledOn: latest.bowled_on, ingestedAt: latest.ingested_at },
+    week: { number: latest.week, bowledOn: latest.bowled_on, ingestedAt: latest.ingested_at, recap: latest.recap ?? null },
     teams: teamWeeks.map(tw => { const t = teams.find(x => x.id === tw.team_id); return {
       number: t?.number ?? 0, name: t?.name ?? "", place: tw.place, percentWon: Number(tw.percent_won), pointsWon: Number(tw.points_won), pointsLost: Number(tw.points_lost), ytdWon: Number(tw.ytd_won), ytdLost: Number(tw.ytd_lost), scratchPins: tw.scratch_pins, ours: t?.id === ours?.id,
       lastWeek: tw.opponent_team_id ? { opponent: teamName(tw.opponent_team_id), points: Number(tw.week_points_won), hdcpGames: tw.hdcp_games ?? [], hdcpTotal: tw.hdcp_total } : null }; }),

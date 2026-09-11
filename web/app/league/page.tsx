@@ -1,6 +1,7 @@
 import { CircleDot, Trophy } from "lucide-react";
 import Link from "next/link";
 import { loadStandings } from "@/lib/league/standings-server";
+import Recap from "./recap";
 
 export const dynamic = "force-dynamic";
 const fmt = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1).replace(".5", "½");
@@ -21,6 +22,7 @@ export default async function LeaguePage({ searchParams }: { searchParams: Promi
           {n.discrepancies.length > 0 && <ul className="reconcile-list">{n.discrepancies.map((d, i) => <li key={i}><strong>{title(d.who)}</strong> {d.field}: we had <em>{d.ours}</em>, sheet says <em>{d.gary}</em></li>)}</ul>}
           <p className="score-note"><Link href={`/?night=${n.nightId}`}>Open that night</Link>. Gary&rsquo;s sheet is the official record; fix the night if our entry was the typo.</p></div>)}
       </section>)}
+      <Recap season={s.season.name} week={s.week.number} initial={s.week.recap}/>
       <section className="league-section" aria-label="Team standings">
         <div className="eyebrow"><Trophy size={16}/> TEAM STANDINGS</div>
         <div className="league-scroll"><table className="league-table"><thead><tr><th scope="col">#</th><th scope="col" className="left">Team</th><th scope="col">Won</th><th scope="col">Lost</th><th scope="col">%</th><th scope="col">YTD</th><th scope="col">Last week</th></tr></thead>

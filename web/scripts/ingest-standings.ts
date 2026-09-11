@@ -47,6 +47,10 @@ for (const file of files) {
       reconciled = `, reconciled ${results.length} night(s): ${results.reduce((s, r) => s + r.discrepancies.length, 0)} difference(s)`;
     }
   }
+  if (process.env.BAFL_RECAP_ORIGIN !== "off") {
+    const origin = process.env.BAFL_RECAP_ORIGIN ?? "https://strike-ceiling-web.vercel.app";
+    try { const r = await fetch(`${origin}/api/league/recap`, { method: "POST", headers: { "Content-Type": "application/json", Origin: origin }, body: JSON.stringify({ season: week.season, week: week.week }), signal: AbortSignal.timeout(50_000) }); reconciled += r.ok ? ", recap written" : `, recap skipped (${r.status})`; } catch { reconciled += ", recap skipped"; }
+  }
   const us = week.teams.find(t => t.number === ourNumber);
   console.log(`${basename(file)}: ${week.season} week ${week.week}/${week.weeksTotal}, ${week.teams.length} teams, ${rosterRows.length} bowlers${us ? `, Big Al's ${us.place}${["st","nd","rd"][us.place - 1] ?? "th"} (${us.pointsWon}-${us.pointsLost}), last week ${week.results.find(r => r.number === us.number)?.pointsWon ?? "?"} pts` : ""}${week.warnings.length ? `, ${week.warnings.length} warning(s): ${week.warnings.join("; ")}` : ""}${reconciled}`);
 }

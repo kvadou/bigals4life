@@ -13,13 +13,13 @@ export async function GET() {
     const [teams, bowlers, bowlerWeeks]: Row[][] = await Promise.all([
       database(`league_teams?select=id,number,name&season_id=eq.${season.id}&order=number.asc`),
       database(`league_bowlers?select=id,name&season_id=eq.${season.id}`),
-      database(`league_bowler_weeks?select=bowler_id,team_id,average,games,scratch_games&week_id=eq.${week.id}`),
+      database(`league_bowler_weeks?select=bowler_id,team_id,average,games,scratch_games,to_raise,to_drop&week_id=eq.${week.id}`),
     ]);
     return Response.json({
       season: season.name, week: week.week,
       teams: teams.map(t => ({ number: t.number, name: t.name, bowlers: bowlerWeeks.filter(bw => bw.team_id === t.id).map(bw => {
         const b = bowlers.find(x => x.id === bw.bowler_id);
-        return { name: displayName(b?.name ?? ""), average: bw.average, handicap: handicapFor(bw.average), games: bw.games, bowledLastWeek: !!bw.scratch_games };
+        return { name: displayName(b?.name ?? ""), average: bw.average, handicap: handicapFor(bw.average), games: bw.games, toRaise: bw.to_raise, toDrop: bw.to_drop, bowledLastWeek: !!bw.scratch_games };
       }).sort((a, b) => Number(b.bowledLastWeek) - Number(a.bowledLastWeek) || b.games - a.games) })),
     }, { headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=3600" } });
   } catch (error) {
