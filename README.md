@@ -7,7 +7,7 @@ Bowling tools for the Thursday Men's Early league at Big Al's Bar and Bowling. B
 | Folder | What it is | Run it |
 |--------|------------|--------|
 | `web/` | Next.js + Supabase app. Live scorebook (tap pins, photo, voice), shared night links, league standings. Deployed at https://strike-ceiling-web.vercel.app | `cd web && bun install && bun dev` |
-| `ios/` | SwiftUI prototype of the scorebook. | `cd ios && xcodegen && open StrikeCeiling.xcodeproj` |
+| `ios/` | Native SwiftUI scorebook with shared web scores, team totals, and game history. | `cd ios && xcodegen && open StrikeCeiling.xcodeproj` |
 
 Tests: `cd web && bun test`. Type check: `bunx tsc --noEmit`.
 
