@@ -27,7 +27,7 @@ export default async function LeaguePage({ searchParams }: { searchParams: Promi
       <Recap season={s.season.name} week={s.week.number} initial={s.week.recap}/>
       <section className="league-section" aria-label="Team standings">
         <div className="eyebrow"><Trophy size={16}/> TEAM STANDINGS</div>
-        <div className="league-scroll"><table className="league-table"><thead><tr><th scope="col">#</th><th scope="col" className="left">Team</th><th scope="col">Won</th><th scope="col">Lost</th><th scope="col">%</th><th scope="col">YTD</th><th scope="col">Last week</th></tr></thead>
+        <div className="league-scroll" tabIndex={0} role="region" aria-label="Team standings, scroll for more columns"><table className="league-table"><thead><tr><th scope="col">#</th><th scope="col" className="left">Team</th><th scope="col">Won</th><th scope="col">Lost</th><th scope="col">%</th><th scope="col">YTD</th><th scope="col">Last week</th></tr></thead>
           <tbody>{s.teams.map(t => <tr key={t.number} className={t.ours ? "ours" : ""}><td>{t.place}</td><td className="left"><strong>{title(t.name)}</strong></td><td>{fmt(t.pointsWon)}</td><td>{fmt(t.pointsLost)}</td><td>{t.percentWon.toFixed(1)}</td><td className="muted-cell">{fmt(t.ytdWon)}–{fmt(t.ytdLost)}</td><td className="muted-cell">{t.lastWeek ? `${fmt(t.lastWeek.points)} vs ${title(t.lastWeek.opponent)}` : ""}</td></tr>)}</tbody></table></div>
       </section>
 

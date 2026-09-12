@@ -57,7 +57,7 @@ export function GameRows({ week, hrefFor }: { week: WeekSummary; hrefFor: (game:
 export function HeadToHead({ week }: { week: WeekSummary }) {
   const p = week.points; if (!p) return null;
   const cell = (s: [number, number]) => s[0] > s[1] ? <td className="won">W</td> : s[1] > s[0] ? <td className="lost">L</td> : s[0] ? <td className="split">½</td> : <td className="dim">–</td>;
-  return <div className="league-scroll"><table className="league-table week-table hth"><thead><tr><th scope="col" className="left">Us · hdcp</th>{week.games.map(g => <th key={g.game} scope="col">G{g.game}</th>)}<th scope="col">Ser</th><th scope="col" className="left">Them</th></tr></thead>
+  return <div className="league-scroll" tabIndex={0} role="region" aria-label="Head-to-head scores, scroll for more columns"><table className="league-table week-table hth"><thead><tr><th scope="col" className="left">Us · hdcp</th>{week.games.map(g => <th key={g.game} scope="col">G{g.game}</th>)}<th scope="col">Ser</th><th scope="col" className="left">Them</th></tr></thead>
     <tbody>{p.bowlers.map((b, i) => <tr key={b.name}><td className="left"><strong>{b.name}</strong> <span className="muted-cell">+{week.ourHandicaps?.[i] ?? 0}</span></td>{b.games.map((g, k) => <HthCell key={k} s={g}/>)}<HthCell s={b.series}/><td className="left muted-cell">{title(b.opponent).split(" ")[0]}</td></tr>)}</tbody></table></div>;
   function HthCell({ s }: { s: [number, number] }) { return cell(s); }
 }

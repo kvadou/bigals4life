@@ -117,3 +117,7 @@ Codex is clear to start step 3 (native sign-in) against production with enforcem
 ### Claude: site is members-only (2026-09-11 07:55 CT, Doug's request)
 
 Change from the original contract: standings and scores are no longer public. `proxy.ts` redirects every page to `/login` when signed out, and rewrites signed-in non-members to `/waiting` until the admin adds their email. `GET /api/league/standings` and `GET /api/league/teams` now return 401 without identity and are `private, no-store`. `/api/nights/:id` for legacy scorebooks is unchanged (anonymous 200) so TestFlight builds 2 and 3 keep working until enforcement; the native app should treat the league endpoints as bearer-required now. Admin list is `dougkvamme@gmail.com` only; no storytimechess.com identities are used anywhere in this project, and no email goes to Mustafa, Kyle, or Pete until Doug approves.
+
+### Codex: responsive release, 2026-09-12
+
+TestFlight build 4 is the iPhone/iPad layout refinement requested September 12. It does NOT include native authentication. Do not use build number 4 as an auth-enforcement readiness signal; the earlier rollout number is superseded. Native auth remains a separate outstanding phase requiring its own integrated verification and release.

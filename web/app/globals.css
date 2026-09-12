@@ -70,3 +70,88 @@ a.league-tag{color:inherit;text-decoration:none}
 .draft-suggest{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#e6efcf;border:1px solid #cadbb3;border-radius:10px;padding:12px 14px}.draft-suggest strong{display:block;font-size:13px;margin:3px 0}.draft-suggest small{font-size:10px;color:#4e6046}.draft-suggest .secondary{width:auto;margin:0;min-height:40px;padding:8px 14px}
 .draft-coach p{font-size:13px;line-height:1.6;background:white;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:6px}.draft-coach .text-button{padding-left:0}
 @media(max-width:480px){.draft-row{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"c us vs" "c them vs"}.draft-controls{grid-area:c}.draft-us{grid-area:us}.draft-vs{grid-area:vs}.draft-them{grid-area:them;text-align:left}}
+
+/* Responsive shell: content fits the viewport; only score tables scroll. */
+:root{--muted:#626d62}
+html{scroll-padding-top:20px}
+body{overflow-wrap:break-word}
+main{min-width:0;padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right))}
+h1{letter-spacing:-.04em;text-wrap:balance}
+input,select,textarea{max-width:100%;min-width:0}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #628836;outline-offset:3px}
+input::placeholder,textarea::placeholder{color:#6e776c;opacity:1}
+.topbar{height:auto;min-height:98px;gap:16px;flex-wrap:wrap;padding:18px 0}
+.brand{flex-shrink:0;min-height:44px}
+.topbar-right{min-width:0;flex-wrap:wrap;justify-content:flex-end;gap:8px 14px}
+.topbar-right .league-tag,.topbar-right .secondary,.topbar-right .text-button{min-height:44px}
+.nav-toggle{display:none;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 12px;background:white;border:1px solid var(--line);border-radius:9px;font-size:13px;font-weight:600}
+.crumbs{flex-wrap:wrap;gap:4px 8px}.crumb{min-width:0;flex-wrap:wrap}.crumb a{display:inline-flex;align-items:center;min-height:44px}.crumb-back{width:44px;height:44px;flex-shrink:0}
+.intro>div,.home-side,.league-columns>*,.home-layout>*,.team-grid>*,.roster-grid>*,.review-field,.review-context-body,.review-row>div,.idea>div{min-width:0}
+.intro p{line-height:1.7}.intro{flex-wrap:wrap}
+.league-scroll,.scorecard-scroll,.opponent-grid-scroll{max-width:100%;overscroll-behavior-x:contain}
+.league-scroll:focus-visible,.scorecard-scroll:focus-visible,.opponent-grid-scroll:focus-visible{outline:3px solid #628836;outline-offset:3px}
+.match-body{grid-template-columns:minmax(0,1fr)}
+.split-chips{grid-template-columns:repeat(4,minmax(0,1fr))}.split-chips.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.match-score .who{white-space:normal}.match-hero-top{gap:12px;align-items:flex-start}.match-hero-top .eyebrow{line-height:1.6}.match-state{flex-shrink:0;line-height:1.6}
+.split-chip{min-width:0}.split-chip small{line-height:1.5}.match-lines{gap:12px;flex-wrap:wrap}
+.chip,.season-nav a{min-height:44px;justify-content:center}.season-nav a{display:inline-flex;align-items:center}
+.note-field textarea{min-width:0}.note-field .mic{flex-shrink:0}
+.review-page>.intro,.review-page>.review-hero,.review-page>.review-cards,.review-page>.review-debrief,.review-page>.review-status{max-width:800px;margin-left:auto;margin-right:auto}
+.review-page .intro p{max-width:58ch;font-size:15px}.review-intro{align-items:flex-start}.review-intro .bowler-switch{flex-basis:100%}
+.review-game-head{flex-wrap:wrap}.review-game-head .muted-cell{font-size:12px;line-height:1.5}
+.review-context{overflow:hidden}.review-context .review-row{min-height:72px}.review-row>svg{flex-shrink:0}
+.review-game,.review-context-body{gap:16px}.review-context-body .field{font-size:14px}
+.review-talk p,.coach-turn>p,.bowler-turn p,.idea p{font-size:15px;line-height:1.7}
+.review-talk-actions .primary{display:flex;align-items:center;justify-content:center}
+.idea a{min-height:44px;font-size:12px;flex-wrap:wrap}.coach-question{font-size:15px;line-height:1.6}
+.entry-bar{padding-bottom:max(16px,env(safe-area-inset-bottom))}
+.dialog-inner{overflow-wrap:anywhere}dialog{max-height:calc(100dvh - 32px);overscroll-behavior:contain}
+.member-list li{flex-wrap:wrap}.member-list li span{min-width:0;overflow-wrap:anywhere}
+.draft-controls .text-button{min-height:44px;min-width:44px}
+.draft-suggest{flex-wrap:wrap}.lineup-pick.lane{gap:0 12px}.lineup-pick label{min-width:0}
+footer{padding-bottom:max(25px,env(safe-area-inset-bottom));flex-wrap:wrap}
+@media(min-width:761px){main{padding-left:max(32px,env(safe-area-inset-left));padding-right:max(32px,env(safe-area-inset-right))}}
+@media(min-width:1200px){main{padding-left:48px;padding-right:48px}}
+@media(max-width:1100px){
+  .topbar{min-height:76px;padding:14px 0;gap:10px}
+  .nav-toggle{display:inline-flex}
+  .topbar-right{display:none;flex-basis:100%;justify-content:flex-start;align-items:stretch;border-top:1px solid var(--line);padding:12px 0 4px;gap:8px}
+  .topbar-right[data-open="true"],.topbar-right:has(dialog[open]){display:flex}
+  .topbar-right .league-tag{flex:1 1 calc(50% - 8px);font-size:11px;letter-spacing:1px;padding:10px 12px;border-radius:8px;background:#edf1e7}
+  .topbar-right .account-email{display:block;flex-basis:100%;max-width:none;padding:8px 4px;white-space:normal;overflow-wrap:anywhere;font-size:12px}
+  .topbar-right .secondary,.topbar-right .text-button{font-size:13px;padding:10px 12px;flex:1 1 auto}
+}
+@media(max-width:760px){
+  .brand{font-size:17px}.intro{gap:14px;padding-top:25px}.intro p{font-size:14px;max-width:65ch}
+  .review-intro h1{font-size:clamp(30px,7vw,42px);line-height:1.15;letter-spacing:-.04em}
+  .review-page .intro p{font-size:15px}.bro-lockup{flex-wrap:wrap;gap:8px}
+  .review-page .review-hero{padding:20px}.review-series{margin-top:16px;flex-wrap:wrap}.review-series span{font-size:13px}
+  .review-context-body{padding:0 16px 20px}.review-game{padding:20px 16px}
+  .game-row-head,.week-head,.week-foot,.session-bar{flex-wrap:wrap;gap:8px}
+  .session-bar>div{flex-wrap:wrap}.session-bar{font-size:10px}.save-status{font-size:11px}
+  .entry-heading{gap:12px}.entry-heading>div{min-width:0}.entry-heading .text-button{flex-shrink:0}
+  .panel-heading{gap:12px;flex-wrap:wrap}.game-nav{flex-wrap:wrap}
+  .login-card{padding:24px;margin:28px auto}.dialog-inner{padding:24px}
+  .close-button{margin:-12px -10px 0 0}
+}
+@media(max-width:380px){
+  .team-grid{gap:8px}.bowler-card{padding:14px 10px 0}.card-top{gap:6px;flex-wrap:wrap}.active-label{margin-left:0}.card-scores{gap:12px}.bowler-name{font-size:13px}
+  .score-panel{padding:14px}.ceiling-hero{padding:20px 16px}.hero-number{font-size:60px;letter-spacing:-.04em}.pin-art{display:none}
+  .match-score{gap:10px}.match-score strong{font-size:48px}.split-chip{padding:10px 4px}.split-chip strong{font-size:14px}
+  .lineup-pick.lane{grid-template-columns:1fr}.draft-row{gap:6px;padding:8px 6px}
+  .home-grid{grid-template-columns:1fr}.chip-add{min-width:0;flex-basis:100%}
+}
+/* Grid children must be allowed to shrink below table and heading min-content. */
+.week-list{grid-template-columns:minmax(0,1fr)}
+.week-card,.league-section,.home-side>*{min-width:0}
+.eyebrow{line-height:1.6}
+.intro h1{letter-spacing:-.04em}
+.hero-number,.match-score strong,.game-hero-score strong,.review-series strong{letter-spacing:-.04em}
+@media(pointer:coarse){
+  .league-table td a{min-height:44px;align-items:center}
+  .review-link{font-size:12px}
+}
+.note-field textarea{min-height:96px}
+@media(max-width:380px){.note-field textarea{min-height:120px}}
+/* Keep offscreen accessible labels inside the table's scrolling coordinate space. */
+.league-scroll,.scorecard-scroll,.opponent-grid-scroll{position:relative}

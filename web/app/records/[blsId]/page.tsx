@@ -64,13 +64,13 @@ export default async function BowlerPage({ params }: { params: Promise<{ blsId: 
 
     {perSeason.length > 1 && <section className="league-section" aria-label="By season">
       <div className="eyebrow">BY SEASON</div>
-      <div className="league-scroll"><table className="league-table"><thead><tr><th scope="col" className="left">Season</th><th scope="col">Nights</th><th scope="col">Avg</th><th scope="col">High game</th><th scope="col">High series</th></tr></thead>
+      <div className="league-scroll" tabIndex={0} role="region" aria-label="Bowler statistics, scroll for more columns"><table className="league-table"><thead><tr><th scope="col" className="left">Season</th><th scope="col">Nights</th><th scope="col">Avg</th><th scope="col">High game</th><th scope="col">High series</th></tr></thead>
         <tbody>{perSeason.map(s => <tr key={s.seasons[0]}><td className="left"><strong>{shortSeason(s.seasons[0])}</strong></td><td>{s.nightsCounted}</td><td>{s.average ?? "–"}</td><td><strong>{s.highGame?.value ?? "–"}</strong></td><td><strong>{s.highSeries?.value ?? "–"}</strong></td></tr>)}</tbody></table></div>
     </section>}
 
     <section className="league-section" aria-label="Night by night">
       <div className="eyebrow">NIGHT BY NIGHT · NEWEST FIRST</div>
-      <div className="league-scroll"><table className="league-table"><thead><tr><th scope="col" className="left">Week</th><th scope="col" className="left">Against</th><th scope="col">G1</th><th scope="col">G2</th><th scope="col">G3</th><th scope="col">Series</th><th scope="col">Avg after</th></tr></thead>
+      <div className="league-scroll" tabIndex={0} role="region" aria-label="Bowler statistics, scroll for more columns"><table className="league-table"><thead><tr><th scope="col" className="left">Week</th><th scope="col" className="left">Against</th><th scope="col">G1</th><th scope="col">G2</th><th scope="col">G3</th><th scope="col">Series</th><th scope="col">Avg after</th></tr></thead>
         <tbody>{r.nights.map(n => <tr key={`${n.seasonName}-${n.week}`}>
           <td className="left"><strong>{shortSeason(n.seasonName)} wk {n.week}</strong><br/><small className="muted-cell">{day(n.bowledOn)}</small></td>
           <td className="left muted-cell">{n.opponent ? title(n.opponent) : "–"}</td>

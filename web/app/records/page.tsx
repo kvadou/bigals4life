@@ -51,7 +51,7 @@ export default async function RecordsPage({ searchParams }: { searchParams: Prom
 
       <section className="league-section" aria-label="Every bowler">
         <div className="eyebrow">EVERY BOWLER · {book.records.length} · TAP FOR THE FULL CARD</div>
-        <div className="league-scroll"><table className="league-table"><thead><tr>
+        <div className="league-scroll" tabIndex={0} role="region" aria-label="Bowler records, scroll for more columns"><table className="league-table"><thead><tr>
           <th scope="col" className="left">Bowler</th><th scope="col" className="left">Team</th><th scope="col">Avg</th><th scope="col">Hdcp</th><th scope="col">High game</th><th scope="col">High series</th><th scope="col">Games</th><th scope="col"><span className="sr-only">Open</span></th></tr></thead>
           <tbody>{book.records.map(r => <tr key={r.blsId} className={r.teamName === book.ourTeam ? "ours" : ""}>
             <td className="left"><Link href={`/records/${r.blsId}`}><strong>{title(r.name)}</strong></Link></td>
