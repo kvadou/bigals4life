@@ -128,3 +128,7 @@ Photo imports and the sheet can leave `finals[i]` set with empty `rolls[i]`. Str
 ## Lineup order is not roster order
 
 `match.ours[k]` is whoever we handed in k-th, but `nightMatchPoints` paired `games[g][k]` by roster index, so a reordered lineup would have scored the wrong bowler's games. It now looks the rolls up by name (`BOWLERS.indexOf(b.name)`). Head-to-head points pair slot for slot (points.ts), which is why the order matters and why the even lane (names in second) is the only place a stack buys anything.
+
+## Native tab contrast depends on device layout
+
+On iOS 26, forcing a dark toolbar scheme for the tab bar can produce pale icons on pale floating glass on iPhone, while the iPad top tab selection still inherits the app tint. Keep the native tab appearance and scope the selected tint to the regular-width Tonight tab. Scope the content tint inside its NavigationStack so ivory cards retain readable controls. Verify rendered phone and tablet screenshots, not only the SwiftUI modifiers.
