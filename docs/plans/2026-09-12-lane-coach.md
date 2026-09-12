@@ -98,3 +98,7 @@ LiveLaneContext has 201 passing standalone Swift assertions for America/Chicago,
 Independent lifecycle review found and fixed two races: do not stop the current capture from a stale startup continuation; do not invalidate the first permission request merely because the permission sheet makes the app inactive. Backgrounding still invalidates startup, and inactive capture pauses.
 
 No release was made. TestFlight remains 1.0 (7). LiveKit Cloud is signed out in the open setup tab. Team video and all autonomous tracking features remain unfinished.
+
+### LiveKit project created
+
+After Doug signed in, created dedicated BA4L project `p_a6czbdarrl2` in LiveKit Cloud. Dashboard verified BA4L, United States region, and zero sessions/agents. Agent observability disabled at creation; PMV was not modified. API key page reports one existing key. No secrets were displayed or copied. `scripts/configure-livekit.ts` provides hidden terminal input into ignored `web/.env.local`, mode0600, atomic save and idempotent no-op if already configured. Presence check confirms all three LiveKit settings remain missing. User credential entry is required by add-secret skill. No streaming, tokens, deployment, or release verified.
