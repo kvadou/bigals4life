@@ -12,7 +12,8 @@ struct ScoreboardView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ScaledMetric(relativeTo: .title3) private var pinWidth = 66.0
-    @State private var selected = 0
+    @Binding var selectedBowler: Int?
+    private var selected: Int { selectedBowler ?? 0 }
     @State private var teamExpanded = false
     @State private var showNewGame = false
     @State private var showDiscard = false
@@ -29,6 +30,18 @@ struct ScoreboardView: View {
 
     var body: some View {
         NavigationStack {
+            Group {
+            if selectedBowler == nil {
+                List {
+                    Section {
+                        Text("Whose game are you scoring?").font(.title2.bold())
+                        Text("Choose a bowler. This choice stays with your account on this device.").foregroundStyle(.secondary)
+                        ForEach(Night.names.indices, id: \.self) { index in
+                            Button(Night.names[index]) { selectedBowler = index }.frame(minHeight: 44)
+                        }
+                    }
+                }
+            } else {
             GeometryReader { geometry in
                 if horizontalSizeClass == .regular && geometry.size.width >= 760 && !dynamicTypeSize.isAccessibilitySize {
                     HStack(spacing: 0) {
@@ -49,6 +62,8 @@ struct ScoreboardView: View {
                         gameSections
                     }
                 }
+            }
+            }
             }
             .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("BA4L")
@@ -77,7 +92,7 @@ struct ScoreboardView: View {
                         night.game += 1
                         night.rolls = Array(repeating: [], count: 4)
                         night.finals = nil
-                    }; selected = 0 }
+                    } }
                 }
             } message: {
                 Text("All four scorecards will be kept in history. Unfinished games remain marked unfinished.")
@@ -185,7 +200,7 @@ struct ScoreboardView: View {
     @ViewBuilder
     private var teamRows: some View {
         ForEach(Night.names.indices, id: \.self) { index in
-            Button { selected = index; teamExpanded = false } label: {
+            Button { selectedBowler = index; teamExpanded = false } label: {
                 let rowLayout = dynamicTypeSize.isAccessibilitySize
                     ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
                     : AnyLayout(HStackLayout(spacing: 12))

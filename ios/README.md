@@ -19,7 +19,7 @@ Tokens use Keychain, refresh through Supabase, and are only sent to the canonica
 - Explicit team invitations/legacy claiming, password changes, and account sign-out.
 - Dictated or typed roll entry using the native keyboard, with preview and stale-score protection.
 
-Shared score edits are atomically backed up before sending. Revision conflicts and failed saves stop edits and preserve recovery data. Viewer roles cannot edit or retry a pending write. Original pre-account scorecards are accessible read-only from Account > Original device scorecards, with export for recovery. They are not automatically imported into an account. Review drafts currently remain in screen memory until successfully saved; offline review draft persistence is not implemented.
+Shared score edits are atomically backed up before sending. Revision conflicts and non-connectivity failures stop edits and preserve recovery data. Recognized connection failures allow a durable offline queue that reconciles against the server revision before upload. Viewer roles cannot edit or retry a pending write. Original pre-account scorecards are accessible read-only from Account > Original device scorecards, with export for recovery. They are not automatically imported into an account. Review notes and answers persist atomically per account, night and bowler. Cross-device changes require explicit conflict resolution.
 
 The bundle identifier remains `com.dougkvamme.StrikeCeiling`, preserving upgrades and original device data. Regenerate from repository root using `xcodegen generate --spec ios/project.yml`.
 
@@ -27,7 +27,7 @@ The bundle identifier remains `com.dougkvamme.StrikeCeiling`, preserving upgrade
 
 Run `bun ios/Tests/run.ts` for scoring/store, account security/lifecycle, voice entry, model contract, web-schema payload and match-point parity tests. Tests use synthetic responses, not production accounts. The DEBUG-only simulator fixture transport cannot use real networking and is excluded from Release builds.
 
-2026-09-12: gap analysis confirmed Week 1 on the signed-in website, team series 1849 and match 26-10. Native/API tests and simulator checks cover the new feature surfaces. See `docs/plans/2026-09-12-native-feature-parity.md` for final evidence. Build 5 is prepared for review; build 4 remains the last released TestFlight build. Real-account native login and physical-device camera/dictation remain field verification. Authentication changes require Doug's review before push, deployment or upload.
+2026-09-12: gap analysis confirmed Week 1 on the signed-in website, team series 1849 and match 26-10. Native/API tests and simulator checks cover the new feature surfaces. See `docs/plans/2026-09-12-native-feature-parity.md` for final evidence. Doug authorized the build 5 release; final deployment evidence is recorded in the experience release plan. Real-account native login and physical-device camera/dictation remain field verification. Doug explicitly authorized Vercel and TestFlight deployment on September 12.
 
 ## TestFlight release
 

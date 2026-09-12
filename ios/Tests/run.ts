@@ -34,6 +34,7 @@ try {
   run(voiceBinary, []);
   run("bun", ["ios/Tests/models.ts"]);
   run("bun", ["ios/Tests/match-insights.ts"]);
+  run("bun", ["ios/Tests/tonight-profile.ts"]);
 } finally {
   rmSync(scratch, { recursive: true, force: true });
 }

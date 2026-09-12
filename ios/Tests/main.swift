@@ -93,6 +93,8 @@ final class TestServer {
     var revision = 1
     var role: ScorebookRole = .editor
     var offline = false
+    var forcedFailure: Error?
+    var forcedStatus: Int?
     var loseNextAcknowledgement = false
     var requests: [URLRequest] = []
     var missingTeamID: String?
@@ -102,6 +104,8 @@ final class TestServer {
         requests.append(request)
         if let delay { await delay() }
         if offline { throw URLError(.notConnectedToInternet) }
+        if let forcedFailure { throw forcedFailure }
+        if let forcedStatus { return (Data("{\"error\":\"Test server refusal\"}".utf8), HTTPURLResponse(url: request.url!, statusCode: forcedStatus, httpVersion: nil, headerFields: nil)!) }
         expect(request.value(forHTTPHeaderField: "Origin") == ScorebookClient.origin, "Native request has canonical Origin")
         expect(request.url?.host == "bigals4life.com", "Native transport host")
         if request.url?.lastPathComponent == missingTeamID {
@@ -234,14 +238,17 @@ func runScorebookTests() async throws {
 
     server.offline = true
     await store.change { $0.rolls[0].append(3) }
+    expect(store.pending && store.canEdit && store.offlineQueue && store.revision == 2, "Recognized connectivity failure enables backed-up offline scoring")
+    let offlineRequests = server.requests.count
+    await store.change { $0.rolls[0].append(10) }
+    await store.change { $0.rolls[1] = [7, 2] }
     let pending = store.night
-    expect(store.pending && !store.canEdit && store.revision == 2, "Offline write locks editing and keeps revision")
-    await store.change { $0.game = 99 }
-    expect(store.night == pending, "Pending edits cannot be overwritten locally")
+    expect(pending.rolls[0] == [10, 7, 3, 10] && pending.rolls[1] == [7, 2], "Multiple offline rolls accumulate")
+    expect(server.requests.count == offlineRequests, "Each offline edit persists without repeating PUT")
     let requestCount = server.requests.count
     let recovered = ScorebookStore(client: client, defaults: defaults, directory: root)
     await recovered.start()
-    expect(recovered.pending && recovered.night == pending && !recovered.canEdit, "Relaunch recovers pending edit")
+    expect(recovered.pending && recovered.night == pending && recovered.canEdit && recovered.offlineQueue, "Relaunch restores the full offline queue with cached writable access")
     expect(server.requests.count == requestCount, "Relaunch never overwrites pending backup with GET")
     server.offline = false
     await recovered.retry()
@@ -413,6 +420,109 @@ func runScorebookTests() async throws {
     server.overrideData = nil
     await separate.retry()
     expect(separate.canEdit, "Explicit editor response restores access")
+
+    // Offline queue recovery is tested against a separate synthetic server and account directory.
+    do {
+        let queuedServer = TestServer()
+        let queuedClient = ScorebookClient(send: queuedServer.send)
+        let queueSuite = suite + ".queue"
+        let queueDefaults = UserDefaults(suiteName: queueSuite)!
+        defer { queueDefaults.removePersistentDomain(forName: queueSuite) }
+        let queueDirectory = root.appendingPathComponent("offline-queue")
+        let queued = ScorebookStore(client: queuedClient, defaults: queueDefaults, directory: queueDirectory)
+        await queued.start(); await queued.openTeam(link)
+        queuedServer.loseNextAcknowledgement = true
+        await queued.change { $0.rolls[0] = [10] }
+        expect(queued.pending && queued.canEdit && queued.revision == 1 && queuedServer.revision == 2, "Lost acknowledgement enables safe queued scoring")
+        let firstAttempt = queuedServer.state
+        let requestsBeforeMore = queuedServer.requests.count
+        await queued.change { $0.rolls[0].append(7) }
+        await queued.change { $0.rolls[0].append(2) }
+        expect(queuedServer.requests.count == requestsBeforeMore, "Newer queued rolls do not blindly resend the lost-ack PUT")
+        let backupPath = queueDirectory.appendingPathComponent(queuedServer.id + ".json")
+        let backup = try JSONDecoder().decode(ScorebookBackup.self, from: Data(contentsOf: backupPath))
+        expect(backup.attemptedNight == firstAttempt && backup.night == queued.night && backup.cachedRole == .editor && backup.offlineQueue == true, "Backup persists both attempted snapshot and latest queue")
+        let queueRelaunch = ScorebookStore(client: queuedClient, defaults: queueDefaults, directory: queueDirectory)
+        await queueRelaunch.start()
+        expect(queueRelaunch.canEdit && queueRelaunch.pending && queuedServer.requests.count == requestsBeforeMore, "Pending queue relaunch needs no network")
+        await queueRelaunch.retry()
+        expect(!queueRelaunch.pending && queueRelaunch.revision == 3 && queuedServer.state.rolls[0] == [10, 7, 2], "Exact lost-ack snapshot rebases and sends all newer rolls")
+        expect(queuedServer.requests.filter { $0.httpMethod == "PUT" }.count == 2, "Lost-ack with newer edits needs only one additional CAS PUT")
+
+        // During a background GET, further offline edits remain available and invalidate that response.
+        queuedServer.offline = true
+        await queueRelaunch.change { $0.rolls[1] = [8] }
+        queuedServer.offline = false
+        let queueGate = TestGate()
+        queuedServer.delay = { await queueGate.wait() }
+        let background = Task { await queueRelaunch.refresh() }
+        while !(await queueGate.entered) { await Task.yield() }
+        expect(queueRelaunch.canEdit && !queueRelaunch.busy, "Background queue check does not block pin entry")
+        let requestsDuringCheck = queuedServer.requests.count
+        await queueRelaunch.refresh()
+        expect(queuedServer.requests.count == requestsDuringCheck, "Overlapping queue checks are suppressed")
+        await queueRelaunch.change { $0.rolls[1].append(1) }
+        await queueGate.release(); await background.value; queuedServer.delay = nil
+        expect(queueRelaunch.pending && queueRelaunch.night.rolls[1] == [8, 1], "New edits invalidate older background GET without losing pins")
+        expect(queuedServer.requests.count == requestsDuringCheck, "Stale GET does not trigger a PUT")
+        await queueRelaunch.refresh()
+        expect(!queueRelaunch.pending && queuedServer.state.rolls[1] == [8, 1], "Next background check flushes the latest queue")
+
+        // A different remote state at base+1 is a conflict, even after an ambiguous acknowledgement.
+        queuedServer.loseNextAcknowledgement = true
+        await queueRelaunch.change { $0.rolls[2] = [7] }
+        await queueRelaunch.change { $0.rolls[2].append(2) }
+        queuedServer.state.rolls[3] = [10]
+        let putsBeforeDifferent = queuedServer.requests.filter { $0.httpMethod == "PUT" }.count
+        await queueRelaunch.retry()
+        expect(queueRelaunch.pending && !queueRelaunch.canEdit && !queueRelaunch.offlineQueue, "Changed remote beyond attempted snapshot freezes queue")
+        expect(queuedServer.requests.filter { $0.httpMethod == "PUT" }.count == putsBeforeDifferent, "Conflicting remote data is never overwritten")
+        queuedServer.offline = true
+        await queueRelaunch.retry()
+        expect(!queueRelaunch.canEdit, "Connectivity failure cannot reopen a previously conflicted queue")
+        queuedServer.offline = false
+        await queueRelaunch.discardAndReload()
+
+        for code in [401, 403, 503] {
+            queuedServer.forcedStatus = code
+            await queueRelaunch.change { $0.drinkTargets = DrinkTargets(high: code % 300, low: 100, qualificationRule: nil) }
+            expect(queueRelaunch.pending && !queueRelaunch.canEdit && !queueRelaunch.offlineQueue, "HTTP auth/server errors freeze, not offline queue")
+            let frozenBackup = try JSONDecoder().decode(ScorebookBackup.self, from: Data(contentsOf: backupPath))
+            expect(frozenBackup.cachedRole == nil && frozenBackup.offlineQueue == false, "No stale owner/editor permission survives a server rejection")
+            queuedServer.forcedStatus = nil; queuedServer.offline = true
+            await queueRelaunch.retry()
+            expect(!queueRelaunch.canEdit, "Later offline error does not restore revoked cached write permission")
+            queuedServer.offline = false; await queueRelaunch.retry()
+            expect(!queueRelaunch.pending && queueRelaunch.canEdit, "Fresh authorized GET permits frozen queue recovery")
+        }
+        queuedServer.forcedFailure = URLError(.secureConnectionFailed)
+        await queueRelaunch.change { $0.rolls[3] = [9] }
+        expect(queueRelaunch.pending && !queueRelaunch.canEdit, "TLS failures never enable offline queue mode")
+        queuedServer.forcedFailure = nil; await queueRelaunch.retry()
+
+        // A local storage failure must not change either displayed pins or the server.
+        queuedServer.offline = true
+        await queueRelaunch.change { $0.rolls[3].append(1) }
+        let beforeDiskLoss = queueRelaunch.night
+        let requestsBeforeDiskLoss = queuedServer.requests.count
+        let savedDirectory = root.appendingPathComponent("offline-queue-preserved")
+        try FileManager.default.moveItem(at: queueDirectory, to: savedDirectory)
+        try Data().write(to: queueDirectory)
+        await queueRelaunch.change { $0.rolls[3].append(10) }
+        expect(queueRelaunch.night == beforeDiskLoss && !queueRelaunch.canEdit && !queueRelaunch.offlineQueue, "Offline disk failure preserves UI and freezes scoring")
+        expect(queuedServer.requests.count == requestsBeforeDiskLoss, "Failed backup never reaches network")
+        try FileManager.default.removeItem(at: queueDirectory)
+        try FileManager.default.moveItem(at: savedDirectory, to: queueDirectory)
+        queuedServer.offline = false; await queueRelaunch.retry()
+        expect(!queueRelaunch.pending && queuedServer.state == beforeDiskLoss, "Restored storage sends only safely persisted rolls")
+
+        // Old backups have no cached role; they remain frozen until online authorization.
+        let oldBackup = ScorebookBackup(night: queueRelaunch.night, id: queuedServer.id, revision: queueRelaunch.revision, pending: true)
+        try JSONEncoder().encode(oldBackup).write(to: backupPath, options: .atomic)
+        let oldRelaunch = ScorebookStore(client: queuedClient, defaults: queueDefaults, directory: queueDirectory)
+        await oldRelaunch.start()
+        expect(oldRelaunch.pending && oldRelaunch.role == nil && !oldRelaunch.canEdit, "Legacy pending backups never infer writable permissions")
+    }
 
     // The same shared night has independent local backups for different signed-in users.
     let accountADefaults = UserDefaults(suiteName: suite + ".accountA")!

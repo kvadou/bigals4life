@@ -54,16 +54,32 @@ const broFixture = String.raw`import Foundation
         let fixture = """
         {"night":{"week":1,"bowledOn":"2026-09-10","prebowl":null,"opponent":"Team B","games":[{"game":1,"complete":true,"stats":{"score":191,"strikes":4,"spares":5,"opens":1,"framesPlayed":10,"cleanFrames":9,"firstBallAvg":8.5,"tenth":"/"}}]},"bowler":0,"names":["Doug","Mustafa","Kyle","Pete"],"review":{"context":{"lanes":"7 & 8","onPair":8,"lefties":false,"highRev":true,"oil":"House"},"games":[{"ball":"Bionic","tags":["light"],"note":"Keep this"}],"debrief":[{"role":"coach","text":"Keep this turn","question":"Where?","ideas":[{"key":"move","text":"An idea","source":"USBC","url":"https://bowl.com","agree":2}],"at":"2026-09-10T20:00:00Z"}],"closed":false},"profile":{"arsenal":["Bionic"],"hand":"left","language":"technical"}}
         """
+        let accountID = "11111111-1111-4111-8111-111111111111"
+        let nightID = "f1c74a06-b404-4e39-b3e7-6e0b84dc24b5"
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("ba4l-review-draft-fixtures-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
         var writes: [String: Any] = [:]
-        var shouldFail = false
-        let model = BroReviewModel(nightID: "f1c74a06-b404-4e39-b3e7-6e0b84dc24b5") { request in
+        var posts = 0
+        var offline = false
+        var race = false
+        var remote = try JSONDecoder().decode(BroPayload.self, from: Data(fixture.utf8))
+        let transport: SeasonTransport = { request in
+            if offline { throw URLError(.notConnectedToInternet) }
             if request.httpMethod == "PUT" {
+                posts += 1
                 writes = try JSONSerialization.jsonObject(with: request.httpBody!) as! [String: Any]
-                let json = shouldFail ? "{\"error\":\"Offline\"}" : "{\"ok\":true}"
-                return (Data(json.utf8), HTTPURLResponse(url: request.url!, statusCode: shouldFail ? 503 : 200, httpVersion: nil, headerFields: nil)!)
+                if race {
+                    remote.review.games[0].note = "Concurrent server winner"
+                    return (Data("{\"error\":\"A newer review was saved\"}".utf8), HTTPURLResponse(url: request.url!, statusCode: 409, httpVersion: nil, headerFields: nil)!)
+                }
+                remote.review = try JSONDecoder().decode(BroReview.self, from: JSONSerialization.data(withJSONObject: writes["review"]!))
+                remote.profile = try JSONDecoder().decode(BroProfile.self, from: JSONSerialization.data(withJSONObject: writes["profile"]!))
+                return (Data("{\"ok\":true}".utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!)
             }
-            return (Data(fixture.utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            return (try JSONEncoder().encode(remote), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!)
         }
+        let model = BroReviewModel(nightID: nightID, accountID: accountID, draftRoot: directory, send: transport)
         await model.load()
         precondition(model.payload?.review.context.lefties == false && model.awaitingAnswer)
         model.changeGame(0) { $0.note = "Updated note" }
@@ -73,13 +89,86 @@ const broFixture = String.raw`import Foundation
         precondition(savedContext["lefties"] as? Bool == false && savedContext["highRev"] as? Bool == true)
         precondition((savedReview["debrief"] as! [[String: Any]]).count == 1)
         precondition((writes["profile"] as! [String: Any])["hand"] as? String == "left")
-        shouldFail = true
+        let expectedReview = writes["expectedReview"] as! [String: Any]
+        precondition((expectedReview["games"] as! [[String: Any]])[0]["note"] as? String == "Keep this")
+        precondition(writes["expectedProfile"] != nil)
+
+        offline = true
         model.changeGame(0) { $0.note = "Must survive failure" }
+        model.changeAnswer("A saved answer from the lanes")
         let saved = await model.save()
         precondition(!saved && model.dirty && model.payload?.review.games[0].note == "Must survive failure")
         await model.load(bowler: 1)
         precondition(model.payload?.bowler == 0 && model.dirty)
-        print("Bro fixtures passed: optional false preservation, full review/profile save, debrief preservation, failed save retains draft and blocks bowler switch")
+        let relaunched = BroReviewModel(nightID: nightID, accountID: accountID, draftRoot: directory, send: transport)
+        await relaunched.load()
+        precondition(relaunched.payload?.review.games[0].note == "Must survive failure")
+        precondition(relaunched.answer == "A saved answer from the lanes" && relaunched.dirty)
+        let otherAccount = BroReviewModel(nightID: nightID, accountID: "22222222-2222-4222-8222-222222222222", draftRoot: directory, send: transport)
+        await otherAccount.load()
+        precondition(otherAccount.payload == nil, "Another account must never read a draft")
+        offline = false
+        remote.review.games[0].note = "Changed on web"
+        let conflicting = BroReviewModel(nightID: nightID, accountID: accountID, draftRoot: directory, send: transport)
+        let beforeConflict = posts
+        await conflicting.load()
+        precondition(conflicting.conflict && conflicting.payload?.review.games[0].note == "Must survive failure")
+        let refused = await conflicting.save()
+        precondition(!refused && posts == beforeConflict)
+        conflicting.resolveConflict(useDraft: true)
+        let explicitlyKept = await conflicting.save()
+        precondition(explicitlyKept && remote.review.games[0].note == "Must survive failure")
+        precondition(((writes["expectedReview"] as! [String: Any])["games"] as! [[String: Any]])[0]["note"] as? String == "Changed on web")
+
+        // Two native windows cannot silently overwrite each other's local drafts.
+        let secondWindow = BroReviewModel(nightID: nightID, accountID: accountID, draftRoot: directory, send: transport)
+        await secondWindow.load()
+        conflicting.changeGame(0) { $0.note = "Old window edit" }
+        precondition(conflicting.localWriteFailed)
+        let beforeOldWindow = posts
+        let staleWrite = await conflicting.save()
+        precondition(!staleWrite && posts == beforeOldWindow)
+        conflicting.reloadSavedDraft()
+        precondition(conflicting.payload?.review.games[0].note == "Must survive failure")
+
+        // An answer-only local write failure must not be replaced by a routine reload.
+        let answerRoot = directory.appendingPathComponent("answer-only-window")
+        let answerWindow = BroReviewModel(nightID: nightID, accountID: accountID, draftRoot: answerRoot, send: transport)
+        await answerWindow.load()
+        let otherAnswerWindow = BroReviewModel(nightID: nightID, accountID: accountID, draftRoot: answerRoot, send: transport)
+        await otherAnswerWindow.load()
+        answerWindow.changeAnswer("Only this window has my answer")
+        precondition(answerWindow.localWriteFailed && !answerWindow.dirty)
+        let answerReloaded = await answerWindow.load()
+        precondition(!answerReloaded && answerWindow.answer == "Only this window has my answer" && answerWindow.localWriteFailed)
+        let postsBeforeAnswerRetry = posts
+        let answerRetried = await answerWindow.save()
+        precondition(!answerRetried && posts == postsBeforeAnswerRetry && answerWindow.answer == "Only this window has my answer")
+        // Only the explicitly destructive recovery action may discard the window's answer.
+        answerWindow.reloadSavedDraft()
+        precondition(!answerWindow.localWriteFailed && answerWindow.answer.isEmpty)
+
+        // The server may race between the preflight and PUT. A 409 opens resolution without rebasing.
+        conflicting.changeGame(0) { $0.note = "Local race draft" }
+        race = true
+        let raceSaved = await conflicting.save()
+        precondition(!raceSaved && conflicting.conflict && conflicting.dirty)
+        precondition(conflicting.payload?.review.games[0].note == "Local race draft")
+        conflicting.resolveConflict(useDraft: false)
+        precondition(conflicting.payload?.review.games[0].note == "Concurrent server winner" && !conflicting.dirty && conflicting.answer.isEmpty)
+        race = false
+
+        // A disk failure cannot be disguised as an offline success or followed by a network write.
+        let blocked = directory.appendingPathComponent("not-a-directory")
+        try Data("fixture".utf8).write(to: blocked)
+        let diskFailure = BroReviewModel(nightID: nightID, accountID: accountID, draftRoot: blocked, send: transport)
+        await diskFailure.load()
+        precondition(diskFailure.localWriteFailed)
+        diskFailure.changeGame(0) { $0.note = "Keep on screen" }
+        let beforeDiskFailure = posts
+        let diskSaved = await diskFailure.save()
+        precondition(!diskSaved && posts == beforeDiskFailure && diskFailure.payload?.review.games[0].note == "Keep on screen")
+        print("Bro fixtures passed: complete contract + CAS expectations, offline relaunch/answer recovery, account separation, changed-server conflict, explicit resolution, multiwindow stale write + answer-only reload protection, 409 race, disk failure blocks writes")
     }
 }
 `;
@@ -180,7 +269,7 @@ try {
   const frames = extract("WeekGameView.swift", "/// A read-only");
   for (const [name, fixture, models] of [
     ["season", seasonFixture, [season]],
-    ["review", broFixture, [season, review]],
+    ["review", broFixture, [season, review, join(root, "ios/Sources/ReviewDraftStorage.swift")]],
     ["team", teamFixture, [season, team]],
     ["frames", framesFixture, [season, frames]],
   ] as const) {

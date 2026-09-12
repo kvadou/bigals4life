@@ -58,6 +58,9 @@ struct SignedInApp: View {
     @StateObject private var store: ScorebookStore
     private let accountID: String
     @State private var tab = 0
+    @State private var selectedBowler: Int?
+    @State private var profile: TonightProfile?
+    private let preferences: UserDefaults
     @State private var waitingForTeam = false
     @State private var checkingAccess = false
     @State private var password = ""
@@ -65,6 +68,10 @@ struct SignedInApp: View {
     init(session: AccountSession, userID: String) {
         self.session = session
         self.accountID = userID
+        let preferences = UserDefaults(suiteName: "com.dougkvamme.BA4L.account.\(userID)")!
+        self.preferences = preferences
+        let saved = preferences.object(forKey: "selectedBowler") as? Int
+        _selectedBowler = State(initialValue: saved.flatMap { Night.names.indices.contains($0) ? $0 : nil })
         let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("Accounts", isDirectory: true).appendingPathComponent(userID, isDirectory: true)
         _store = StateObject(wrappedValue: ScorebookStore(client: ScorebookClient(send: { request in
@@ -90,20 +97,27 @@ struct SignedInApp: View {
             }
         } else {
         TabView(selection: $tab) {
-            SeasonView(send: send, onOpenNight: openNight)
-                .tabItem { Label("Season", systemImage: "calendar") }.tag(0)
-            ScoreboardView(store: store).tabItem { Label("Score", systemImage: "figure.bowling") }.tag(1)
+            TonightView(store: store, selectedBowler: $selectedBowler, profile: profile, send: send, onScore: { tab = 1 }, onReview: { tab = 3 }, onOpenNight: openNight)
+                .tabItem { Label("Tonight", systemImage: "house") }.tag(0)
+            ScoreboardView(store: store, selectedBowler: $selectedBowler).tabItem { Label("Score", systemImage: "figure.bowling") }.tag(1)
             LeagueView(send: send).tabItem { Label("League", systemImage: "trophy") }.tag(2)
             NavigationStack {
                 if let id = store.teamID {
-                    ReviewView(nightID: id, send: send).id(id)
+                    ReviewView(nightID: id, accountID: accountID, send: send).id(id)
                 } else {
                     ContentUnavailableView("Choose a night", systemImage: "text.bubble", description: Text("Open a night from Season to review your games with Bowling Bro’."))
                 }
             }.tabItem { Label("Review", systemImage: "text.bubble") }.tag(3)
             NavigationStack {
                 Form {
-                    Section("Signed in") { Text(session.email ?? "Team member") }
+                    Section("Signed in") {
+                        Text(session.email ?? "Team member")
+                        if let profile { Text(profile.displayName).font(.headline) }
+                        Picker("Preferred scorecard", selection: $selectedBowler) {
+                            Text("Choose a bowler").tag(nil as Int?)
+                            ForEach(Night.names.indices, id: \.self) { Text(Night.names[$0]).tag(Optional($0)) }
+                        }
+                    }
                     Section {
                         NavigationLink("Team access") { TeamAccessView(store: store) }
                         NavigationLink("Original device scorecards") { DeviceArchiveView() }
@@ -122,6 +136,9 @@ struct SignedInApp: View {
             }.tabItem { Label("Account", systemImage: "person.crop.circle") }.tag(4)
         }
         }
+        }.onChange(of: selectedBowler) { _, value in
+            if let value { preferences.set(value, forKey: "selectedBowler") }
+            else { preferences.removeObject(forKey: "selectedBowler") }
         }.task {
             await checkMembership()
             guard !waitingForTeam else { return }
@@ -144,6 +161,11 @@ struct SignedInApp: View {
             let (data, response) = try await send(URLRequest(url: URL(string: ScorebookClient.origin + "/api/me")!))
             guard response.statusCode == 200 else { return }
             let account = try JSONDecoder().decode(SeasonAccount.self, from: data)
+            struct Identity: Decodable { let profile: TonightProfile }
+            if let identity = try? JSONDecoder().decode(Identity.self, from: data) {
+                profile = identity.profile
+                if selectedBowler == nil { selectedBowler = identity.profile.bowlerIndex }
+            }
             waitingForTeam = !account.admin && account.scorebooks.isEmpty
         } catch { /* Offline accounts keep their account-scoped backups; APIs enforce access. */ }
     }

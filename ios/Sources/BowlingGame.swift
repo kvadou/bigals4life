@@ -323,6 +323,9 @@ struct ScorebookBackup: Codable {
     var id: String?
     var revision: Int
     var pending: Bool
+    var cachedRole: ScorebookRole? = nil
+    var offlineQueue: Bool? = nil
+    var attemptedNight: Night? = nil
 }
 
 @MainActor
@@ -338,6 +341,7 @@ final class ScorebookStore: ObservableObject {
     @Published private(set) var legacy: [Bowler] = []
     @Published private(set) var loaded = false
     @Published private(set) var role: ScorebookRole?
+    @Published private(set) var offlineQueue = false
     var transport: (URLRequest) async throws -> (Data, HTTPURLResponse) { client.send }
     private let client: ScorebookClient
     private let defaults: UserDefaults
@@ -345,24 +349,67 @@ final class ScorebookStore: ObservableObject {
     private var generation = 0
     private var needsLoad = false
     private var damagedBackup = false
-    var canEdit: Bool { (teamID == nil || role?.allowsWrite == true) && loaded && !busy && !pending && !needsLoad && !damagedBackup }
-    var canSwitchTeam: Bool { loaded && !busy && !pending && !damagedBackup }
+    private var attemptedNight: Night?
+    private var checkingQueue = false
+    var canEdit: Bool { (teamID == nil || role?.allowsWrite == true) && loaded && !busy && (!pending || offlineQueue) && !needsLoad && !damagedBackup }
+    var canSwitchTeam: Bool { loaded && !busy && !checkingQueue && !pending && !damagedBackup }
     var shareURL: URL? { teamID.flatMap { URL(string: ScorebookClient.origin + "/?night=" + $0) } }
     var canMigrate: Bool { canEdit && teamID == nil && night == Night() && !legacy.isEmpty }
 
     init(client: ScorebookClient = ScorebookClient(), defaults: UserDefaults = .standard, directory: URL? = nil) {
-        self.client = client
-        self.defaults = defaults
+        self.client = client; self.defaults = defaults
+        // AppRoot supplies an account-scoped directory and defaults suite for signed-in users.
         self.directory = directory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Scorebooks", isDirectory: true)
     }
-
     private func backupURL(_ id: String?) -> URL { directory.appendingPathComponent((id ?? "local") + ".json") }
-    private func persist(_ value: Night, id: String?, revision: Int, pending: Bool) throws {
+    private func persist(_ value: Night, id: String?, revision: Int, pending: Bool, cachedRole: ScorebookRole?, offlineQueue: Bool = false, attemptedNight: Night? = nil) throws {
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            let data = try JSONEncoder().encode(ScorebookBackup(night: value.validated(), id: id, revision: revision, pending: pending))
+            let backup = ScorebookBackup(night: try value.validated(), id: id, revision: revision, pending: pending, cachedRole: cachedRole, offlineQueue: offlineQueue, attemptedNight: attemptedNight)
+            let data = try JSONEncoder().encode(backup)
             try data.write(to: backupURL(id), options: .atomic)
         } catch { throw ScorebookError.storage }
+    }
+    private func validateBackup(_ value: ScorebookBackup, id: String?) throws {
+        guard value.id == id, id == nil ? value.revision == 0 && !value.pending : value.revision > 0 else { throw ScorebookError.invalidData }
+        _ = try value.night.validated()
+        if let attempted = value.attemptedNight { guard value.pending else { throw ScorebookError.invalidData }; _ = try attempted.validated() }
+        if value.offlineQueue == true { guard id != nil, value.cachedRole?.allowsWrite == true else { throw ScorebookError.invalidData } }
+    }
+    private func restore(_ backup: ScorebookBackup) {
+        night = backup.night; revision = backup.revision; pending = backup.pending
+        role = backup.cachedRole; offlineQueue = backup.offlineQueue == true && role?.allowsWrite == true
+        attemptedNight = backup.attemptedNight
+        needsLoad = teamID != nil && !offlineQueue
+    }
+    private func connectivityFailure(_ failure: Error) -> Bool {
+        guard let failure = failure as? URLError else { return false }
+        return [.notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed, .dataNotAllowed, .internationalRoamingOff].contains(failure.code)
+    }
+    /// Only a positively identified connection failure enables offline edits. Auth/server/storage errors freeze.
+    private func handleFailure(_ failure: Error) {
+        let connectionOnly = connectivityFailure(failure)
+        if !connectionOnly, role?.allowsWrite == true { role = nil }
+        let canQueue = connectionOnly && role?.allowsWrite == true && teamID != nil && !damagedBackup
+        offlineQueue = false; needsLoad = teamID != nil
+        do {
+            if let id = teamID {
+                try persist(night, id: id, revision: revision, pending: pending, cachedRole: role, offlineQueue: canQueue, attemptedNight: attemptedNight)
+            }
+            offlineQueue = canQueue
+            if canQueue {
+                needsLoad = false
+                error = "You’re offline. Keep scoring; each change is saved on this device. The team updates when the connection returns."
+                status = pending ? "Offline. Scores queued on this device." : "Offline. Saved scores available."
+            } else {
+                error = failure.localizedDescription
+                status = pending ? "Sync needs attention. Scores backed up." : "Team unavailable. Scores are backed up."
+            }
+        } catch {
+            offlineQueue = false; needsLoad = teamID != nil
+            self.error = ScorebookError.storage.localizedDescription
+            status = "Backup needs attention"
+        }
     }
 
     func start() async {
@@ -375,41 +422,38 @@ final class ScorebookStore: ObservableObject {
         if FileManager.default.fileExists(atPath: url.path) {
             do {
                 let value = try JSONDecoder().decode(ScorebookBackup.self, from: Data(contentsOf: url))
-                guard value.id == teamID, teamID == nil ? value.revision == 0 && !value.pending : value.revision > 0 else { throw ScorebookError.invalidData }
-                night = try value.night.validated(); revision = value.revision; pending = value.pending
+                try validateBackup(value, id: teamID); restore(value)
             } catch {
                 damagedBackup = true
                 self.error = "The saved backup could not be read. It has been kept on this device. Restore it before continuing."
-                status = "Backup needs attention"
-                return
+                status = "Backup needs attention"; return
             }
         }
         if pending {
-            status = "Unsaved edit recovered"
-            error = "Your previous edit is backed up. Retry to check whether it reached the team, or review the latest team scores."
+            status = offlineQueue ? "Offline scores recovered. Keep scoring or retry sync." : "Unsaved edit recovered"
+            error = offlineQueue ? nil : "Your previous edit is backed up. Retry to check whether it reached the team, or review the latest team scores."
         } else if teamID != nil { await refresh(force: true) }
     }
 
     func refresh(force: Bool = false) async {
-        guard let id = teamID, !busy, !pending, !damagedBackup else { return }
+        guard let id = teamID, !busy, !checkingQueue, !damagedBackup else { return }
+        if pending {
+            if offlineQueue { await retry(background: true) }
+            return
+        }
         busy = true
         let ticket = generation
         defer { busy = false }
         do {
             let result = try await client.request("GET", id: id)
             guard ticket == generation, teamID == id, !pending else { return }
-            role = result.role
             guard result.revision >= revision else { throw ScorebookError.invalidData }
-            if force || result.revision > revision || needsLoad {
-                try persist(result.state, id: id, revision: result.revision, pending: false)
-                night = result.state; revision = result.revision
-            }
+            // Always persist permissions, even when no new revision was created.
+            try persist(result.state, id: id, revision: result.revision, pending: false, cachedRole: result.role)
+            role = result.role; night = result.state; revision = result.revision
+            offlineQueue = false; attemptedNight = nil
             needsLoad = false; error = nil; status = "Saved to team"
-        } catch {
-            needsLoad = true
-            self.error = error.localizedDescription
-            status = "Team unavailable. Scores are backed up."
-        }
+        } catch { if ticket == generation, teamID == id { handleFailure(error) } }
     }
 
     func openTeam(_ link: String) async {
@@ -418,24 +462,22 @@ final class ScorebookStore: ObservableObject {
         defer { busy = false }
         do {
             let id = try ScorebookClient.teamID(from: link)
-            // Recover this team's pending backup before any network read can replace it.
             let url = backupURL(id)
             if FileManager.default.fileExists(atPath: url.path) {
                 let saved = try JSONDecoder().decode(ScorebookBackup.self, from: Data(contentsOf: url))
-                _ = try saved.night.validated()
-                guard saved.id == id, saved.revision > 0 else { throw ScorebookError.invalidData }
+                try validateBackup(saved, id: id)
                 if saved.pending {
-                    role = nil
-                    teamID = id; night = saved.night; revision = saved.revision; pending = true; needsLoad = true
+                    teamID = id; restore(saved)
                     defaults.set(id, forKey: "strike-ceiling.shared-team.v2")
-                    status = "Unsaved edit recovered"; error = "This team's backed-up edit needs review or retry."
+                    status = offlineQueue ? "Offline scores recovered. Keep scoring or retry sync." : "Unsaved edit recovered"
+                    error = offlineQueue ? nil : "This team’s backed-up edit needs review or retry."
                     return
                 }
             }
             let result = try await client.request("GET", id: id)
-            try persist(result.state, id: id, revision: result.revision, pending: false)
-            role = result.role
-            teamID = id; night = result.state; revision = result.revision; pending = false; needsLoad = false
+            try persist(result.state, id: id, revision: result.revision, pending: false, cachedRole: result.role)
+            role = result.role; teamID = id; night = result.state; revision = result.revision
+            pending = false; needsLoad = false; offlineQueue = false; attemptedNight = nil
             defaults.set(id, forKey: "strike-ceiling.shared-team.v2")
             error = nil; status = "Saved to team"
         } catch { self.error = error.localizedDescription }
@@ -449,12 +491,14 @@ final class ScorebookStore: ObservableObject {
             let result = try await client.request("POST", state: night)
             let id = result.id!.lowercased()
             role = result.role
-            // Remember the created link even if the disk backup fails afterwards.
             teamID = id; revision = result.revision; night = result.state
             defaults.set(id, forKey: "strike-ceiling.shared-team.v2")
-            try persist(night, id: id, revision: revision, pending: false)
+            try persist(night, id: id, revision: revision, pending: false, cachedRole: role)
             error = nil; status = "Saved to team"
-        } catch { self.error = error.localizedDescription; status = "Could not finish sharing" }
+        } catch {
+            if teamID != nil { handleFailure(error) }
+            else { self.error = error.localizedDescription; status = "Could not finish sharing" }
+        }
     }
 
     func change(_ update: (inout Night) -> Void) async {
@@ -463,69 +507,93 @@ final class ScorebookStore: ObservableObject {
         do {
             _ = try next.validated()
             guard next != night else { return }
-            try persist(next, id: teamID, revision: revision, pending: teamID != nil)
+            try persist(next, id: teamID, revision: revision, pending: teamID != nil, cachedRole: role, offlineQueue: offlineQueue, attemptedNight: attemptedNight)
             night = next; generation += 1; error = nil
-            if teamID != nil { pending = true; await savePending() }
-            else { status = "Saved on this device" }
-        } catch { self.error = error.localizedDescription }
+            if teamID != nil {
+                pending = true
+                if offlineQueue { status = "Offline. Scores queued on this device." }
+                else { await savePending() }
+            } else { status = "Saved on this device" }
+        } catch {
+            self.error = error.localizedDescription
+            if case ScorebookError.storage = error { offlineQueue = false; role = nil; needsLoad = teamID != nil; status = "Backup needs attention" }
+        }
     }
 
     private func savePending() async {
         guard pending, let id = teamID, !busy else { return }
         guard role?.allowsWrite == true else {
-            error = "You can view this scorebook but cannot save edits. Your edit remains backed up. Ask the owner for edit access."
-            status = "Edit still backed up"
-            return
+            handleFailure(ScorebookError.server("You can view this scorebook but cannot save edits. Your scores remain backed up. Ask the owner for edit access.")); return
         }
         busy = true; status = "Saving to team…"
+        let sending = night; let baseRevision = revision
         defer { busy = false }
         do {
-            let result = try await client.request("PUT", id: id, state: night, revision: revision)
-            guard result.state == night, result.revision == revision + 1 else { throw ScorebookError.invalidData }
-            try persist(result.state, id: id, revision: result.revision, pending: false)
-            if let updatedRole = result.role { role = updatedRole }
-            revision = result.revision; pending = false; needsLoad = false; error = nil; status = "Saved to team"
-        } catch { self.error = error.localizedDescription; status = "Not saved to team. Edit backed up." }
+            // Record exactly what may reach the server before sending it. New offline edits retain this snapshot.
+            try persist(sending, id: id, revision: baseRevision, pending: true, cachedRole: role, offlineQueue: offlineQueue, attemptedNight: sending)
+            attemptedNight = sending
+            let result = try await client.request("PUT", id: id, state: sending, revision: baseRevision)
+            guard result.state == sending, result.revision == baseRevision + 1 else { throw ScorebookError.invalidData }
+            let newRole = result.role ?? role
+            try persist(result.state, id: id, revision: result.revision, pending: false, cachedRole: newRole)
+            role = newRole; revision = result.revision; pending = false; offlineQueue = false; attemptedNight = nil
+            needsLoad = false; error = nil; status = "Saved to team"
+        } catch { handleFailure(error) }
     }
 
-    func retry() async {
-        guard !busy, !damagedBackup else { return }
+    /// Background GET checks do not block offline scoring. A local edit invalidates the response.
+    func retry(background: Bool = false) async {
+        guard !busy, !checkingQueue, !damagedBackup else { return }
         guard pending, let id = teamID else { await refresh(force: true); return }
-        busy = true
+        checkingQueue = true
+        let ticket = generation
+        let backgroundCheck = background && offlineQueue
+        if !backgroundCheck { busy = true }
+        defer { checkingQueue = false; busy = false }
         do {
             let result = try await client.request("GET", id: id)
+            guard generation == ticket, teamID == id, pending else { return }
+            busy = true
             role = result.role
             if result.state == night, result.revision >= revision {
-                // The server may have saved a PUT whose response was lost.
-                try persist(result.state, id: id, revision: result.revision, pending: false)
-                revision = result.revision; pending = false; needsLoad = false; error = nil; status = "Saved to team"
-            } else if result.revision != revision {
-                throw ScorebookError.conflict
+                try persist(result.state, id: id, revision: result.revision, pending: false, cachedRole: result.role)
+                revision = result.revision; pending = false; needsLoad = false; offlineQueue = false; attemptedNight = nil
+                error = nil; status = "Saved to team"; return
             }
+            guard role?.allowsWrite == true else {
+                throw ScorebookError.server("You can view this scorebook but cannot save edits. Your scores remain backed up. Ask the owner for edit access.")
+            }
+            if result.revision == revision + 1, let attempted = attemptedNight, result.state == attempted {
+                // Only our recorded in-flight snapshot can safely advance the base under a newer queue.
+                try persist(night, id: id, revision: result.revision, pending: true, cachedRole: result.role, offlineQueue: offlineQueue)
+                revision = result.revision; attemptedNight = nil
+            } else if result.revision != revision { throw ScorebookError.conflict }
+            needsLoad = false
             busy = false
-            if pending {
-                guard role?.allowsWrite == true else { throw ScorebookError.server("You can view this scorebook but cannot save edits. Your edit remains backed up. Ask the owner for edit access.") }
-                await savePending()
-            }
-        } catch { busy = false; self.error = error.localizedDescription; status = "Edit still backed up" }
+            await savePending()
+        } catch {
+            guard generation == ticket, teamID == id else { return }
+            handleFailure(error)
+        }
     }
 
     // Explicitly invoked only after the user confirms discarding their pending edit.
     func discardAndReload() async {
-        guard let id = teamID, !busy, !damagedBackup else { return }
+        guard let id = teamID, !busy, !checkingQueue, !damagedBackup else { return }
         busy = true; generation += 1
         defer { busy = false }
         do {
             let result = try await client.request("GET", id: id)
-            role = result.role
             if pending {
-                let data = try JSONEncoder().encode(ScorebookBackup(night: night, id: id, revision: revision, pending: true))
+                let backup = ScorebookBackup(night: night, id: id, revision: revision, pending: true, cachedRole: role, offlineQueue: offlineQueue, attemptedNight: attemptedNight)
+                let data = try JSONEncoder().encode(backup)
                 try data.write(to: directory.appendingPathComponent("discarded-\(UUID().uuidString).json"), options: .atomic)
             }
-            try persist(result.state, id: id, revision: result.revision, pending: false)
-            night = result.state; revision = result.revision; pending = false; needsLoad = false
+            try persist(result.state, id: id, revision: result.revision, pending: false, cachedRole: result.role)
+            role = result.role; night = result.state; revision = result.revision; pending = false
+            needsLoad = false; offlineQueue = false; attemptedNight = nil
             status = "Saved to team"; error = nil
-        } catch { self.error = error.localizedDescription }
+        } catch { handleFailure(error) }
     }
 
     func migrateLegacy() async {

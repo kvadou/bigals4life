@@ -18,7 +18,9 @@
 		4C4BB6F6CA8D5B7C3FBCC547 /* VoiceEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3288926755D1F7D450F5D50C /* VoiceEntryView.swift */; };
 		4FE1835D1327378CE3C5A928 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 21D9127AD2739D1BC5EBFE54 /* PrivacyInfo.xcprivacy */; };
 		516B56B5FFCA45366CF6B06E /* NativeFixtureSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E2A7AEB2D6266455A12E57 /* NativeFixtureSession.swift */; };
+		B445FC795CFC34EF8DB4B3D1 /* TonightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE683751CC347C2EC6E22B6 /* TonightView.swift */; };
 		BF0B72A4A238461A2E5CD90B /* WeekGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67D72ACB8DDDDBA61E155DFE /* WeekGameView.swift */; };
+		C141769DCF585FB5DCB83E35 /* ReviewDraftStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ED8500D4884814BFC5420E1 /* ReviewDraftStorage.swift */; };
 		CAE9C9F34EEF05DBAB294F8D /* AccountSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8791C06DCCCBE23B5207885F /* AccountSession.swift */; };
 		CD5925D8BDBCEB51A1AA2967 /* SeasonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0EF0F16C07849CD496B575 /* SeasonView.swift */; };
 		DF1192B136E1FFB2590D38AD /* MatchSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12B3AA69798C69544A9A071C /* MatchSetupView.swift */; };
@@ -41,8 +43,10 @@
 		67D72ACB8DDDDBA61E155DFE /* WeekGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekGameView.swift; sourceTree = "<group>"; };
 		69E2A7AEB2D6266455A12E57 /* NativeFixtureSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeFixtureSession.swift; sourceTree = "<group>"; };
 		7D0EF0F16C07849CD496B575 /* SeasonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonView.swift; sourceTree = "<group>"; };
+		7ED8500D4884814BFC5420E1 /* ReviewDraftStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewDraftStorage.swift; sourceTree = "<group>"; };
 		8791C06DCCCBE23B5207885F /* AccountSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSession.swift; sourceTree = "<group>"; };
 		885C48085CB9E77974D1662D /* TeamAccessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamAccessView.swift; sourceTree = "<group>"; };
+		8CE683751CC347C2EC6E22B6 /* TonightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonightView.swift; sourceTree = "<group>"; };
 		989053A7A8B4FDC93729C522 /* BA4L.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BA4L.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9D59FD0C883D0D1A492D7B16 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingGame.swift; sourceTree = "<group>"; };
@@ -71,11 +75,13 @@
 				EE8FBC563B1D088E580EEC17 /* MatchInsightsView.swift */,
 				12B3AA69798C69544A9A071C /* MatchSetupView.swift */,
 				69E2A7AEB2D6266455A12E57 /* NativeFixtureSession.swift */,
+				7ED8500D4884814BFC5420E1 /* ReviewDraftStorage.swift */,
 				1C402694017885D21C956CF0 /* ReviewView.swift */,
 				4950602E37FA9B9887F22AD9 /* ScoreboardScan.swift */,
 				7D0EF0F16C07849CD496B575 /* SeasonView.swift */,
 				F6B33F7EF1FD008BC8E6191A /* StrikeCeilingApp.swift */,
 				885C48085CB9E77974D1662D /* TeamAccessView.swift */,
+				8CE683751CC347C2EC6E22B6 /* TonightView.swift */,
 				3288926755D1F7D450F5D50C /* VoiceEntryView.swift */,
 				11EC059B3D0B54FD92BD7320 /* VoiceRoll.swift */,
 				67D72ACB8DDDDBA61E155DFE /* WeekGameView.swift */,
@@ -189,11 +195,13 @@
 				3641594612B63853B8F7C85D /* MatchInsightsView.swift in Sources */,
 				DF1192B136E1FFB2590D38AD /* MatchSetupView.swift in Sources */,
 				516B56B5FFCA45366CF6B06E /* NativeFixtureSession.swift in Sources */,
+				C141769DCF585FB5DCB83E35 /* ReviewDraftStorage.swift in Sources */,
 				19F795C6CDC26AAD73091C71 /* ReviewView.swift in Sources */,
 				F36065580D9D48C599D7A24E /* ScoreboardScan.swift in Sources */,
 				CD5925D8BDBCEB51A1AA2967 /* SeasonView.swift in Sources */,
 				30FC21369A61A02A2EC6A518 /* StrikeCeilingApp.swift in Sources */,
 				E4302FA1816B37ACF941E63B /* TeamAccessView.swift in Sources */,
+				B445FC795CFC34EF8DB4B3D1 /* TonightView.swift in Sources */,
 				4C4BB6F6CA8D5B7C3FBCC547 /* VoiceEntryView.swift in Sources */,
 				F1E0B1ABBB90B10890BCD0C5 /* VoiceRoll.swift in Sources */,
 				BF0B72A4A238461A2E5CD90B /* WeekGameView.swift in Sources */,
