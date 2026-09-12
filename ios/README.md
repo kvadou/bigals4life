@@ -1,22 +1,33 @@
 # BA4L
 
-Native SwiftUI iOS 17+ bowling companion sharing the web app's team scorebooks. Tracks Doug, Mustafa, Kyle and Pete, with scorecards, maximum possible finishes, team totals, final-only scores, undo, game history, and next-game transitions for all four bowlers.
+Native SwiftUI iOS 17+ companion for iPhone and iPad. The app uses the same Supabase identity and HTTPS APIs as bigals4life.com. It does not have a separate league database.
 
-Tap **Team**, then paste the web app's **Share team link** to open the same scores. Alternatively, **Save & share with team** creates a new scorebook. Opening an HTTPS link in Safari does not automatically launch the native app; paste it into Team. The selected team resumes after relaunch. Foreground polling refreshes every five seconds.
+## Account and score discovery
 
-Local mode works without a connection. Shared edits are backed up atomically before sending and use the server's revision checks. Failed saves pause editing. Retry recognizes a saved request whose response was lost; it never overwrites a newer conflicting team revision. Discard/reload requires confirmation and retains a recovery archive. Backups live in the app's Application Support/Scorebooks directory. Unreadable backups block edits and are preserved for manual recovery.
+Sign in with the same email code or password as the web app. Season discovers the account's shared nights, including earlier weeks and pre-bowls. A fresh empty account workspace opens its latest recorded night automatically. Uninvited accounts wait for team access. Canonical and legacy scorebook links can still be pasted into Score > Team; HTTPS links do not automatically launch the app.
 
-Original iPhone scorecards remain in their existing local archive. On an empty local scorebook, **Original device scorecards** offers explicit import by bowler name. Additional names remain in the archive. Existing shared team scores are not migrated or overwritten.
+Tokens use Keychain, refresh through Supabase, and are only sent to the canonical BA4L API. Only the public Supabase URL/anonymous client key are bundled. Run `bun ios/Tools/configure-auth.ts` before the first Xcode build; it reads the existing public web key into ignored `ios/Config/LocalAuth.xcconfig`. The TestFlight helper runs this automatically. Service-role credentials are never included. Account-specific defaults and backup directories prevent pending edits being attributed to another account. Sign-out keeps the web session intact.
 
-Phase 1 is implemented, plus camera scoreboard scanning (`ScoreboardScan.swift`): a photo goes to the web app's `/api/scoreboard` reader, rows are re-validated against `BowlingGame`, assigned to bowlers, and applied through `store.change`. Camera and photo-library usage strings are set in `project.yml`. Native league standings and voice entry remain later phases. The web match metadata (lineups, handicaps, and opponent scores) is preserved through native edits and new games; native match entry is not part of this phase. No Supabase credentials are bundled; the native client uses the same HTTPS API and team-link access as the web app.
+## Native features
 
-Open `BA4L.xcodeproj` in Xcode. Automatic signing uses the same Apple Developer team as PMV and Jot. The bundle identifier remains `com.dougkvamme.StrikeCeiling` so the name change preserves existing device data. Display name, Xcode target/scheme, and product name are BA4L.
+- Season/week/game navigation with individual totals, points, and frame-by-frame history.
+- Scorecards, pin entry, finals, undo, next game, and authenticated camera scanning.
+- Match setup, ordered lineup, handicaps, opponent scores, pre-bowling and beer numbers.
+- Local live match points, target tracking, and lineup coaching from the existing web API.
+- League standings, roster, recap, records and bowler careers.
+- Bowling Bro' review notes, tags, lane context, arsenal and saved coaching conversations.
+- Explicit team invitations/legacy claiming, password changes, and account sign-out.
+- Dictated or typed roll entry using the native keyboard, with preview and stale-score protection.
 
-Regenerate the project with `xcodegen generate`. From the repository root, run `bun ios/Tests/run.ts` for deterministic scoring parity, mocked networking/persistence/conflict tests, and native request validation against the actual web schema. Requires Xcode command-line tools, Bun, and installed web dependencies.
+Shared score edits are atomically backed up before sending. Revision conflicts and failed saves stop edits and preserve recovery data. Viewer roles cannot edit or retry a pending write. Original pre-account scorecards are accessible read-only from Account > Original device scorecards, with export for recovery. They are not automatically imported into an account. Review drafts currently remain in screen memory until successfully saved; offline review draft persistence is not implemented.
 
-Verified 2026-09-10: simulator build; 3,162 web-generated scoring fixtures and 209,588 assertions; six native request bodies accepted by the web schema. In an isolated live test scorebook, web-to-iOS and iOS-to-web rolls, next-game/history, team-link entry, relaunch, final-only totals, and preservation of nullable metadata were checked. Large accessibility text and dark mode were inspected. Web counterpart passed `pw-verify` with screenshot inspection. [runtime-tested]
+The bundle identifier remains `com.dougkvamme.StrikeCeiling`, preserving upgrades and original device data. Regenerate from repository root using `xcodegen generate --spec ios/project.yml`.
 
-Signing and TestFlight upload are configured. Physical-phone testing remains separate from simulator verification.
+## Verification and release status
+
+Run `bun ios/Tests/run.ts` for scoring/store, account security/lifecycle, voice entry, model contract, web-schema payload and match-point parity tests. Tests use synthetic responses, not production accounts. The DEBUG-only simulator fixture transport cannot use real networking and is excluded from Release builds.
+
+2026-09-12: gap analysis confirmed Week 1 on the signed-in website, team series 1849 and match 26-10. Native/API tests and simulator checks cover the new feature surfaces. See `docs/plans/2026-09-12-native-feature-parity.md` for final evidence. Build 5 is prepared for review; build 4 remains the last released TestFlight build. Real-account native login and physical-device camera/dictation remain field verification. Authentication changes require Doug's review before push, deployment or upload.
 
 ## TestFlight release
 

@@ -18,3 +18,6 @@ web/.playwright-mcp/
 docs/design/ba4l-league-first.html
 docs/design/*.png
 /.playwright-cli/
+
+# Local build configuration, generated from the web public client key
+ios/Config/LocalAuth.xcconfig

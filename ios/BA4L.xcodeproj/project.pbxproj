@@ -7,19 +7,46 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		19F795C6CDC26AAD73091C71 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C402694017885D21C956CF0 /* ReviewView.swift */; };
 		2D4B4EE47B862B0A40AAE868 /* BowlingGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */; };
 		30FC21369A61A02A2EC6A518 /* StrikeCeilingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B33F7EF1FD008BC8E6191A /* StrikeCeilingApp.swift */; };
+		348FD5B11283E8BF90B7A9B1 /* LeagueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF0ECC12F4A119D99AFFC69 /* LeagueView.swift */; };
+		3641594612B63853B8F7C85D /* MatchInsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8FBC563B1D088E580EEC17 /* MatchInsightsView.swift */; };
 		48B9113A6D80EC7ACA9DC506 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9D59FD0C883D0D1A492D7B16 /* Assets.xcassets */; };
+		4A058540C83DA00358EA083D /* DeviceArchiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2805C0AEAC8D2A46898B1467 /* DeviceArchiveView.swift */; };
+		4BED72B1BF9A43A311308097 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CF060769FA1850A56AA9E5E /* AppRootView.swift */; };
+		4C4BB6F6CA8D5B7C3FBCC547 /* VoiceEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3288926755D1F7D450F5D50C /* VoiceEntryView.swift */; };
 		4FE1835D1327378CE3C5A928 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 21D9127AD2739D1BC5EBFE54 /* PrivacyInfo.xcprivacy */; };
+		516B56B5FFCA45366CF6B06E /* NativeFixtureSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E2A7AEB2D6266455A12E57 /* NativeFixtureSession.swift */; };
+		BF0B72A4A238461A2E5CD90B /* WeekGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67D72ACB8DDDDBA61E155DFE /* WeekGameView.swift */; };
+		CAE9C9F34EEF05DBAB294F8D /* AccountSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8791C06DCCCBE23B5207885F /* AccountSession.swift */; };
+		CD5925D8BDBCEB51A1AA2967 /* SeasonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0EF0F16C07849CD496B575 /* SeasonView.swift */; };
+		DF1192B136E1FFB2590D38AD /* MatchSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12B3AA69798C69544A9A071C /* MatchSetupView.swift */; };
+		E4302FA1816B37ACF941E63B /* TeamAccessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 885C48085CB9E77974D1662D /* TeamAccessView.swift */; };
+		F1E0B1ABBB90B10890BCD0C5 /* VoiceRoll.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11EC059B3D0B54FD92BD7320 /* VoiceRoll.swift */; };
 		F36065580D9D48C599D7A24E /* ScoreboardScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4950602E37FA9B9887F22AD9 /* ScoreboardScan.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		11EC059B3D0B54FD92BD7320 /* VoiceRoll.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceRoll.swift; sourceTree = "<group>"; };
+		12B3AA69798C69544A9A071C /* MatchSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchSetupView.swift; sourceTree = "<group>"; };
+		135628B3BBFAE1BAF388C103 /* Auth.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Auth.xcconfig; sourceTree = "<group>"; };
+		1C402694017885D21C956CF0 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		21D9127AD2739D1BC5EBFE54 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		2805C0AEAC8D2A46898B1467 /* DeviceArchiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceArchiveView.swift; sourceTree = "<group>"; };
+		3288926755D1F7D450F5D50C /* VoiceEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceEntryView.swift; sourceTree = "<group>"; };
+		3CF060769FA1850A56AA9E5E /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
 		4950602E37FA9B9887F22AD9 /* ScoreboardScan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreboardScan.swift; sourceTree = "<group>"; };
+		5FF0ECC12F4A119D99AFFC69 /* LeagueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeagueView.swift; sourceTree = "<group>"; };
+		67D72ACB8DDDDBA61E155DFE /* WeekGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekGameView.swift; sourceTree = "<group>"; };
+		69E2A7AEB2D6266455A12E57 /* NativeFixtureSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeFixtureSession.swift; sourceTree = "<group>"; };
+		7D0EF0F16C07849CD496B575 /* SeasonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonView.swift; sourceTree = "<group>"; };
+		8791C06DCCCBE23B5207885F /* AccountSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSession.swift; sourceTree = "<group>"; };
+		885C48085CB9E77974D1662D /* TeamAccessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamAccessView.swift; sourceTree = "<group>"; };
 		989053A7A8B4FDC93729C522 /* BA4L.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BA4L.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9D59FD0C883D0D1A492D7B16 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingGame.swift; sourceTree = "<group>"; };
+		EE8FBC563B1D088E580EEC17 /* MatchInsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchInsightsView.swift; sourceTree = "<group>"; };
 		F6B33F7EF1FD008BC8E6191A /* StrikeCeilingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikeCeilingApp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -36,11 +63,32 @@
 		9419FF954E7237E913D9ED87 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				8791C06DCCCBE23B5207885F /* AccountSession.swift */,
+				3CF060769FA1850A56AA9E5E /* AppRootView.swift */,
 				EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */,
+				2805C0AEAC8D2A46898B1467 /* DeviceArchiveView.swift */,
+				5FF0ECC12F4A119D99AFFC69 /* LeagueView.swift */,
+				EE8FBC563B1D088E580EEC17 /* MatchInsightsView.swift */,
+				12B3AA69798C69544A9A071C /* MatchSetupView.swift */,
+				69E2A7AEB2D6266455A12E57 /* NativeFixtureSession.swift */,
+				1C402694017885D21C956CF0 /* ReviewView.swift */,
 				4950602E37FA9B9887F22AD9 /* ScoreboardScan.swift */,
+				7D0EF0F16C07849CD496B575 /* SeasonView.swift */,
 				F6B33F7EF1FD008BC8E6191A /* StrikeCeilingApp.swift */,
+				885C48085CB9E77974D1662D /* TeamAccessView.swift */,
+				3288926755D1F7D450F5D50C /* VoiceEntryView.swift */,
+				11EC059B3D0B54FD92BD7320 /* VoiceRoll.swift */,
+				67D72ACB8DDDDBA61E155DFE /* WeekGameView.swift */,
 			);
 			path = Sources;
+			sourceTree = "<group>";
+		};
+		CAFCB90B5421336DDA9E43E8 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				135628B3BBFAE1BAF388C103 /* Auth.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		D9B6259F78F11346C8215D11 /* Products */ = {
@@ -54,6 +102,7 @@
 		E01CC4E5C6F96774AACB91D4 = {
 			isa = PBXGroup;
 			children = (
+				CAFCB90B5421336DDA9E43E8 /* Config */,
 				2B19E23A300FFF6C53E605FA /* Resources */,
 				9419FF954E7237E913D9ED87 /* Sources */,
 				D9B6259F78F11346C8215D11 /* Products */,
@@ -132,9 +181,22 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CAE9C9F34EEF05DBAB294F8D /* AccountSession.swift in Sources */,
+				4BED72B1BF9A43A311308097 /* AppRootView.swift in Sources */,
 				2D4B4EE47B862B0A40AAE868 /* BowlingGame.swift in Sources */,
+				4A058540C83DA00358EA083D /* DeviceArchiveView.swift in Sources */,
+				348FD5B11283E8BF90B7A9B1 /* LeagueView.swift in Sources */,
+				3641594612B63853B8F7C85D /* MatchInsightsView.swift in Sources */,
+				DF1192B136E1FFB2590D38AD /* MatchSetupView.swift in Sources */,
+				516B56B5FFCA45366CF6B06E /* NativeFixtureSession.swift in Sources */,
+				19F795C6CDC26AAD73091C71 /* ReviewView.swift in Sources */,
 				F36065580D9D48C599D7A24E /* ScoreboardScan.swift in Sources */,
+				CD5925D8BDBCEB51A1AA2967 /* SeasonView.swift in Sources */,
 				30FC21369A61A02A2EC6A518 /* StrikeCeilingApp.swift in Sources */,
+				E4302FA1816B37ACF941E63B /* TeamAccessView.swift in Sources */,
+				4C4BB6F6CA8D5B7C3FBCC547 /* VoiceEntryView.swift in Sources */,
+				F1E0B1ABBB90B10890BCD0C5 /* VoiceRoll.swift in Sources */,
+				BF0B72A4A238461A2E5CD90B /* WeekGameView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -176,7 +238,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = FM45AMFBNY;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -210,6 +272,7 @@
 		};
 		38F4C159BF0FFC88BD5019E6 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 135628B3BBFAE1BAF388C103 /* Auth.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -265,7 +328,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = FM45AMFBNY;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -292,6 +355,7 @@
 		};
 		8D7E4689B8A655BA4E3E68A0 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 135628B3BBFAE1BAF388C103 /* Auth.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";

@@ -1,0 +1,2 @@
+// Generated locally by bun ios/Tools/configure-auth.ts. Never store server keys here.
+#include "LocalAuth.xcconfig"

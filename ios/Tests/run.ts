@@ -26,6 +26,14 @@ try {
   run("swiftc", ["-O", "ios/Sources/BowlingGame.swift", "ios/Tests/main.swift", "-o", binary]);
   run(binary, []);
   run("bun", ["ios/Tests/validate-scorebook-payloads.ts", payloads]);
+  const authBinary = join(scratch, "account-tests");
+  run("swiftc", ["-parse-as-library", "ios/Sources/AccountSession.swift", "ios/Tests/account-session.swift", "-o", authBinary]);
+  run(authBinary, []);
+  const voiceBinary = join(scratch, "voice-tests");
+  run("swiftc", ["-parse-as-library", "ios/Sources/BowlingGame.swift", "ios/Sources/VoiceRoll.swift", "ios/Tests/voice-roll.swift", "-o", voiceBinary]);
+  run(voiceBinary, []);
+  run("bun", ["ios/Tests/models.ts"]);
+  run("bun", ["ios/Tests/match-insights.ts"]);
 } finally {
   rmSync(scratch, { recursive: true, force: true });
 }

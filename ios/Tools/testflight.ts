@@ -84,6 +84,7 @@ if (command === "register-bundle") {
   const archive = join(output, "BA4L.xcarchive");
   const authentication = ["-authenticationKeyPath", keyPath, "-authenticationKeyID", keyID, "-authenticationKeyIssuerID", issuer];
   console.log(`Archiving BA4L build ${build}. Logs: ${output}`);
+  execute("bun", ["Tools/configure-auth.ts"], join(output, "auth-config.log"));
   execute("xcodegen", ["generate"], join(output, "generate.log"));
   execute("xcodebuild", ["-project", "BA4L.xcodeproj", "-scheme", "BA4L", "-configuration", "Release", "-destination", "generic/platform=iOS", "-archivePath", archive, "-allowProvisioningUpdates", ...authentication, "archive"], join(output, "archive.log"));
   if (!existsSync(join(archive, "Products/Applications/BA4L.app/PrivacyInfo.xcprivacy"))) throw Error("Archive is missing the required privacy manifest; upload stopped.");

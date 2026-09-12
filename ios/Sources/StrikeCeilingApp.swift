@@ -3,11 +3,11 @@ import UIKit
 
 @main
 struct BA4LApp: App {
-    var body: some Scene { WindowGroup { ScoreboardView() } }
+    var body: some Scene { WindowGroup { AppRootView() } }
 }
 
 struct ScoreboardView: View {
-    @StateObject private var store = ScorebookStore()
+    @ObservedObject var store: ScorebookStore
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -19,6 +19,8 @@ struct ScoreboardView: View {
     @State private var showTeam = false
     @State private var showLegacy = false
     @State private var showScan = false
+    @State private var showMatch = false
+    @State private var showVoice = false
     @State private var link = ""
     @State private var sheetError: String?
 
@@ -87,7 +89,9 @@ struct ScoreboardView: View {
             }
             .sheet(isPresented: $showTeam) { teamSheet }
             .sheet(isPresented: $showLegacy) { legacySheet }
-            .sheet(isPresented: $showScan) { ScanSheet(store: store) }
+            .sheet(isPresented: $showVoice) { VoiceEntryView(store: store) }
+            .sheet(isPresented: $showMatch) { MatchSetupView(store: store) }
+            .sheet(isPresented: $showScan) { ScanSheet(store: store, scanner: ScoreboardScanner(send: store.transport)) }
             .tint(BA4LTheme.tint)
         }
     }
@@ -95,12 +99,15 @@ struct ScoreboardView: View {
     @ViewBuilder
     private var gameSections: some View {
         scoreSection
+        Section { Button("Match, pre-bowl & targets", systemImage: "slider.horizontal.3") { showMatch = true }.disabled(!store.canEdit) }
         if !complete { entrySection }
         Section {
+            Button("Say a roll", systemImage: "mic") { showVoice = true }.disabled(!store.canEdit)
             Button("Scan the scoreboard", systemImage: "camera.viewfinder") { showScan = true }
                 .disabled(!store.canEdit)
                 .accessibilityIdentifier("scanButton")
         } footer: { Text("Take a photo of the lane monitor. Review the rolls, then apply them to the current game.") }
+        Section { NavigationLink("Match points & lineup") { MatchInsightsView(store: store, send: store.transport) } }
         framesSection
         Section {
             Button("Undo last roll", systemImage: "arrow.uturn.backward") {
@@ -134,6 +141,7 @@ struct ScoreboardView: View {
                 .font(.subheadline)
                 .foregroundStyle(store.pending || store.error != nil ? Color.orange : Color.secondary)
                 .accessibilityIdentifier("syncStatus")
+            if store.role == .viewer { Label("View-only access", systemImage: "eye").font(.subheadline) }
             if let error = store.error {
                 Text(error).font(.callout).foregroundStyle(.red).accessibilityIdentifier("syncError")
                 Button("Retry save / load") { Task { await store.retry() } }.disabled(store.busy)
@@ -379,12 +387,6 @@ struct HistoryView: View {
 
 /// A forest tint in daylight, a readable sage tint in dark bowling alleys.
 enum BA4LTheme {
-    static let onTint = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark ? .black : .white
-    })
-    static let tint = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.70, green: 0.84, blue: 0.56, alpha: 1)
-            : UIColor(red: 0.18, green: 0.33, blue: 0.24, alpha: 1)
-    })
+    static let onTint = Color("OnBrandGreen")
+    static let tint = Color("BrandGreen")
 }

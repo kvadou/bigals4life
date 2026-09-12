@@ -1,4 +1,4 @@
-import { enforcing, identify, unauthorized } from "@/lib/auth-server";
+import { enforcing, identify, isTeammate, unauthorized } from "@/lib/auth-server";
 import { database, readUpdate, sameOrigin } from "@/lib/scorebook-server";
 const recent = new Map<string, number>();
 
@@ -6,6 +6,8 @@ export async function POST(request: Request) {
   const identity = await identify(request);
   if ((!identity || identity.viaCookie) && !sameOrigin(request)) return Response.json({ error: "Use the website to create a scorebook." }, { status: 403 });
   if (!identity && enforcing()) return unauthorized("Sign in to create a shared scorebook.");
+  // Creating ownership must not let a newly registered account grant itself league membership.
+  if (identity && !await isTeammate(identity)) return Response.json({ error: "Ask Doug to add you to the team before creating a scorebook." }, { status: 403 });
   const key = identity?.user.id ?? request.headers.get("x-vercel-forwarded-for")?.split(",")[0] ?? "local";
   const now = Date.now(); for (const [k, until] of recent) if (until < now) recent.delete(k);
   if (recent.has(key)) return Response.json({ error: "Please wait a minute before creating another scorebook." }, { status: 429 });

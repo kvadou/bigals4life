@@ -91,6 +91,7 @@ final class TestServer {
     let id = "bf5be0eb-8fdb-4a20-a8dd-3b19b59ad95f"
     var state = Night()
     var revision = 1
+    var role: ScorebookRole = .editor
     var offline = false
     var loseNextAcknowledgement = false
     var requests: [URLRequest] = []
@@ -102,7 +103,7 @@ final class TestServer {
         if let delay { await delay() }
         if offline { throw URLError(.notConnectedToInternet) }
         expect(request.value(forHTTPHeaderField: "Origin") == ScorebookClient.origin, "Native request has canonical Origin")
-        expect(request.url?.host == "strike-ceiling-web.vercel.app", "Native transport host")
+        expect(request.url?.host == "bigals4life.com", "Native transport host")
         if request.url?.lastPathComponent == missingTeamID {
             return (Data("{\"error\":\"Team scorebook not found.\"}".utf8), HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: nil)!)
         }
@@ -120,7 +121,7 @@ final class TestServer {
             state = try JSONDecoder().decode(Night.self, from: JSONSerialization.data(withJSONObject: object["state"]!))
             status = 201
         }
-        let body = try overrideData ?? JSONEncoder().encode(SharedScorebook(id: request.httpMethod == "POST" ? id : nil, state: state, revision: revision))
+        let body = try overrideData ?? JSONEncoder().encode(SharedScorebook(id: request.httpMethod == "POST" ? id : nil, state: state, revision: revision, role: request.httpMethod == "PUT" ? nil : role))
         return (body, HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!)
     }
 }
@@ -146,8 +147,26 @@ func runScorebookTests() async throws {
     let link = ScorebookClient.origin + "/?night=" + server.id
     let parsedID = try ScorebookClient.teamID(from: link)
     expect(parsedID == server.id, "Canonical team link")
-    for invalid in ["http://strike-ceiling-web.vercel.app/?night=\(server.id)", "https://evil.test/?night=\(server.id)", "https://strike-ceiling-web.vercel.app/league?night=\(server.id)", link + "&night=" + server.id, ScorebookClient.origin + "/?night=no", "https://user@strike-ceiling-web.vercel.app/?night=\(server.id)"] {
-        expectThrows("Reject unsafe or ambiguous team link") { _ = try ScorebookClient.teamID(from: invalid) }
+    for host in ["bigals4life.com", "strike-ceiling-web.vercel.app"] {
+        for path in ["/?night=", "/night?night=", "/season/", "/review/"] {
+            let parsed = try ScorebookClient.teamID(from: "https://" + host + path + server.id)
+            expect(parsed == server.id, "Current and legacy night/week/review links")
+        }
+    }
+    let reviewID = try ScorebookClient.teamID(from: ScorebookClient.origin + "/review/" + server.id + "?bowler=2")
+    expect(reviewID == server.id, "Bowler review link resolves its night")
+    for invalid in [
+        "http://bigals4life.com/?night=\(server.id)", "https://evil.test/?night=\(server.id)",
+        "https://bigals4life.com.evil.test/?night=\(server.id)", "https://bigals4life.com:443/?night=\(server.id)",
+        "https://user@bigals4life.com/?night=\(server.id)", "https://bigals4life.com/league?night=\(server.id)",
+        link + "&night=" + server.id, link + "&redirect=evil", link + "#night=other", ScorebookClient.origin + "/?night=no",
+        ScorebookClient.origin + "/season//" + server.id, ScorebookClient.origin + "/season/" + server.id + "/",
+        ScorebookClient.origin + "/season/" + server.id + "?night=" + server.id,
+        ScorebookClient.origin + "/review/" + server.id + "?bowler=4", ScorebookClient.origin + "/review/" + server.id + "?bowler=1&bowler=2",
+        ScorebookClient.origin + "/season%2F" + server.id, ScorebookClient.origin + "/night/../?night=" + server.id,
+        ScorebookClient.origin + "/review/" + server.id + "/game/1"
+    ] {
+        expectThrows("Reject unsafe or ambiguous team link: \(invalid)") { _ = try ScorebookClient.teamID(from: invalid) }
     }
     let minimal = Data("{\"game\":1,\"rolls\":[[],[],[],[]],\"history\":[]}".utf8)
     let decodedMinimal = try JSONDecoder().decode(Night.self, from: minimal).validated()
@@ -165,13 +184,18 @@ func runScorebookTests() async throws {
         season: "2026-27", week: 2,
         opponent: MatchOpponent(number: 7, name: "Test Opponent", bowlers: [MatchBowler(name: "Alex", handicap: 32), MatchBowler(name: "Sam", handicap: 0)]),
         ours: Night.names.enumerated().map { MatchBowler(name: $0.element, handicap: $0.offset * 10) },
-        opponentGames: [[145, nil], [nil, 201], []]
+        opponentGames: [[145, nil], [nil, 201], []], lane: .even
     )
     invalid = Night(); invalid.match = leagueMatch; invalid.match?.ours[0].handicap = 121
     expectThrows("Reject out-of-range match handicap") { _ = try invalid.validated() }
     invalid = Night(); invalid.match = leagueMatch; invalid.match?.opponentGames[0][0] = 301
     expectThrows("Reject out-of-range opponent scratch score") { _ = try invalid.validated() }
 
+    let prebowl = Prebowl(week: 2, bowlers: [0, 2])
+    for bad in [Prebowl(week: 0, bowlers: [0]), Prebowl(week: 61, bowlers: [0]), Prebowl(week: 1, bowlers: []), Prebowl(week: 1, bowlers: [4]), Prebowl(week: 1, bowlers: [-1]), Prebowl(week: 1, bowlers: [0, 1, 2, 3, 0])] {
+        invalid = Night(); invalid.prebowl = bad
+        expectThrows("Reject invalid prebowl week or slots") { _ = try invalid.validated() }
+    }
     let store = ScorebookStore(client: client, defaults: defaults, directory: root)
     await store.start()
     expect(store.canEdit && store.teamID == nil, "Fresh local store editable")
@@ -182,6 +206,7 @@ func runScorebookTests() async throws {
         $0.history = [RecordedGame(game: 1, rolls: [[], [], [], []], finals: [200, 150, 160, 170])]
         $0.game = 2
         $0.match = leagueMatch
+        $0.prebowl = prebowl
     }
     await store.change { $0.drinkTargets?.qualificationRule = nil }
     let local = store.night
@@ -196,7 +221,16 @@ func runScorebookTests() async throws {
     expect(store.revision == 2 && !store.pending && server.state == store.night, "PUT advances revision")
     expect(store.night.finals == local.finals && store.night.history == local.history && store.night.drinkTargets == local.drinkTargets, "Roll edits preserve web metadata")
 
-    expect(server.state.match == leagueMatch && store.night.match == leagueMatch, "PUT preserves all match metadata")
+    expect(server.state.match == leagueMatch && store.night.match == leagueMatch, "PUT preserves all match metadata, including lane")
+    expect(server.state.prebowl == prebowl && localRelaunch.night.prebowl == prebowl, "Prebowl metadata survives local backup, POST, and PUT")
+    for lane in [MatchLane.odd, .even] {
+        var webNight = local
+        webNight.match?.lane = lane
+        server.overrideData = try JSONEncoder().encode(SharedScorebook(id: nil, state: webNight, revision: 2, role: .editor))
+        let response = try await client.request("GET", id: server.id)
+        expect(response.state == webNight, "GET preserves current web metadata")
+    }
+    server.overrideData = nil
 
     server.offline = true
     await store.change { $0.rolls[0].append(3) }
@@ -241,6 +275,17 @@ func runScorebookTests() async throws {
     server.overrideData = Data("{\"state\":{\"game\":1,\"rolls\":[[],[],[],[]],\"history\":[],\"newFeature\":true},\"revision\":6}".utf8)
     await recovered.retry()
     expect(recovered.night == beforeMalformed && !recovered.canEdit, "Unknown web field blocks lossy native update")
+    for (section, field, value) in [("prebowl", "futureField", true as Any), ("match", "futureField", true as Any), ("match", "lane", "middle" as Any), ("match", "lane", NSNull()), ("prebowl", "week", 1.5 as Any)] {
+        var rootObject = try JSONSerialization.jsonObject(with: JSONEncoder().encode(SharedScorebook(id: nil, state: beforeMalformed, revision: 6))) as! [String: Any]
+        var stateObject = rootObject["state"] as! [String: Any]
+        var metadata = stateObject[section] as! [String: Any]
+        metadata[field] = value
+        stateObject[section] = metadata
+        rootObject["state"] = stateObject
+        server.overrideData = try JSONSerialization.data(withJSONObject: rootObject)
+        await recovered.retry()
+        expect(recovered.night == beforeMalformed && !recovered.canEdit, "Invalid or unknown nested metadata blocks lossy update")
+    }
     server.overrideData = nil
     await recovered.retry()
     expect(recovered.canEdit, "Valid response restores editing after malformed response")
@@ -293,6 +338,103 @@ func runScorebookTests() async throws {
     server.revision = acceptedRevision
     await separate.retry()
     expect(separate.canEdit, "Recovery after obsolete response")
+
+    // A failed switch must not grant the old scorebook the destination's permissions.
+    do {
+        let viewerID = "11111111-1111-4111-8111-111111111111"
+        let ownerID = "22222222-2222-4222-8222-222222222222"
+        let failureSuite = suite + ".failed-open"
+        let failureDefaults = UserDefaults(suiteName: failureSuite)!
+        defer { failureDefaults.removePersistentDomain(forName: failureSuite) }
+        let failureDirectory = root.appendingPathComponent("failed-open")
+        var requests = 0
+        let roleClient = ScorebookClient(send: { request in
+            requests += 1
+            let result = SharedScorebook(id: nil, state: Night(), revision: 1,
+                role: request.url!.lastPathComponent == viewerID ? .viewer : .owner)
+            return (try JSONEncoder().encode(result), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        })
+        let switching = ScorebookStore(client: roleClient, defaults: failureDefaults, directory: failureDirectory)
+        await switching.start()
+        await switching.openTeam(ScorebookClient.origin + "/?night=" + viewerID)
+        expect(switching.role == .viewer && !switching.canEdit, "Initial viewer scorebook stays read-only")
+        // A file occupying the backup directory deterministically simulates a disk write failure.
+        try FileManager.default.removeItem(at: failureDirectory)
+        try Data().write(to: failureDirectory)
+        await switching.openTeam(ScorebookClient.origin + "/?night=" + ownerID)
+        expect(switching.teamID == viewerID && switching.role == .viewer, "Failed opening another book preserves the original role and ID")
+        expect(!switching.canEdit && switching.error != nil, "Failed disk persistence never grants viewer edit access")
+        let before = switching.night, requestCount = requests
+        await switching.change { $0.game += 1 }
+        expect(switching.night == before && requests == requestCount && !switching.pending, "Viewer edit after failed switch causes no write or pending change")
+    }
+
+    // Server roles are authoritative, including a downgrade while a local write is pending.
+    server.role = .viewer
+    await separate.refresh()
+    expect(separate.role == .viewer && !separate.canEdit, "Viewer can read but never edit")
+    let beforeViewer = separate.night
+    let viewerRequests = server.requests.count
+    await separate.change { $0.game += 1 }
+    expect(separate.night == beforeViewer && server.requests.count == viewerRequests, "Viewer change is refused before disk or network write")
+    server.role = .legacy
+    await separate.refresh()
+    expect(separate.role == .legacy && separate.canEdit, "Explicit legacy access matches web semantics")
+    server.role = .owner
+    await separate.refresh()
+    expect(separate.role == .owner && separate.canEdit, "Owner access enables editing")
+    server.offline = true
+    await separate.change { $0.drinkTargets?.high = 199 }
+    server.offline = false
+    let pendingViewer = separate.night
+    let writesBeforeDowngrade = server.requests.filter { $0.httpMethod == "PUT" }.count
+    server.role = .viewer
+    await separate.retry()
+    expect(separate.pending && separate.night == pendingViewer && !separate.canEdit, "Role downgrade retains pending backup")
+    expect(server.requests.filter { $0.httpMethod == "PUT" }.count == writesBeforeDowngrade, "Viewer retry must not send PUT")
+    // A server acknowledgement may still resolve a lost-response edit after a downgrade.
+    server.state = pendingViewer; server.revision += 1
+    await separate.retry()
+    expect(!separate.pending && !separate.canEdit && separate.role == .viewer, "Viewer may recognize an already saved pending edit without writing")
+    server.role = .editor
+    await separate.refresh()
+    await separate.change { $0.drinkTargets?.high = 200 }
+    expect(separate.canEdit && separate.role == .editor, "PUT omission of role never removes known permissions")
+    for rawRole in ["unexpected", "none", "missing"] {
+        var object = try JSONSerialization.jsonObject(with: JSONEncoder().encode(SharedScorebook(id: nil, state: server.state, revision: server.revision))) as! [String: Any]
+        object["role"] = rawRole
+        server.overrideData = try JSONSerialization.data(withJSONObject: object)
+        await separate.refresh()
+        expect(!separate.canEdit && separate.error != nil, "Unknown or denied role must never become editable")
+    }
+    server.overrideData = try JSONEncoder().encode(SharedScorebook(id: nil, state: server.state, revision: server.revision))
+    await separate.refresh()
+    expect(!separate.canEdit, "GET without a role fails closed")
+    server.overrideData = nil
+    await separate.retry()
+    expect(separate.canEdit, "Explicit editor response restores access")
+
+    // The same shared night has independent local backups for different signed-in users.
+    let accountADefaults = UserDefaults(suiteName: suite + ".accountA")!
+    let accountBDefaults = UserDefaults(suiteName: suite + ".accountB")!
+    defer {
+        accountADefaults.removePersistentDomain(forName: suite + ".accountA")
+        accountBDefaults.removePersistentDomain(forName: suite + ".accountB")
+    }
+    let accountA = ScorebookStore(client: client, defaults: accountADefaults, directory: root.appendingPathComponent("Accounts/A"))
+    await accountA.start(); await accountA.openTeam(link)
+    server.offline = true
+    await accountA.change { $0.drinkTargets?.high = 198 }
+    server.offline = false
+    expect(accountA.pending, "Account A has isolated pending backup")
+    let accountB = ScorebookStore(client: client, defaults: accountBDefaults, directory: root.appendingPathComponent("Accounts/B"))
+    await accountB.start()
+    expect(accountB.teamID == nil && accountB.night == Night() && !accountB.pending, "Account B cannot inherit Account A selection or scores")
+    await accountB.openTeam(link)
+    expect(accountB.night == server.state && !accountB.pending, "Account B loads server state instead of Account A pending edits")
+    let accountARestored = ScorebookStore(client: client, defaults: accountADefaults, directory: root.appendingPathComponent("Accounts/A"))
+    await accountARestored.start()
+    expect(accountARestored.pending && accountARestored.night == accountA.night && accountARestored.teamID == server.id, "Returning account recovers only its own pending edit")
 
     let legacyDefaults = UserDefaults(suiteName: suite + ".legacy")!
     defer { legacyDefaults.removePersistentDomain(forName: suite + ".legacy") }

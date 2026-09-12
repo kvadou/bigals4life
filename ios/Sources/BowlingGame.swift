@@ -150,12 +150,27 @@ struct MatchOpponent: Codable, Equatable {
     var bowlers: [MatchBowler]
 }
 
+enum MatchLane: String, Codable {
+    case odd, even
+}
+
+struct Prebowl: Codable, Equatable {
+    var week: Int
+    var bowlers: [Int]
+
+    func validate() throws {
+        guard (1...60).contains(week), (1...4).contains(bowlers.count),
+              bowlers.allSatisfy({ (0...3).contains($0) }) else { throw ScorebookError.invalidData }
+    }
+}
+
 struct LeagueMatch: Codable, Equatable {
     var season: String
     var week: Int
     var opponent: MatchOpponent
     var ours: [MatchBowler]
     var opponentGames: [[Int?]]
+    var lane: MatchLane?
 
     func validate() throws {
         guard season.utf16.count <= 60, (1...60).contains(week),
@@ -175,6 +190,7 @@ struct Night: Codable, Equatable {
     var history: [RecordedGame] = []
     var drinkTargets: DrinkTargets?
     var match: LeagueMatch?
+    var prebowl: Prebowl?
     var current: RecordedGame { RecordedGame(game: game, rolls: rolls, finals: finals) }
     func maximum(_ index: Int) -> Int { finals?[index] ?? current.bowling(index).maximumScore }
 
@@ -196,6 +212,7 @@ struct Night: Codable, Equatable {
             guard (0...300).contains(targets.high), (0...300).contains(targets.low),
                   targets.qualificationRule == nil || ["exact", "threshold"].contains(targets.qualificationRule!) else { throw ScorebookError.invalidData }
         }
+        try prebowl?.validate()
         try match?.validate()
         return self
     }
@@ -206,7 +223,7 @@ enum ScorebookError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidData: return "This scorebook contains unsupported or invalid scores. Nothing was changed."
-        case .invalidLink: return "Paste a team link from strike-ceiling-web.vercel.app with a valid night ID."
+        case .invalidLink: return "Paste a BA4L scorebook, week, or review link with a valid night ID."
         case .conflict: return "Another phone updated this game. Your edit is backed up. Reload the team scores to continue, or keep this edit for recovery."
         case .server(let message): return message
         case .storage: return "Could not save the backup on this device. Free some storage and retry."
@@ -214,14 +231,20 @@ enum ScorebookError: LocalizedError {
     }
 }
 
+enum ScorebookRole: String, Codable {
+    case owner, editor, viewer, legacy
+    var allowsWrite: Bool { self == .owner || self == .editor || self == .legacy }
+}
+
 struct SharedScorebook: Codable {
     var id: String?
     var state: Night
     var revision: Int
+    var role: ScorebookRole?
 }
 
 struct ScorebookClient {
-    static let origin = "https://strike-ceiling-web.vercel.app"
+    static let origin = "https://bigals4life.com"
     var send: (URLRequest) async throws -> (Data, HTTPURLResponse) = { request in
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw ScorebookError.invalidData }
@@ -230,10 +253,22 @@ struct ScorebookClient {
 
     static func teamID(from text: String) throws -> String {
         guard let url = URLComponents(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
-              url.scheme == "https", url.host == "strike-ceiling-web.vercel.app", url.port == nil,
-              url.user == nil, url.password == nil, url.path == "/" || url.path.isEmpty,
-              let values = url.queryItems?.filter({ $0.name == "night" }), values.count == 1,
-              let value = values[0].value, let id = UUID(uuidString: value) else { throw ScorebookError.invalidLink }
+              url.scheme == "https", ["bigals4life.com", "strike-ceiling-web.vercel.app"].contains(url.host ?? ""),
+              url.port == nil, url.user == nil, url.password == nil, url.fragment == nil,
+              url.percentEncodedPath == url.path else { throw ScorebookError.invalidLink }
+        let query = url.queryItems ?? []
+        guard Set(query.map(\.name)).count == query.count else { throw ScorebookError.invalidLink }
+        let value: String?
+        if ["", "/", "/night"].contains(url.path) {
+            guard query.count == 1, query[0].name == "night" else { throw ScorebookError.invalidLink }
+            value = query[0].value
+        } else {
+            let parts = url.path.split(separator: "/", omittingEmptySubsequences: false)
+            guard parts.count == 3, parts[0].isEmpty, ["season", "review"].contains(parts[1]),
+                  query.isEmpty || (parts[1] == "review" && query.count == 1 && query[0].name == "bowler" && ["0", "1", "2", "3"].contains(query[0].value ?? "")) else { throw ScorebookError.invalidLink }
+            value = String(parts[2])
+        }
+        guard let value, let id = UUID(uuidString: value) else { throw ScorebookError.invalidLink }
         return id.uuidString.lowercased()
     }
 
@@ -259,19 +294,23 @@ struct ScorebookClient {
         }
         // Reject unknown state fields rather than silently removing newer web features on PUT.
         guard data.count <= 1_000_000, let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let raw = root["state"] as? [String: Any], Set(raw.keys).isSubset(of: ["game", "rolls", "finals", "history", "drinkTargets", "match"]),
+              let raw = root["state"] as? [String: Any], Set(raw.keys).isSubset(of: ["game", "rolls", "finals", "history", "drinkTargets", "match", "prebowl"]),
               let history = raw["history"] as? [[String: Any]],
               history.allSatisfy({ Set($0.keys).isSubset(of: ["game", "rolls", "finals"]) }) else { throw ScorebookError.invalidData }
         if let targets = raw["drinkTargets"] as? [String: Any], !Set(targets.keys).isSubset(of: ["high", "low", "qualificationRule"]) { throw ScorebookError.invalidData }
+        if let value = raw["prebowl"] {
+            guard let prebowl = value as? [String: Any], Set(prebowl.keys).isSubset(of: ["week", "bowlers"]) else { throw ScorebookError.invalidData }
+        }
         if let match = raw["match"] as? [String: Any] {
-            guard Set(match.keys).isSubset(of: ["season", "week", "opponent", "ours", "opponentGames"]),
+            if let lane = match["lane"], !(lane is String) { throw ScorebookError.invalidData }
+            guard Set(match.keys).isSubset(of: ["season", "week", "opponent", "ours", "opponentGames", "lane"]),
                   let opponent = match["opponent"] as? [String: Any], Set(opponent.keys).isSubset(of: ["number", "name", "bowlers"]),
                   let ours = match["ours"] as? [[String: Any]], let theirs = opponent["bowlers"] as? [[String: Any]],
                   (ours + theirs).allSatisfy({ Set($0.keys).isSubset(of: ["name", "handicap"]) }) else { throw ScorebookError.invalidData }
         }
         let result = try JSONDecoder().decode(SharedScorebook.self, from: data)
         _ = try result.state.validated()
-        guard result.revision > 0 else { throw ScorebookError.invalidData }
+        guard result.revision > 0, method == "PUT" || result.role != nil else { throw ScorebookError.invalidData }
         if method == "POST" {
             guard let created = result.id, UUID(uuidString: created) != nil else { throw ScorebookError.invalidData }
         }
@@ -298,13 +337,15 @@ final class ScorebookStore: ObservableObject {
     @Published private(set) var status = "Saved on this device"
     @Published private(set) var legacy: [Bowler] = []
     @Published private(set) var loaded = false
+    @Published private(set) var role: ScorebookRole?
+    var transport: (URLRequest) async throws -> (Data, HTTPURLResponse) { client.send }
     private let client: ScorebookClient
     private let defaults: UserDefaults
     private let directory: URL
     private var generation = 0
     private var needsLoad = false
     private var damagedBackup = false
-    var canEdit: Bool { loaded && !busy && !pending && !needsLoad && !damagedBackup }
+    var canEdit: Bool { (teamID == nil || role?.allowsWrite == true) && loaded && !busy && !pending && !needsLoad && !damagedBackup }
     var canSwitchTeam: Bool { loaded && !busy && !pending && !damagedBackup }
     var shareURL: URL? { teamID.flatMap { URL(string: ScorebookClient.origin + "/?night=" + $0) } }
     var canMigrate: Bool { canEdit && teamID == nil && night == Night() && !legacy.isEmpty }
@@ -357,6 +398,7 @@ final class ScorebookStore: ObservableObject {
         do {
             let result = try await client.request("GET", id: id)
             guard ticket == generation, teamID == id, !pending else { return }
+            role = result.role
             guard result.revision >= revision else { throw ScorebookError.invalidData }
             if force || result.revision > revision || needsLoad {
                 try persist(result.state, id: id, revision: result.revision, pending: false)
@@ -383,6 +425,7 @@ final class ScorebookStore: ObservableObject {
                 _ = try saved.night.validated()
                 guard saved.id == id, saved.revision > 0 else { throw ScorebookError.invalidData }
                 if saved.pending {
+                    role = nil
                     teamID = id; night = saved.night; revision = saved.revision; pending = true; needsLoad = true
                     defaults.set(id, forKey: "strike-ceiling.shared-team.v2")
                     status = "Unsaved edit recovered"; error = "This team's backed-up edit needs review or retry."
@@ -391,6 +434,7 @@ final class ScorebookStore: ObservableObject {
             }
             let result = try await client.request("GET", id: id)
             try persist(result.state, id: id, revision: result.revision, pending: false)
+            role = result.role
             teamID = id; night = result.state; revision = result.revision; pending = false; needsLoad = false
             defaults.set(id, forKey: "strike-ceiling.shared-team.v2")
             error = nil; status = "Saved to team"
@@ -404,6 +448,7 @@ final class ScorebookStore: ObservableObject {
         do {
             let result = try await client.request("POST", state: night)
             let id = result.id!.lowercased()
+            role = result.role
             // Remember the created link even if the disk backup fails afterwards.
             teamID = id; revision = result.revision; night = result.state
             defaults.set(id, forKey: "strike-ceiling.shared-team.v2")
@@ -427,12 +472,18 @@ final class ScorebookStore: ObservableObject {
 
     private func savePending() async {
         guard pending, let id = teamID, !busy else { return }
+        guard role?.allowsWrite == true else {
+            error = "You can view this scorebook but cannot save edits. Your edit remains backed up. Ask the owner for edit access."
+            status = "Edit still backed up"
+            return
+        }
         busy = true; status = "Saving to team…"
         defer { busy = false }
         do {
             let result = try await client.request("PUT", id: id, state: night, revision: revision)
             guard result.state == night, result.revision == revision + 1 else { throw ScorebookError.invalidData }
             try persist(result.state, id: id, revision: result.revision, pending: false)
+            if let updatedRole = result.role { role = updatedRole }
             revision = result.revision; pending = false; needsLoad = false; error = nil; status = "Saved to team"
         } catch { self.error = error.localizedDescription; status = "Not saved to team. Edit backed up." }
     }
@@ -443,6 +494,7 @@ final class ScorebookStore: ObservableObject {
         busy = true
         do {
             let result = try await client.request("GET", id: id)
+            role = result.role
             if result.state == night, result.revision >= revision {
                 // The server may have saved a PUT whose response was lost.
                 try persist(result.state, id: id, revision: result.revision, pending: false)
@@ -451,7 +503,10 @@ final class ScorebookStore: ObservableObject {
                 throw ScorebookError.conflict
             }
             busy = false
-            if pending { await savePending() }
+            if pending {
+                guard role?.allowsWrite == true else { throw ScorebookError.server("You can view this scorebook but cannot save edits. Your edit remains backed up. Ask the owner for edit access.") }
+                await savePending()
+            }
         } catch { busy = false; self.error = error.localizedDescription; status = "Edit still backed up" }
     }
 
@@ -462,6 +517,7 @@ final class ScorebookStore: ObservableObject {
         defer { busy = false }
         do {
             let result = try await client.request("GET", id: id)
+            role = result.role
             if pending {
                 let data = try JSONEncoder().encode(ScorebookBackup(night: night, id: id, revision: revision, pending: true))
                 try data.write(to: directory.appendingPathComponent("discarded-\(UUID().uuidString).json"), options: .atomic)

@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BA4LSupabaseAnonKey</key>
+	<string>$(BA4L_SUPABASE_ANON_KEY)</string>
+	<key>BA4LSupabaseURL</key>
+	<string>https://aqrigyieuzceksptwfci.supabase.co</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -22,6 +26,10 @@
 	<string>1</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>BA4L photographs the lane scoreboard to read your rolls.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>BA4L reads a scoreboard photo you choose to fill in rolls.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

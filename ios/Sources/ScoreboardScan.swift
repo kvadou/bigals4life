@@ -93,7 +93,7 @@ struct ScanSheet: View {
     @State private var warning = ""
     @State private var rows: [ScannedRow] = []
     @State private var targets: [Int: Int] = [:]   // row id -> bowler index, absent = skip
-    private let scanner = ScoreboardScanner()
+    var scanner = ScoreboardScanner()
 
     private var assignments: [(index: Int, rolls: [Int])] { rows.compactMap { row in targets[row.id].map { (index: $0, rolls: row.rolls) } }.filter { !$0.rolls.isEmpty } }
     private var duplicate: Bool { Set(assignments.map(\.index)).count != assignments.count }
