@@ -1,6 +1,7 @@
 import { analyze } from "@/lib/bowling";
 import type { Night } from "@/lib/scorebook";
 import { matchPoints, type MatchPoints, type TeamNight } from "./points";
+import { BOWLERS } from "@/lib/season";
 
 export const GAMES_PER_NIGHT = 3;
 
@@ -20,7 +21,8 @@ export function ourGames(night: Night): (number | null)[][] {
 export function nightMatchPoints(night: Night): MatchPoints | null {
   const m = night.match; if (!m) return null;
   const games = ourGames(night);
-  const ours: TeamNight = { name: "Big Al's", bowlers: m.ours.map((b, i) => ({ name: b.name, handicap: b.handicap, games: games.map(g => g[i]) })) };
+  // Lineup order is not roster order: slot k is whoever we handed in k-th, so look up the rolls by name.
+  const ours: TeamNight = { name: "Big Al's", bowlers: m.ours.map((b, i) => { const idx = BOWLERS.indexOf(b.name); return { name: b.name, handicap: b.handicap, games: games.map(g => g[idx >= 0 ? idx : i]) }; }) };
   const theirs: TeamNight = { name: m.opponent.name, bowlers: m.opponent.bowlers.map((b, i) => ({ name: b.name, handicap: b.handicap, games: Array.from({ length: GAMES_PER_NIGHT }, (_, g) => m.opponentGames[g]?.[i] ?? null) })) };
   return matchPoints(ours, theirs, GAMES_PER_NIGHT);
 }

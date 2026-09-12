@@ -120,3 +120,11 @@ The coach picks idea keys; the server resolves them to `lib/review/ideas.ts` row
 ## A game entered as a final score has no frames
 
 Photo imports and the sheet can leave `finals[i]` set with empty `rolls[i]`. Strike and spare counts are then 0, which reads as "0X · 0/ · 0 open" and lies. `statLine` says "score only" when `framesPlayed` is 0 and the coach is told the same.
+
+## First-name lookups across the whole league hit the wrong bowler
+
+`Object.keys(averages).find(n => n.startsWith("KYLE "))` returned a Kyle on another team (192 avg) for our Kyle (145). Anything keyed by first name has to be scoped to our roster first (`usTeam`, the team whose roster contains DOUG KVAMME). The draft and the handicap prefill both go through it now.
+
+## Lineup order is not roster order
+
+`match.ours[k]` is whoever we handed in k-th, but `nightMatchPoints` paired `games[g][k]` by roster index, so a reordered lineup would have scored the wrong bowler's games. It now looks the rolls up by name (`BOWLERS.indexOf(b.name)`). Head-to-head points pair slot for slot (points.ts), which is why the order matters and why the even lane (names in second) is the only place a stack buys anything.

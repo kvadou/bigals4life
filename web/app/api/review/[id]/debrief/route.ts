@@ -1,4 +1,5 @@
 import { generateText } from "ai";
+import { allow } from "@/lib/rate-limit";
 import { z } from "zod";
 import { access, decide, denied, identify, unauthorized } from "@/lib/auth-server";
 import { sameOrigin } from "@/lib/scorebook-server";
@@ -26,6 +27,7 @@ export async function POST(request: Request, context: Context) {
   if (!id.success) return Response.json({ error: "Invalid night link." }, { status: 400 });
   const verdict = decide("read", await access(identity, id.data), true);
   if (verdict.status !== 200) return denied(verdict);
+  if (!allow(`debrief:${identity.user.id}`, 12, 10 * 60_000)) return Response.json({ error: "That is plenty of coaching for ten minutes. Bowl a bit and come back." }, { status: 429 });
   let body; try { body = bodySchema.parse(await request.json()); } catch { return Response.json({ error: "That did not look right." }, { status: 400 }); }
   try {
     const loaded = await loadNight(id.data);

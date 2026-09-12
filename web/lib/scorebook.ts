@@ -7,6 +7,8 @@ const lineupBowler = z.object({name:z.string().min(1).max(40),handicap:z.number(
 export const matchSchema = z.object({
   season:z.string().max(60),
   week:z.number().int().min(1).max(60),
+  /** Odd lane hands names in first; even lane second and gets to stack. */
+  lane:z.enum(["odd","even"]).optional(),
   opponent:z.object({number:z.number().int().min(0).max(99),name:z.string().min(1).max(40),bowlers:z.array(lineupBowler).min(1).max(8)}),
   ours:z.array(lineupBowler).length(4),
   /** opponentGames[gameIndex][bowlerIndex] scratch score, null until bowled. Indexed by game number - 1. */
