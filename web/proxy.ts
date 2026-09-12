@@ -10,6 +10,8 @@ export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   let response = NextResponse.next({ request });
   const path = request.nextUrl.pathname;
+  // Public brand assets must load on the sign-in page and browser/Home Screen chrome.
+  if (["/ba4l-icon.svg", "/ba4l-mark.svg", "/apple-touch-icon.png"].includes(path)) return response;
   const open = path === "/login" || path === "/waiting";
   if (!url || !key) return open ? response : NextResponse.redirect(new URL("/login", request.url));
   const supabase = createServerClient(url, key, { cookies: {
