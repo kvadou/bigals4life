@@ -27,7 +27,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSCameraUsageDescription</key>
-	<string>BA4L photographs the lane scoreboard to read your rolls.</string>
+	<string>BA4L uses the camera for live lane observation and scoreboard photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>BA4L reads a scoreboard photo you choose to fill in rolls.</string>
 	<key>UILaunchScreen</key>

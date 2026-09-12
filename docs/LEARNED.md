@@ -136,3 +136,7 @@ On iOS 26, forcing a dark toolbar scheme for the tab bar can produce pale icons 
 ## Scroll content must not paint under collapsed native tabs
 
 Tonight uses the native scroll view directly, contentMargins for trailing content and iOS 26 tabBarMinimizeBehavior on compact layouts. A ShapeStyle background defaults to ignoring all safe areas; forest paint then hides the contrast of the minimized native tab control. Restrict the forest background to the top safe area and leave the bottom surface to navigation. Verify both the collapsed and expanded tab states, the final action being hittable, and the return to Score. A successful typecheck or screenshot of only the expanded bar misses this defect.
+
+## Camera lifecycle generations must not stop newer work
+
+A stale asynchronous camera-start continuation must return without enqueueing a stop that could run after a newer start. Pause already queues the stop serially. A system permission prompt can temporarily make the app inactive; distinguish that from backgrounding so accepting first-use permission does not cancel startup. Still stop actual capture on inactivity and invalidate startup on backgrounding. Verify hardware interruption behavior separately from simulator no-camera tests.

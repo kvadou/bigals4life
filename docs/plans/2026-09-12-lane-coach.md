@@ -72,3 +72,29 @@ Robust multi-person and occlusion recovery, optional spoken cue, dual-device cam
 ## User correction
 
 Doug clarified on September 12: the system must watch and know who is bowling and follow the game without selections. One-time setup and explicit start/stop are acceptable assumptions; per-shot selection is not the product. Automatic recognition and observation must be proven before this is described as hands-free. A second camera may be necessary when one angle cannot see both delivery and scoring display.
+
+## Live Lane refinement, September 12
+
+Doug authorized starting implementation. Dedicated native Live Lane hosts the mounted camera; teammates should join the same session from their phones. Thursday warm-up is expected at 19:00 America/Chicago, league play around 19:10. Schedule is contextual evidence, not permission to count warm-up shots. Existing pre-bowl metadata takes priority over a clock suggestion. Outside scheduled league activity, use practice unless pre-bowl is established. Actual scoreboard/game evidence must establish counted competition.
+
+First implementation slice: real camera preview with explicit start/pause/stop, visible observation lifecycle, foreground/interruption handling, session phase suggestion and observation quality. Keep unproven identity, ball trajectory and oil inference visibly unavailable. No fabricated live metrics. Subsequent shared capture/coordinator and calibrated tracking require actual footage evaluation and authenticated session transport; these remain part of the requested feature, not complete at this slice.
+
+Occlusion strategy: fixed calibrated camera, retain observed path segments, mark invisible intervals, reacquire using temporal/lane constraints. Do not render predicted gaps as measurements. A second offset angle provides independent evidence when a bowler fully blocks the ball. Mount outside the approach. Supplied oil-pattern chart is reference data; observed ball reaction is an inference that also depends on ball, speed and release. Never claim direct oil measurement from normal video.
+
+### Shared room transport
+
+Doug confirmed teammates need all of live video, scores, coaching and replays. Recommended transport: LiveKit, with one room per explicit live session and short-lived server-issued tokens. Reuse verified BA4L identities and scorebook membership, but never grant camera publishing from a caller-supplied role. Viewers subscribe only; authorized capture devices publish camera video without microphone by default. Pairing must be scoped to the session, not inferred from being on the same Wi-Fi. A second angle publishes a separate camera track; one coordinator owns score reconciliation. Replays and verified observation history require private persistence independently of ephemeral video transport.
+
+LiveKit credentials were not present in BA4L web local configuration or the checked shared secret file. A project-selection question is pending. No room, provider account, billing change, token endpoint or streaming integration has been created. Authenticated room grants and private media persistence require human review under the existing repository policy before publishing.
+
+References: https://docs.livekit.io/transport/sdk-platforms/swift/ and https://docs.livekit.io/frontends/reference/tokens-grants/ . Lane reaction context: https://bowl.com/coaching/advanced and https://bowl.com/oil-pattern-bank .
+
+### Local implementation evidence
+
+Implemented a native Live Lane full-screen entry from Tonight, camera start/pause/stop, rear-camera preview, throttled on-device human-rectangle detection, stale-observation state, and explicit lifecycle interruption handling. It does not identify individual bowlers, save clips, broadcast, measure ball paths, infer oil, coach or write scores. Existing scorebook values are labeled separately. No camera starts until the user taps Start camera; no audio is requested.
+
+LiveLaneContext has 201 passing standalone Swift assertions for America/Chicago, daylight saving boundaries, Thursday 19:00/19:10, explicit intent, and no automatic competitive attribution from time. Simulator UI tests passed on iPhone and iPad for entry, no-camera failure, and return. Final iPad screenshots inspected after fixing text compression. Evidence: /tmp/ba4l-live-qa/result1.xcresult and result-ipad2.xcresult. Camera hardware, orientation/frame alignment, sustained thermal behavior and person-detection accuracy remain physical-device tests. [runtime-tested] applies only to those simulator interaction paths.
+
+Independent lifecycle review found and fixed two races: do not stop the current capture from a stale startup continuation; do not invalidate the first permission request merely because the permission sheet makes the app inactive. Backgrounding still invalidates startup, and inactive capture pauses.
+
+No release was made. TestFlight remains 1.0 (7). LiveKit Cloud is signed out in the open setup tab. Team video and all autonomous tracking features remain unfinished.

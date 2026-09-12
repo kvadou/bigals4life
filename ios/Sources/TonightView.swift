@@ -27,6 +27,7 @@ struct TonightView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showSeason = false
+    @State private var showLiveLane = false
     @State private var availableWidth: CGFloat = 0
     @State private var season: SeasonResponse?
     @State private var error: String?
@@ -103,6 +104,7 @@ struct TonightView: View {
                         .buttonStyle(.plain).accessibilityIdentifier("tonightSeason")
                 }
             }
+            .fullScreenCover(isPresented: $showLiveLane) { LiveLaneView(store: store) }
             .refreshable { await refresh() }
             .task { await refresh() }
             .sheet(isPresented: $showSeason) {
@@ -124,6 +126,19 @@ struct TonightView: View {
                 Text(profile?.greeting ?? "Your team. Your scorebook.")
                     .font(.subheadline).foregroundStyle(Color("BrandGold"))
             }
+            Button { showLiveLane = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "video.fill")
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Live Lane").font(.headline)
+                        Text("Camera preview · early access").font(.caption)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "arrow.up.right")
+                }.frame(minHeight: 52).padding(14)
+                    .foregroundStyle(Color("BrandForest"))
+                    .background(Color("BrandGoldSurface"), in: RoundedRectangle(cornerRadius: 14))
+            }.buttonStyle(.plain).accessibilityIdentifier("openLiveLane")
             resultPanel
             personalPanel
             NavigationLink { MatchInsightsView(store: store, send: send) } label: {

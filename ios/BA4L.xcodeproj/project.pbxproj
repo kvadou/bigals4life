@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1212EFDA6E9CA21B82FBA394 /* LiveLaneContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE55F106C5F267A14CB732E /* LiveLaneContext.swift */; };
 		19F795C6CDC26AAD73091C71 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C402694017885D21C956CF0 /* ReviewView.swift */; };
 		2D4B4EE47B862B0A40AAE868 /* BowlingGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */; };
 		30FC21369A61A02A2EC6A518 /* StrikeCeilingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B33F7EF1FD008BC8E6191A /* StrikeCeilingApp.swift */; };
@@ -18,6 +19,7 @@
 		4C4BB6F6CA8D5B7C3FBCC547 /* VoiceEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3288926755D1F7D450F5D50C /* VoiceEntryView.swift */; };
 		4FE1835D1327378CE3C5A928 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 21D9127AD2739D1BC5EBFE54 /* PrivacyInfo.xcprivacy */; };
 		516B56B5FFCA45366CF6B06E /* NativeFixtureSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E2A7AEB2D6266455A12E57 /* NativeFixtureSession.swift */; };
+		9701721564F6F85C28233F93 /* LiveLaneCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A394B777B30A778A4DF712C /* LiveLaneCamera.swift */; };
 		AD0894893F885BF5FBC901CF /* BA4LBrandMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2505DFFE18B4FF08A3BC432F /* BA4LBrandMark.swift */; };
 		B445FC795CFC34EF8DB4B3D1 /* TonightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE683751CC347C2EC6E22B6 /* TonightView.swift */; };
 		BF0B72A4A238461A2E5CD90B /* WeekGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67D72ACB8DDDDBA61E155DFE /* WeekGameView.swift */; };
@@ -25,6 +27,7 @@
 		CAE9C9F34EEF05DBAB294F8D /* AccountSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8791C06DCCCBE23B5207885F /* AccountSession.swift */; };
 		CD5925D8BDBCEB51A1AA2967 /* SeasonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0EF0F16C07849CD496B575 /* SeasonView.swift */; };
 		DF1192B136E1FFB2590D38AD /* MatchSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12B3AA69798C69544A9A071C /* MatchSetupView.swift */; };
+		E05A71BFAFBD9C5E02442ECB /* LiveLaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40786667734A398A8A4388D6 /* LiveLaneView.swift */; };
 		E4302FA1816B37ACF941E63B /* TeamAccessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 885C48085CB9E77974D1662D /* TeamAccessView.swift */; };
 		F1E0B1ABBB90B10890BCD0C5 /* VoiceRoll.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11EC059B3D0B54FD92BD7320 /* VoiceRoll.swift */; };
 		F36065580D9D48C599D7A24E /* ScoreboardScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4950602E37FA9B9887F22AD9 /* ScoreboardScan.swift */; };
@@ -35,15 +38,18 @@
 		12B3AA69798C69544A9A071C /* MatchSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchSetupView.swift; sourceTree = "<group>"; };
 		135628B3BBFAE1BAF388C103 /* Auth.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Auth.xcconfig; sourceTree = "<group>"; };
 		1C402694017885D21C956CF0 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
+		1FE55F106C5F267A14CB732E /* LiveLaneContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveLaneContext.swift; sourceTree = "<group>"; };
 		21D9127AD2739D1BC5EBFE54 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2505DFFE18B4FF08A3BC432F /* BA4LBrandMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BA4LBrandMark.swift; sourceTree = "<group>"; };
 		2805C0AEAC8D2A46898B1467 /* DeviceArchiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceArchiveView.swift; sourceTree = "<group>"; };
 		3288926755D1F7D450F5D50C /* VoiceEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceEntryView.swift; sourceTree = "<group>"; };
 		3CF060769FA1850A56AA9E5E /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
+		40786667734A398A8A4388D6 /* LiveLaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveLaneView.swift; sourceTree = "<group>"; };
 		4950602E37FA9B9887F22AD9 /* ScoreboardScan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreboardScan.swift; sourceTree = "<group>"; };
 		5FF0ECC12F4A119D99AFFC69 /* LeagueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeagueView.swift; sourceTree = "<group>"; };
 		67D72ACB8DDDDBA61E155DFE /* WeekGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekGameView.swift; sourceTree = "<group>"; };
 		69E2A7AEB2D6266455A12E57 /* NativeFixtureSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeFixtureSession.swift; sourceTree = "<group>"; };
+		6A394B777B30A778A4DF712C /* LiveLaneCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveLaneCamera.swift; sourceTree = "<group>"; };
 		7D0EF0F16C07849CD496B575 /* SeasonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonView.swift; sourceTree = "<group>"; };
 		7ED8500D4884814BFC5420E1 /* ReviewDraftStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewDraftStorage.swift; sourceTree = "<group>"; };
 		8791C06DCCCBE23B5207885F /* AccountSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSession.swift; sourceTree = "<group>"; };
@@ -75,6 +81,9 @@
 				EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */,
 				2805C0AEAC8D2A46898B1467 /* DeviceArchiveView.swift */,
 				5FF0ECC12F4A119D99AFFC69 /* LeagueView.swift */,
+				6A394B777B30A778A4DF712C /* LiveLaneCamera.swift */,
+				1FE55F106C5F267A14CB732E /* LiveLaneContext.swift */,
+				40786667734A398A8A4388D6 /* LiveLaneView.swift */,
 				EE8FBC563B1D088E580EEC17 /* MatchInsightsView.swift */,
 				12B3AA69798C69544A9A071C /* MatchSetupView.swift */,
 				69E2A7AEB2D6266455A12E57 /* NativeFixtureSession.swift */,
@@ -196,6 +205,9 @@
 				2D4B4EE47B862B0A40AAE868 /* BowlingGame.swift in Sources */,
 				4A058540C83DA00358EA083D /* DeviceArchiveView.swift in Sources */,
 				348FD5B11283E8BF90B7A9B1 /* LeagueView.swift in Sources */,
+				9701721564F6F85C28233F93 /* LiveLaneCamera.swift in Sources */,
+				1212EFDA6E9CA21B82FBA394 /* LiveLaneContext.swift in Sources */,
+				E05A71BFAFBD9C5E02442ECB /* LiveLaneView.swift in Sources */,
 				3641594612B63853B8F7C85D /* MatchInsightsView.swift in Sources */,
 				DF1192B136E1FFB2590D38AD /* MatchSetupView.swift in Sources */,
 				516B56B5FFCA45366CF6B06E /* NativeFixtureSession.swift in Sources */,

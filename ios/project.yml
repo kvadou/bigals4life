@@ -38,7 +38,7 @@ targets:
         BA4LSupabaseAnonKey: "$(BA4L_SUPABASE_ANON_KEY)"
         CFBundleDisplayName: BA4L
         ITSAppUsesNonExemptEncryption: false
-        NSCameraUsageDescription: BA4L photographs the lane scoreboard to read your rolls.
+        NSCameraUsageDescription: BA4L uses the camera for live lane observation and scoreboard photos.
         NSPhotoLibraryUsageDescription: BA4L reads a scoreboard photo you choose to fill in rolls.
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
