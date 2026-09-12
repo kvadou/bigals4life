@@ -27,6 +27,7 @@ struct TonightView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showSeason = false
+    @State private var availableWidth: CGFloat = 0
     @State private var season: SeasonResponse?
     @State private var error: String?
     @State private var loading = false
@@ -56,26 +57,35 @@ struct TonightView: View {
 
     var body: some View {
         NavigationStack {
-            GeometryReader { geometry in
-                if horizontalSizeClass == .regular && geometry.size.width >= 900 && !dynamicTypeSize.isAccessibilitySize {
+            Group {
+                if horizontalSizeClass == .regular && availableWidth >= 900 && !dynamicTypeSize.isAccessibilitySize {
                     HStack(alignment: .top, spacing: 24) {
-                        ScrollView { mainColumn.padding(.bottom, 24) }
-                        ScrollView { sideColumn.padding(.bottom, 24) }
-                            .frame(width: min(380, geometry.size.width * 0.34))
+                        ScrollView { mainColumn }
+                            .contentMargins(.bottom, 24, for: .scrollContent)
+                        ScrollView { sideColumn }
+                            .contentMargins(.bottom, 24, for: .scrollContent)
+                            .frame(width: min(380, availableWidth * 0.34))
                     }.padding(.horizontal, 24).padding(.top, 16)
                 } else {
                     ScrollView {
                         VStack(spacing: 20) { mainColumn; sideColumn }
-                            .padding(.horizontal, 18).padding(.top, 12).padding(.bottom, 28)
+                            .padding(.horizontal, 18).padding(.top, 12)
                     }
+                    .contentMargins(.bottom, 28, for: .scrollContent)
                 }
             }
+            // Observe the container without interposing a GeometryReader between
+            // native navigation and its primary scroll view. System bar insets
+            // then follow the expanded/minimized tab bar and window resizing.
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { availableWidth = $0 }
             .tint(BA4LTheme.tint)
-            .background(Color("BrandForest"))
+            .background(Color("BrandForest"), ignoresSafeAreaEdges: .top)
             .navigationTitle("Tonight")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color("BrandForest"), for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(horizontalSizeClass == .regular ? Color("BrandForest") : Color("BrandIvory"), for: .tabBar)
+            .toolbarBackground(.visible, for: .tabBar)
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 8) {
@@ -84,8 +94,13 @@ struct TonightView: View {
                     }.foregroundStyle(Color("OnForest")).accessibilityLabel("BA4L Tonight")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { showSeason = true } label: { Label("Season", systemImage: "calendar") }
-                        .tint(Color("BrandLime")).accessibilityIdentifier("tonightSeason")
+                    Button { showSeason = true } label: {
+                        Label("Season", systemImage: "calendar").labelStyle(.iconOnly)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .foregroundStyle(Color("BrandGold"))
+                            .background(Color("BrandForest"), in: Circle())
+                    }
+                        .buttonStyle(.plain).accessibilityIdentifier("tonightSeason")
                 }
             }
             .refreshable { await refresh() }
@@ -107,7 +122,7 @@ struct TonightView: View {
                     .font(.system(.largeTitle, design: .serif, weight: .bold))
                     .foregroundStyle(Color("OnForest")).fixedSize(horizontal: false, vertical: true)
                 Text(profile?.greeting ?? "Your team. Your scorebook.")
-                    .font(.subheadline).foregroundStyle(Color("BrandLime"))
+                    .font(.subheadline).foregroundStyle(Color("BrandGold"))
             }
             resultPanel
             personalPanel
@@ -118,7 +133,7 @@ struct TonightView: View {
                     Spacer(minLength: 8)
                     Image(systemName: "chevron.right").font(.caption.weight(.bold))
                 }.frame(minHeight: 48).padding(.horizontal, 16)
-                    .foregroundStyle(Color("BrandLime"))
+                    .foregroundStyle(Color("BrandGold"))
                     .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.white.opacity(0.24), lineWidth: 1))
             }.buttonStyle(.plain)
@@ -153,7 +168,7 @@ struct TonightView: View {
                     Spacer(minLength: 8)
                     Text(pointPair(seriesPoints)).font(.title3.bold().monospacedDigit())
                 }.padding(12)
-                    .background(Color("BrandLime").opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
+                    .background(Color("BrandGoldSurface"), in: RoundedRectangle(cornerRadius: 10))
                 if points.remaining > 0 {
                     Text("\(formatted(points.remaining)) of 36 points still available. Open games are not counted yet.")
                         .font(.caption).foregroundStyle(.secondary)

@@ -135,7 +135,8 @@ struct SignedInApp: View {
                     Section { Link("BA4L on the web", destination: URL(string: ScorebookClient.origin)!) }
                 }.navigationTitle("Account")
             }.tabItem { Label("Account", systemImage: "person.crop.circle") }.tag(4)
-        }.tint(horizontalSizeClass == .regular && tab == 0 ? Color("BrandLime") : BA4LTheme.tint)
+        }.tint(horizontalSizeClass == .regular && tab == 0 ? Color("BrandGold") : BA4LTheme.tint)
+            .modifier(NativeTabScrollBehavior(compact: horizontalSizeClass == .compact))
         }
         }.onChange(of: selectedBowler) { _, value in
             if let value { preferences.set(value, forKey: "selectedBowler") }
@@ -180,6 +181,19 @@ struct SignedInApp: View {
             if !store.canSwitchTeam { tab = 1; return }
             await store.openTeam(ScorebookClient.origin + "/season/" + id)
             tab = 1
+        }
+    }
+}
+
+/// Let the system animate its own tab bar and update scroll-safe-area insets.
+/// Regular-width iPad tabs keep their existing top navigation behavior.
+private struct NativeTabScrollBehavior: ViewModifier {
+    let compact: Bool
+    @ViewBuilder func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.tabBarMinimizeBehavior(compact ? .onScrollDown : .never)
+        } else {
+            content
         }
     }
 }

@@ -322,7 +322,7 @@ struct ScoreboardView: View {
         }
         .buttonStyle(.borderedProminent)
         .buttonBorderShape(.roundedRectangle(radius: 12))
-        .tint(special ? Color("BrandLime") : BA4LTheme.tint)
+        .tint(special ? Color("BrandGold") : BA4LTheme.tint)
         .foregroundStyle(special ? Color("BrandForest") : BA4LTheme.onTint)
         .disabled(!store.canEdit || pins > game.pinsAvailable)
         .accessibilityLabel(special ? (entryLabel(pins) == "X" ? "Strike, 10 pins" : "Spare, \(pins) pins") : "\(pins) pins")

@@ -132,3 +132,7 @@ Photo imports and the sheet can leave `finals[i]` set with empty `rolls[i]`. Str
 ## Native tab contrast depends on device layout
 
 On iOS 26, forcing a dark toolbar scheme for the tab bar can produce pale icons on pale floating glass on iPhone, while the iPad top tab selection still inherits the app tint. Keep the native tab appearance and scope the selected tint to the regular-width Tonight tab. Scope the content tint inside its NavigationStack so ivory cards retain readable controls. Verify rendered phone and tablet screenshots, not only the SwiftUI modifiers.
+
+## Scroll content must not paint under collapsed native tabs
+
+Tonight uses the native scroll view directly, contentMargins for trailing content and iOS 26 tabBarMinimizeBehavior on compact layouts. A ShapeStyle background defaults to ignoring all safe areas; forest paint then hides the contrast of the minimized native tab control. Restrict the forest background to the top safe area and leave the bottom surface to navigation. Verify both the collapsed and expanded tab states, the final action being hittable, and the return to Score. A successful typecheck or screenshot of only the expanded bar misses this defect.

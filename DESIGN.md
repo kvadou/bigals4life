@@ -11,3 +11,5 @@ Score First: compact bowler/frame context, actual score primary, attainable fini
 Team Night: state-aware current/pre-bowl/final dashboard, explicit game/series point labels, team totals and dated standings. Finished nights prioritize review/results. Shared data must remain truthful.
 
 Use crisp borders, purposeful groupings, 12–16pt radii, generous touch targets, readable secondary labels. Honor Dynamic Type, keyboard, VoiceOver, reduced motion and safe areas. Generated screenshot typography and numeric samples are direction only; implement real data and native controls.
+
+September 12 refinement: add muted gold #D8B86A for selected scoring actions, coaching cues and result highlights. Use pale gold #F4E8C8 for quiet insets and dark gold #795B24 for text on ivory. Keep lime confined to the established logo; forest and ivory remain dominant. Gold never replaces error or warning labels. Native gold assets include dark/high-contrast variants.
