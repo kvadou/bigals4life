@@ -6,7 +6,7 @@
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { summarizeWeek, BOWLERS } from '../lib/season';
+import { summarizeWeek, pointsSummary, BOWLERS } from '../lib/season';
 import { bowlerGames } from '../lib/review/facts';
 import { emptyProfile, emptyReview } from '../lib/review/schema';
 
@@ -40,6 +40,13 @@ const log = Bun.file(`${out}/next.log`);
 const next = Bun.spawn(['bun', 'node_modules/next/dist/bin/next', 'dev', '--hostname', '127.0.0.1', '--port', String(appPort)], { cwd: root, stdout: log, stderr: log, env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${fixturePort}`, NEXT_PUBLIC_SUPABASE_ANON_KEY: 'fixture-only-public-key', SUPABASE_URL: `http://127.0.0.1:${fixturePort}`, SUPABASE_SERVICE_ROLE_KEY: 'fixture-only-service-key', BAFL_ADMIN_EMAILS: email } });
 const night = { game: 3, rolls: [[],[],[],[]], finals: [210,180,175,200], history: [1,2].map(game => ({ game, rolls: [[],[],[],[]], finals: [190,180,170,160] })) };
 const week = summarizeWeek(nightId, night, '2026-09-12T12:00:00Z', 2);
+const matchedNight = {...night, match: {
+  season:"Thursday Men's Early 2026-27",week:2,
+  ours:BOWLERS.map(name=>({name,handicap:20})),
+  opponent:{number:2,name:'Fixture Opponents',bowlers:['Alex','Casey','Jordan','Sam'].map(name=>({name,handicap:20}))},
+  opponentGames:[[180,170,160,150],[180,170,160,150],[180,170,160,150]],
+}};
+const matchedWeek={...summarizeWeek(nightId,matchedNight,'2026-09-12T12:00:00Z',2),points:pointsSummary(matchedNight)};
 const data = { night: { week: 2, bowledOn: '2026-09-12', prebowl: { week: 2, bowlers: [0] }, opponent: null, games: bowlerGames(night,0) }, bowler: 0, names: BOWLERS, review: emptyReview(), profile: { ...emptyProfile(), arsenal: ['Storm Bionic', 'A Very Long Bowling Ball Name'] } };
 tables.scorebooks = [{id:nightId, owner_id:userId, state:{...night,prebowl:{week:2,bowlers:[0]}},updated_at:'2026-09-12T12:00:00Z',revision:1}];
 tables.scorebook_members = [{scorebook_id:nightId,user_id:userId,role:'owner',scorebooks:{updated_at:'2026-09-12T12:00:00Z'}}];
@@ -59,6 +66,8 @@ try {
   const page = await context.newPage();
   const errors: string[] = [];
   let emptyNight = false;
+  let matchedHome = false;
+  let attemptedWrites = 0;
   page.on('pageerror', (e: Error) => errors.push(e.message));
   await context.route('**/*', async (route: any) => {
     const req = route.request(), url = new URL(req.url());
@@ -67,8 +76,8 @@ try {
       return route.abort();
     }
     if (!url.pathname.startsWith('/api/')) return route.continue();
-    if (req.method() !== 'GET') return route.fulfill({ status:405, json:{error:'Browser fixture is read-only'} });
-    const payload = url.pathname === '/api/me' ? {user,admin:true,profile:{displayName:'Doug',bowlerName:'Doug'},scorebooks:[{id:nightId,role:'owner',updatedAt:'2026-09-12'}],legacy:[]} : url.pathname === '/api/season' ? {season:'2026-27',weeks:[week]} : url.pathname.startsWith('/api/review/') ? (emptyNight?{...data,night:{...data.night,games:[]}}:data) : url.pathname.startsWith('/api/nights/') ? {state:night,revision:1,role:'owner'} : url.pathname === '/api/league/standings' ? {teams:[{name:'Big Al’s 4 Life',place:1,pointsWon:24,pointsLost:12,ours:true}],roster:[]} : {teams:[],season:null};
+    if (req.method() !== 'GET') { attemptedWrites++; return route.fulfill({ status:405, json:{error:'Browser fixture is read-only'} }); }
+    const payload = url.pathname === '/api/me' ? {user,admin:true,profile:{displayName:'Doug',bowlerName:'Doug'},scorebooks:[{id:nightId,role:'owner',updatedAt:'2026-09-12'}],legacy:[]} : url.pathname === '/api/season' ? {season:'2026-27',weeks:[matchedHome?matchedWeek:week]} : url.pathname.startsWith('/api/review/') ? (emptyNight?{...data,night:{...data.night,games:[]}}:data) : url.pathname.startsWith('/api/nights/') ? {state:night,revision:1,role:'owner'} : url.pathname === '/api/league/standings' ? {season:{name:"Thursday Men's Early 2026-27"},week:{number:2,bowledOn:'2026-09-12'},teams:[{name:'Big Al’s 4 Life',place:1,pointsWon:24,pointsLost:12,ours:true}],roster:[]} : {teams:[],season:null};
     return route.fulfill({status:200,json:payload});
   });
   const sizes = process.env.RESPONSIVE_EXTRAS_ONLY === '1' ? [[1920,1080]] : [[320,740],[390,844],[430,932],[768,1024],[1024,768],[1440,1000],[1920,1080],[844,390]];
@@ -88,9 +97,53 @@ try {
       const okay = metrics.scroll <= metrics.width+1 && !errors.length && metrics.url !== '/login' && (metrics.content??0)>150;
       results.push({path,width,height,okay,...metrics,errors:[...errors]});
       console.log(JSON.stringify(results.at(-1)));
-      if (path.startsWith('/review/') || (!okay)) await page.screenshot({path:`${out}/${width}-${path.split('?')[0].replaceAll('/','_')||'home'}.png`,fullPage:true});
+      if (path.startsWith('/review/') || ((width===390||width===1440)&&(path==='/'||path.startsWith('/night'))) || (!okay)) await page.screenshot({path:`${out}/${width}-${path.split('?')[0].replaceAll('/','_')||'home'}.png`,fullPage:true});
     }
   }
+  // The approved score-first controls stay within reach; mutations remain device-local.
+  for (const width of [390,1440]) {
+    await page.setViewportSize({width,height:width===390?844:1000});
+    await page.goto(origin+'/night?new=1');
+    await page.getByRole('button',{name:'7 pins',exact:true}).waitFor();
+    await page.waitForFunction(()=>!(document.querySelector('button[aria-label="7 pins"]') as HTMLButtonElement)?.disabled);
+    const undo=page.getByRole('button',{name:'Undo',exact:true});
+    results.push({path:'empty-undo-disabled',width,okay:await undo.isDisabled()});
+    const keypad=await page.locator('.score-keypad').boundingBox();
+    const undoRect=await undo.boundingBox();
+    results.push({path:'score-first-viewport',width,okay:!!keypad&&!!undoRect&&keypad.y+keypad.height<(width===390?844:1000)&&undoRect.y+undoRect.height<(width===390?844:1000),keypad,undoRect});
+    await page.screenshot({path:`${out}/${width}-score-first-live.png`,fullPage:true});
+    const before=attemptedWrites;
+    await page.getByRole('button',{name:'7 pins',exact:true}).click();
+    await page.getByRole('button',{name:'8 pins',exact:true}).waitFor();
+    results.push({path:'pins-stable-availability',width,okay:await page.getByRole('button',{name:'8 pins',exact:true}).isDisabled()&&await page.getByRole('button',{name:'3 pins',exact:true}).isEnabled()});
+    await undo.click();
+    results.push({path:'local-undo',width,okay:await undo.isDisabled()&&await page.getByRole('button',{name:'8 pins',exact:true}).isEnabled()&&attemptedWrites===before});
+  }
+  for(const mode of ['scan','voice']) {
+    const before=attemptedWrites;
+    await page.goto(origin+`/night?new=1&mode=${mode}`);
+    const dialog=page.getByRole('dialog'); await dialog.waitFor();
+    results.push({path:`direct-${mode}-presentation`,width:1440,okay:attemptedWrites===before&&await dialog.isVisible()&&await dialog.locator('h2').innerText()===(mode==='scan'?'Scan the scoreboard':'Say a roll')});
+    await page.screenshot({path:`${out}/${mode}-direct.png`,fullPage:true});
+    await page.keyboard.press('Escape');
+    results.push({path:`direct-${mode}-escape`,width:1440,okay:!(await dialog.isVisible())});
+  }
+  await page.goto(origin+`/night?night=${nightId}`);
+  const finalUndo=page.getByRole('button',{name:'Undo',exact:true});await page.getByText('Final score',{exact:true}).waitFor();
+  results.push({path:'final-only-undo-enabled',width:1440,okay:await finalUndo.isEnabled()});
+  await finalUndo.click();
+  await page.locator('.sync-error').waitFor();
+  results.push({path:'failed-save-disables-undo',width:1440,okay:await finalUndo.isDisabled()});
+  matchedHome=true;
+  for(const width of [390,1440]) {
+    await page.setViewportSize({width,height:width===390?844:1000});
+    await page.goto(origin+'/');
+    await page.getByRole('link',{name:'Review the night'}).waitFor();
+    const text=await page.locator('main').innerText();
+    results.push({path:'home-match-point-labels',width,okay:text.includes('Game points')&&text.includes('Series points')&&text.includes('Team points')});
+    await page.screenshot({path:`${out}/${width}-home-match.png`,fullPage:true});
+  }
+  matchedHome=false;
   for (const width of [320,390,768,1024,1440]) {
     await page.setViewportSize({width,height:900});
     await page.goto(origin+`/review/${nightId}`);
@@ -148,7 +201,7 @@ try {
   await browser?.close();
   if (process.env.RESPONSIVE_KEEP === '1') {
     console.log(`Fixture remains available at ${origin}/review/${nightId}; synthetic storage: ${out}/storage.json`);
-    await new Promise<void>(done => {process.once('SIGINT',done);process.once('SIGTERM',done);});
+    await new Promise<void>(done => {const timer=setTimeout(done,300_000);const finish=()=>{clearTimeout(timer);done()};process.once('SIGINT',finish);process.once('SIGTERM',finish);});
   }
   next.kill(); fixture.stop();
 }

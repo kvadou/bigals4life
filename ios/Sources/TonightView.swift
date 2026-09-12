@@ -32,42 +32,60 @@ struct TonightView: View {
     @State private var loading = false
     @State private var requestID = UUID()
 
+    @ScaledMetric(relativeTo: .largeTitle) private var scoreSize = 48.0
+
     private var selected: Int? { selectedBowler.flatMap { Night.names.indices.contains($0) ? $0 : nil } }
+    private var summary: SeasonWeek? { season?.weeks.first { $0.id == store.teamID } }
     private var currentTitle: String {
-        if let prebowl = store.night.prebowl { return "Week \(prebowl.week) pre-bowl" }
-        if let match = store.night.match { return "Week \(match.week)" }
-        if let summary = season?.weeks.first(where: { $0.id == store.teamID }), let week = summary.week { return "Week \(week)" }
+        let week = store.night.prebowl?.week ?? store.night.match?.week ?? summary?.week
+        if let week { return "Week \(week)" }
         return store.teamID == nil ? "Device scorebook" : "Team scorebook"
     }
     private var participants: [Int] { store.night.prebowl?.bowlers ?? Array(Night.names.indices) }
-    private var completed: Bool {
-        let games = NativeMatchScoring.ourGames(store.night)
-        return participants.allSatisfy { index in games.allSatisfy { $0[index] != nil } }
+    private var games: [[Int?]] { NativeMatchScoring.ourGames(store.night) }
+    private var completed: Bool { participants.allSatisfy { index in games.allSatisfy { $0[index] != nil } } }
+    private var points: NativeMatchPoints? { store.night.prebowl == nil ? NativeMatchScoring.points(store.night) : nil }
+    private var previousResult: SeasonWeek? { season?.weeks.first { $0.id != store.teamID && $0.prebowl == nil && $0.finishedGames >= 3 } }
+    private var nightState: String {
+        if store.night.prebowl != nil { return completed ? "Pre-bowl complete" : "Pre-bowl in progress" }
+        if completed { return points?.remaining == 0 ? "Final" : "Scores complete" }
+        return "Game \(store.night.game) · Live"
     }
-    private var previousResult: SeasonWeek? {
-        season?.weeks.first { $0.id != store.teamID && $0.prebowl == nil && $0.finishedGames >= 3 }
-    }
+    private var canReview: Bool { completed && store.teamID != nil }
+    private var teamSeries: Int { games.reduce(0) { total, game in total + participants.compactMap { game[$0] }.reduce(0, +) } }
 
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
-                if horizontalSizeClass == .regular && geometry.size.width >= 800 && !dynamicTypeSize.isAccessibilitySize {
-                    HStack(spacing: 0) {
-                        List { welcomeSection; currentSection; actionSection }
-                            .frame(width: geometry.size.width * 0.52)
-                        Divider()
-                        List { teamSection; previousSection; seasonSection }
-                    }
+                if horizontalSizeClass == .regular && geometry.size.width >= 900 && !dynamicTypeSize.isAccessibilitySize {
+                    HStack(alignment: .top, spacing: 24) {
+                        ScrollView { mainColumn.padding(.bottom, 24) }
+                        ScrollView { sideColumn.padding(.bottom, 24) }
+                            .frame(width: min(380, geometry.size.width * 0.34))
+                    }.padding(.horizontal, 24).padding(.top, 16)
                 } else {
-                    List { welcomeSection; currentSection; actionSection; teamSection; previousSection; seasonSection }
+                    ScrollView {
+                        VStack(spacing: 20) { mainColumn; sideColumn }
+                            .padding(.horizontal, 18).padding(.top, 12).padding(.bottom, 28)
+                    }
                 }
             }
-            .background(Color(uiColor: .systemGroupedBackground))
+            .tint(BA4LTheme.tint)
+            .background(Color("BrandForest"))
             .navigationTitle("Tonight")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color("BrandForest"), for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 8) {
+                        BA4LBrandMark(size: 27)
+                        Text("BA4L").font(.system(.title3, design: .serif, weight: .black))
+                    }.foregroundStyle(Color("OnForest")).accessibilityLabel("BA4L Tonight")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showSeason = true } label: { Label("Season", systemImage: "calendar") }
-                        .accessibilityIdentifier("tonightSeason")
+                        .tint(Color("BrandLime")).accessibilityIdentifier("tonightSeason")
                 }
             }
             .refreshable { await refresh() }
@@ -75,64 +93,84 @@ struct TonightView: View {
             .sheet(isPresented: $showSeason) {
                 SeasonView(send: send, onOpenNight: { id in showSeason = false; onOpenNight(id) })
                     .safeAreaInset(edge: .bottom) {
-                        Button { showSeason = false } label: {
-                            Text("Done").frame(maxWidth: .infinity, minHeight: 44)
-                        }
-                            .buttonStyle(.bordered).padding(.horizontal)
-                            .background(.bar)
+                        Button { showSeason = false } label: { Text("Done").frame(maxWidth: .infinity, minHeight: 44) }
+                            .buttonStyle(.bordered).padding(.horizontal).background(.bar)
                     }
             }
         }
     }
-    private var welcomeSection: some View {
-        Section {
-            Text(profile?.greeting ?? "Ready for the lanes?").font(.title2.bold())
-                .fixedSize(horizontal: false, vertical: true)
-            Picker("Scoring for", selection: $selectedBowler) {
-                Text("Choose a bowler").tag(nil as Int?)
-                ForEach(Night.names.indices, id: \.self) { Text(Night.names[$0]).tag(Optional($0)) }
+
+    private var mainColumn: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(store.night.prebowl != nil ? "Before league night." : completed ? "The night, together." : "Four bowlers. One night.")
+                    .font(.system(.largeTitle, design: .serif, weight: .bold))
+                    .foregroundStyle(Color("OnForest")).fixedSize(horizontal: false, vertical: true)
+                Text(profile?.greeting ?? "Your team. Your scorebook.")
+                    .font(.subheadline).foregroundStyle(Color("BrandLime"))
             }
-            .frame(minHeight: 44)
-            .accessibilityIdentifier("tonightBowler")
-        } footer: {
-            Text(selected == nil ? "Choose your scorecard to begin. Your choice stays with this account on this device." : "You can switch bowlers any time to help score for the team.")
+            resultPanel
+            personalPanel
+            NavigationLink { MatchInsightsView(store: store, send: send) } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "target")
+                    Text("Match points & lineup").fontWeight(.semibold)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right").font(.caption.weight(.bold))
+                }.frame(minHeight: 48).padding(.horizontal, 16)
+                    .foregroundStyle(Color("BrandLime"))
+                    .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.white.opacity(0.24), lineWidth: 1))
+            }.buttonStyle(.plain)
         }
     }
-    private var currentSection: some View {
-        Section {
-            if let match = store.night.match {
-                Text("vs \(match.opponent.name.capitalized)").font(.headline)
-            }
-            if store.night.prebowl != nil {
-                Label(completed ? "Pre-bowl scores recorded" : "Pre-bowl in progress", systemImage: "calendar.badge.clock")
-                Text(participants.map { Night.names[$0] }.joined(separator: ", "))
-                    .font(.subheadline).foregroundStyle(.secondary)
+    private var sideColumn: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            teamPanel
+            if let result = previousResult { previousPanel(result) }
+            seasonPanel
+        }
+    }
+
+    private var resultPanel: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            ViewThatFits(in: .horizontal) {
+                HStack { Text(currentTitle).fontWeight(.semibold); Spacer(); Text(nightState) }
+                VStack(alignment: .leading, spacing: 4) { Text(currentTitle).fontWeight(.semibold); Text(nightState) }
+            }.font(.subheadline)
+            if let summary { Text(summary.dateLabel).font(.caption).foregroundStyle(.secondary) }
+            if let match = store.night.match, let points {
+                matchup(points, opponent: match.opponent.name)
+                VStack(spacing: 6) {
+                    Text(completed ? "Team scratch series" : "Scratch pins · completed games").font(.caption).foregroundStyle(.secondary)
+                    Text(teamSeries.formatted()).font(.title3.bold().monospacedDigit())
+                }.frame(maxWidth: .infinity)
+                Divider()
+                gamePoints(points)
+                let seriesPoints = points.bowlers.map(\.series).reduce(points.series.split) { [$0[0] + $1[0], $0[1] + $1[1]] }
+                HStack {
+                    Text("Series points").font(.subheadline.weight(.semibold))
+                    Spacer(minLength: 8)
+                    Text(pointPair(seriesPoints)).font(.title3.bold().monospacedDigit())
+                }.padding(12)
+                    .background(Color("BrandLime").opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
+                if points.remaining > 0 {
+                    Text("\(formatted(points.remaining)) of 36 points still available. Open games are not counted yet.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             } else {
-                Label(completed ? "Night complete" : "Game \(store.night.game)", systemImage: completed ? "checkmark.circle" : "figure.bowling")
-            }
-            if let index = selected {
-                let game = store.night.current
-                let isComplete = game.complete(index)
-                let scoreLayout = dynamicTypeSize.isAccessibilitySize
-                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
-                    : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 10))
-                scoreLayout {
-                    Text("\(game.score(index))").font(.largeTitle.bold().monospacedDigit())
-                    Text("\(Night.names[index]) · \(isComplete ? "final" : "scored")")
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(store.night.prebowl != nil ? participants.map { Night.names[$0] }.joined(separator: ", ") : "Big Al’s 4 Life")
+                        .font(.title2.bold())
+                    Text(teamSeries.formatted()).font(.system(size: scoreSize, weight: .bold, design: .rounded).monospacedDigit())
+                    Text(store.night.prebowl != nil ? "Scratch pins from completed pre-bowl games" : "Team scratch pins from completed games")
                         .font(.subheadline).foregroundStyle(.secondary)
-                }.accessibilityElement(children: .combine)
-                if !isComplete {
-                    Text("Frame \(game.bowling(index).frameNumber) · ball \(game.bowling(index).ballNumber) · up to \(store.night.maximum(index))")
-                        .font(.subheadline).foregroundStyle(.secondary)
-                }
-                if let prebowl = store.night.prebowl, !prebowl.bowlers.contains(index) {
-                    Text("This pre-bowl is for your teammates. Your scorecard is not part of its result.")
-                        .font(.callout).foregroundStyle(.secondary)
+                    if store.night.match == nil { Text("Match points appear after the opponent and handicaps are set.").font(.caption).foregroundStyle(.secondary) }
                 }
             }
-            if let points = NativeMatchScoring.points(store.night), store.night.prebowl == nil {
-                LabeledContent("Match points", value: "\(formatted(points.total[0])) – \(formatted(points.total[1]))")
-                if points.remaining > 0 { Text("\(formatted(points.remaining)) points still available").font(.caption).foregroundStyle(.secondary) }
+            primaryAction
+            if canReview {
+                Button("View scorecards") { onScore() }.frame(maxWidth: .infinity, minHeight: 44)
             }
             Label(store.status, systemImage: store.pending ? "icloud.and.arrow.up" : store.error == nil ? "checkmark.icloud" : "exclamationmark.icloud")
                 .font(.caption).foregroundStyle(.secondary)
@@ -140,85 +178,148 @@ struct TonightView: View {
                 Text(error).font(.callout).foregroundStyle(.red)
                 Button("Retry score sync") { Task { await store.retry() } }.disabled(store.busy).frame(minHeight: 44)
             }
-            Button { onScore() } label: {
-                Group {
-                    if dynamicTypeSize.isAccessibilitySize {
-                        Text(scoreAction).multilineTextAlignment(.center)
-                    } else {
-                        Label(scoreAction, systemImage: "figure.bowling")
-                    }
-                }
-                .font(.headline).lineLimit(nil).fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, minHeight: 48)
-                .foregroundStyle(Color("OnBrandGreen"))
-            }
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.roundedRectangle(radius: 16))
-            .tint(Color("BrandGreen"))
-            .foregroundStyle(Color("OnBrandGreen"))
-            .accessibilityIdentifier("tonightContinue")
-        } header: {
-            Text(currentTitle)
-        } footer: {
-            Text(store.teamID == nil ? "This scorebook is saved on this device. Open a team night from Season to use its shared scores." : store.pending ? "Your latest changes are included here and waiting to sync." : "The scorebook is shared with your team.")
+            if store.pending { Text("Includes your latest local changes, waiting to sync.").font(.caption).foregroundStyle(.secondary) }
+            if store.teamID == nil { Text("Saved on this device. Open a night from Season to join your shared scorebook.").font(.caption).foregroundStyle(.secondary) }
         }
+        .padding(20).frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 16))
+    }
+    @ViewBuilder private func matchup(_ points: NativeMatchPoints, opponent: String) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("BA4L").font(.headline)
+                Text(formatted(points.total[0])).font(.system(size: scoreSize, weight: .black, design: .rounded).monospacedDigit())
+                Text("Our points").font(.caption).foregroundStyle(.secondary)
+                Text(opponent.capitalized).font(.headline)
+                Text(formatted(points.total[1])).font(.system(size: scoreSize, weight: .black, design: .rounded).monospacedDigit())
+                Text("Their points").font(.caption).foregroundStyle(.secondary)
+            }.accessibilityElement(children: .combine)
+        } else {
+            Grid(horizontalSpacing: 12, verticalSpacing: 6) {
+                GridRow {
+                    Text("BA4L").font(.headline).frame(maxWidth: .infinity)
+                    Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                    Text(opponent.capitalized).font(.headline).multilineTextAlignment(.center).frame(maxWidth: .infinity)
+                }
+                GridRow {
+                    Text(formatted(points.total[0])).font(.system(size: scoreSize, weight: .black, design: .rounded).monospacedDigit())
+                    Text("–").font(.title.weight(.light)).accessibilityHidden(true)
+                    Text(formatted(points.total[1])).font(.system(size: scoreSize, weight: .black, design: .rounded).monospacedDigit())
+                }
+                GridRow {
+                    Text("Our points").font(.caption).foregroundStyle(.secondary)
+                    Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                    Text("Their points").font(.caption).foregroundStyle(.secondary)
+                }
+            }.accessibilityElement(children: .combine)
+        }
+    }
+    private func gamePoints(_ points: NativeMatchPoints) -> some View {
+        let columns = dynamicTypeSize.isAccessibilitySize ? [GridItem(.flexible())] : Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+        return LazyVGrid(columns: columns, spacing: 14) {
+            ForEach(Array(points.games.enumerated()), id: \.element.game) { index, game in
+                let split = points.bowlers.reduce(game.split) { total, bowler in
+                    guard index < bowler.games.count else { return total }
+                    return [total[0] + bowler.games[index][0], total[1] + bowler.games[index][1]]
+                }
+                VStack(spacing: 4) {
+                    Text("Game \(game.game)").font(.caption).foregroundStyle(.secondary)
+                    Text(pointPair(split)).font(.title3.bold().monospacedDigit())
+                    Text("Game points").font(.caption2).foregroundStyle(.secondary)
+                }.frame(maxWidth: .infinity).accessibilityElement(children: .combine)
+            }
+        }
+    }
+    private var primaryAction: some View {
+        Button { canReview ? onReview() : onScore() } label: {
+            HStack {
+                Text(canReview ? "Review the night" : scoreAction).fixedSize(horizontal: false, vertical: true)
+                if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 8); Image(systemName: "arrow.right") }
+            }.font(.headline).frame(maxWidth: .infinity, minHeight: 48)
+                .foregroundStyle(Color("OnBrandGreen"))
+        }.buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle(radius: 12))
+            .tint(Color("BrandGreen")).foregroundStyle(Color("OnBrandGreen"))
+            .accessibilityIdentifier("tonightContinue")
     }
     private var scoreAction: String {
         guard selected != nil else { return "Choose a scorecard" }
         if store.role == .viewer || completed { return "View scorecard" }
         return "Continue scoring"
     }
-    private var actionSection: some View {
-        Section {
-            NavigationLink { MatchInsightsView(store: store, send: send) } label: {
-                Label("Match points & targets", systemImage: "target")
-            }.frame(minHeight: 44)
-            Button { onReview() } label: { Label("Review with Bowling Bro’", systemImage: "text.bubble") }
-                .disabled(store.teamID == nil).frame(minHeight: 44)
-        }
+    private var personalPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Picker("Your scorecard", selection: $selectedBowler) {
+                Text("Choose a bowler").tag(nil as Int?)
+                ForEach(Night.names.indices, id: \.self) { Text(Night.names[$0]).tag(Optional($0)) }
+            }.frame(minHeight: 44).accessibilityIdentifier("tonightBowler")
+            if let index = selected {
+                let game = store.night.current
+                let personalLayout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 10))
+                personalLayout {
+                    Text("\(game.score(index))").font(.title.bold().monospacedDigit())
+                    Text("\(Night.names[index]) · \(game.complete(index) ? "final" : "scored")").font(.subheadline)
+                }
+                if !game.complete(index) {
+                    Text("Frame \(game.bowling(index).frameNumber) · ball \(game.bowling(index).ballNumber) · up to \(store.night.maximum(index))")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
+                if let prebowl = store.night.prebowl, !prebowl.bowlers.contains(index) {
+                    Text("This pre-bowl is for your teammates. Your scorecard is not part of its result.").font(.callout).foregroundStyle(.secondary)
+                }
+            } else { Text("Your choice stays with this account on this device.").font(.callout).foregroundStyle(.secondary) }
+            if !canReview {
+                Button { onReview() } label: { Label("Bowling Bro’ · review notes", systemImage: "text.bubble") }
+                    .disabled(store.teamID == nil).frame(minHeight: 44)
+            }
+        }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 16))
     }
-    private var teamSection: some View {
-        Section("Team · game \(store.night.game)") {
+    private var teamPanel: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(completed ? "The team · scratch series" : "The team · game \(store.night.game)").font(.headline)
             ForEach(Night.names.indices, id: \.self) { index in
+                if index != 0 { Divider() }
+                let game = store.night.current
+                let score = completed ? games.compactMap { $0[index] }.reduce(0, +) : game.score(index)
                 Button { selectedBowler = index; onScore() } label: {
                     LabeledContent {
-                        Text("\(store.night.current.score(index)) \(store.night.current.complete(index) ? "final" : "scored")")
-                            .monospacedDigit().foregroundStyle(.primary)
+                        Text(score.formatted()).font(.title3.bold().monospacedDigit()).foregroundStyle(.primary)
                     } label: {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(Night.names[index]).font(.headline).foregroundStyle(.primary)
-                            Text(store.night.current.complete(index) ? "Game complete" : "Frame \(store.night.current.bowling(index).frameNumber)")
+                            Text(store.night.prebowl != nil && !participants.contains(index) ? "Not in this pre-bowl" : completed ? "Series recorded" : game.complete(index) ? "Game complete" : "Frame \(game.bowling(index).frameNumber)")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }.frame(minHeight: 44)
-                }.buttonStyle(.plain)
-                    .accessibilityLabel("Open \(Night.names[index])’s scorecard, \(store.night.current.score(index)) scored")
+                }.buttonStyle(.plain).accessibilityLabel("Open \(Night.names[index])’s scorecard, \(score) scratch pins")
             }
-        }
+        }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 16))
     }
-    @ViewBuilder private var previousSection: some View {
-        if let result = previousResult {
-            Section("Last completed league night") {
-                Text("\(result.title) · \(result.dateLabel)").font(.headline)
-                if let opponent = result.opponent { Text("vs \(opponent.capitalized)").font(.subheadline) }
-                if let points = result.points {
-                    LabeledContent("Result", value: "\(formatted(points.ours)) – \(formatted(points.theirs))")
-                    if points.remaining > 0 { Text("\(formatted(points.remaining)) points await opponent scores.").font(.caption).foregroundStyle(.secondary) }
-                }
-                if let score = result.teamSeries { LabeledContent("Team scratch series", value: score.formatted()) }
-                Button("Open \(result.title)") { onOpenNight(result.id) }
-                    .disabled(!store.canSwitchTeam).frame(minHeight: 44)
+    private func previousPanel(_ result: SeasonWeek) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Last completed league night").font(.headline)
+            Text("\(result.title) · \(result.dateLabel)").font(.subheadline).foregroundStyle(.secondary)
+            if let opponent = result.opponent { Text("vs \(opponent.capitalized)") }
+            if let points = result.points {
+                LabeledContent("Match points", value: "\(formatted(points.ours)) – \(formatted(points.theirs))")
+                if points.remaining > 0 { Text("\(formatted(points.remaining)) points await opponent scores.").font(.caption).foregroundStyle(.secondary) }
             }
-        }
+            if let score = result.teamSeries { LabeledContent("Team scratch series", value: score.formatted()) }
+            Button("Open \(result.title)") { onOpenNight(result.id) }.disabled(!store.canSwitchTeam).frame(minHeight: 44)
+        }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 16))
     }
-    private var seasonSection: some View {
-        Section {
-            Button { showSeason = true } label: { Label("All weeks & pre-bowls", systemImage: "calendar") }
-                .frame(minHeight: 44)
+    private var seasonPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button { showSeason = true } label: { Label("All weeks & pre-bowls", systemImage: "calendar").frame(minHeight: 44) }
             if loading { ProgressView("Loading season…") }
             if let error { Text(error).font(.callout).foregroundStyle(.red); Button("Retry season") { Task { await refresh() } }.frame(minHeight: 44) }
-        }
+        }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 16))
     }
+    private func pointPair(_ values: [Double]) -> String { values[0] + values[1] == 0 ? "Open" : "\(formatted(values[0])) – \(formatted(values[1]))" }
+
     @MainActor private func refresh() async {
         let token = UUID(); requestID = token; loading = true; error = nil
         defer { if requestID == token { loading = false } }

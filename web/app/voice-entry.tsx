@@ -7,12 +7,13 @@ import type {Night} from "@/lib/scorebook";
 type Recognizer={lang:string;continuous:boolean;interimResults:boolean;onresult:((event:{results:ArrayLike<ArrayLike<{transcript:string}>>})=>void)|null;onerror:((event:{error:string})=>void)|null;onend:(()=>void)|null;start:()=>void;stop:()=>void;abort:()=>void};
 type SpeechWindow=Window&{SpeechRecognition?:new()=>Recognizer;webkitSpeechRecognition?:new()=>Recognizer};
 type Review=ReturnType<typeof parseVoiceRoll>&{game:number;before:string};
-export default function VoiceEntry({night,disabled,onApply}:{night:Night;disabled:boolean;onApply:(review:Review)=>void}){
+export default function VoiceEntry({night,disabled,onApply,requestedOpen=false}:{requestedOpen?:boolean;night:Night;disabled:boolean;onApply:(review:Review)=>void}){
   const [open,setOpen]=useState(false),[text,setText]=useState(""),[listening,setListening]=useState(false),[error,setError]=useState(""),[review,setReview]=useState<Review|null>(null),[supported,setSupported]=useState(false);
   const dialog=useRef<HTMLDialogElement>(null),recognizer=useRef<Recognizer|null>(null),timeout=useRef<ReturnType<typeof setTimeout>|null>(null);
   const stop=()=>{recognizer.current?.abort();recognizer.current=null;if(timeout.current)clearTimeout(timeout.current);setListening(false)};
   const close=()=>{stop();setOpen(false)};
   useEffect(()=>{const w=window as SpeechWindow;setSupported(Boolean(w.SpeechRecognition||w.webkitSpeechRecognition));return()=>{recognizer.current?.abort();if(timeout.current)clearTimeout(timeout.current)}},[]);
+  useEffect(()=>{if(requestedOpen)setOpen(true)},[requestedOpen]);
   useEffect(()=>{if(open)dialog.current?.showModal();else dialog.current?.close()},[open]);
   const start=()=>{
     const w=window as SpeechWindow;const Constructor=w.SpeechRecognition||w.webkitSpeechRecognition;

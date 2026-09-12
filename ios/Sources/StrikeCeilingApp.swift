@@ -11,7 +11,7 @@ struct ScoreboardView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @ScaledMetric(relativeTo: .title3) private var pinWidth = 66.0
+    @ScaledMetric(relativeTo: .largeTitle) private var scoreSize = 64.0
     @Binding var selectedBowler: Int?
     private var selected: Int { selectedBowler ?? 0 }
     @State private var teamExpanded = false
@@ -57,16 +57,19 @@ struct ScoreboardView: View {
                     }
                 } else {
                     List {
-                        syncSection
+                        if store.error != nil || store.pending || store.role == .viewer { syncSection }
                         compactTeamSection
                         gameSections
+                        if store.error == nil && !store.pending && store.role != .viewer { syncSection }
                     }
                 }
             }
             }
             }
-            .background(Color(uiColor: .systemGroupedBackground))
-            .navigationTitle("BA4L")
+            .scrollContentBackground(.hidden)
+            .background(Color("BrandIvory"))
+            .navigationTitle("Score")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { sheetError = nil; showTeam = true } label: { Label("Team", systemImage: "person.2") }
@@ -114,24 +117,13 @@ struct ScoreboardView: View {
     @ViewBuilder
     private var gameSections: some View {
         scoreSection
-        Section { Button("Match, pre-bowl & targets", systemImage: "slider.horizontal.3") { showMatch = true }.disabled(!store.canEdit) }
         if !complete { entrySection }
-        Section {
-            Button("Say a roll", systemImage: "mic") { showVoice = true }.disabled(!store.canEdit)
-            Button("Scan the scoreboard", systemImage: "camera.viewfinder") { showScan = true }
-                .disabled(!store.canEdit)
-                .accessibilityIdentifier("scanButton")
-        } footer: { Text("Take a photo of the lane monitor. Review the rolls, then apply them to the current game.") }
-        Section { NavigationLink("Match points & lineup") { MatchInsightsView(store: store, send: store.transport) } }
+        else { Section { undoButton; captureActions } }
         framesSection
-        Section {
-            Button("Undo last roll", systemImage: "arrow.uturn.backward") {
-                Task { await store.change { night in
-                    if night.finals?[selected] != nil { night.finals?[selected] = nil }
-                    else if !night.rolls[selected].isEmpty { night.rolls[selected].removeLast() }
-                } }
-            }
-            .disabled(!store.canEdit || (game.rolls.isEmpty && store.night.finals?[selected] == nil))
+        Section("Game tools") {
+            Button("Match, pre-bowl & targets", systemImage: "slider.horizontal.3") { showMatch = true }
+                .disabled(!store.canEdit)
+            NavigationLink("Match points & lineup") { MatchInsightsView(store: store, send: store.transport) }
             Button("Start next game", systemImage: "arrow.clockwise") { showNewGame = true }
                 .disabled(!store.canEdit || store.night.game >= 1000 || store.night.history.count >= 500)
             NavigationLink { HistoryView(history: store.night.history) } label: {
@@ -230,53 +222,148 @@ struct ScoreboardView: View {
     }
 
     private var scoreSection: some View {
-        Section("\(Night.names[selected])’s game") {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(complete ? "Final score" : "Highest possible finish").font(.headline).foregroundStyle(.secondary)
-                Text("\(store.night.maximum(selected))")
-                    .font(.largeTitle.bold().monospacedDigit()).foregroundStyle(.tint)
-                    .contentTransition(.numericText()).accessibilityIdentifier("maximumScore")
-                Text(complete ? "Game complete. Every pin counted." : "Clear the remaining pins. Strike the rest of the way.")
-                    .font(.subheadline).foregroundStyle(.secondary)
+        Section {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Game \(store.night.game)").font(.subheadline.weight(.semibold))
+                    Spacer()
+                    if store.busy { ProgressView().tint(BA4LTheme.onTint).accessibilityLabel("Syncing") }
+                    else { Image(systemName: store.pending || store.error != nil ? "exclamationmark.triangle" : "checkmark.circle").accessibilityLabel(store.status) }
+                }
+                ViewThatFits(in: .horizontal) {
+                    scoreTotals(stacked: false)
+                    scoreTotals(stacked: true)
+                }
+                Text(complete ? "Game complete" : "Frame \(game.frameNumber) · Ball \(game.ballNumber)")
+                    .font(.headline)
                 if store.night.finals?[selected] != nil {
-                    Text("Final total recorded from the score sheet. Frame marks may be incomplete.")
-                        .font(.caption).foregroundStyle(.secondary)
-                } else if !complete {
-                    Text("\(game.settledScore) scored in completed frames. Strike and spare bonuses settle after the next rolls.")
-                        .font(.caption).foregroundStyle(.secondary)
+                    Text("Final total recorded. Frame marks may be incomplete.").font(.caption)
                 }
             }
+            .foregroundStyle(BA4LTheme.onTint)
             .padding(.vertical, 8)
-            .accessibilityElement(children: .combine)
+            .accessibilityElement(children: .contain)
         }
+        .listRowBackground(BA4LTheme.tint)
+    }
+
+    private func scoreTotals(stacked: Bool) -> some View {
+        let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 24))
+        return layout {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(complete ? "Final score" : "Actual score").font(.subheadline)
+                Text("\(store.night.current.score(selected))")
+                    .font(.system(size: scoreSize, weight: .heavy, design: .rounded).monospacedDigit())
+                    .accessibilityIdentifier("actualScore")
+            }
+            if !complete {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Possible finish").font(.subheadline)
+                    Text("\(store.night.maximum(selected))")
+                        .font(.title2.monospacedDigit())
+                        .accessibilityIdentifier("maximumScore")
+                }
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var entrySection: some View {
         Section {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: pinWidth))], spacing: 12) {
-                ForEach(0...game.pinsAvailable, id: \.self) { pins in
-                    Button {
-                        Task { await store.change { night in
-                            guard !night.current.complete(selected) else { return }
-                            var current = night.current.bowling(selected)
-                            if current.add(pins) { night.rolls[selected] = current.rolls }
-                        } }
-                    } label: {
-                        Text(entryLabel(pins)).font(.title3.bold())
-                            .foregroundStyle(BA4LTheme.onTint)
-                            .frame(maxWidth: .infinity, minHeight: 48)
-                    }
-                    .buttonStyle(.borderedProminent).disabled(!store.canEdit)
-                    .accessibilityLabel(pins == 10 ? "Strike, 10 pins" : "\(pins) pins")
-                    .accessibilityIdentifier("pins-\(pins)")
+            if dynamicTypeSize.isAccessibilitySize {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                    ForEach(1...9, id: \.self) { pinButton($0) }
+                    pinButton(game.pinsAvailable, special: true)
+                    pinButton(0)
+                    undoButton
+                    scanButton
+                    voiceButton
+                }
+                .buttonStyle(.bordered)
+            } else {
+            Grid(horizontalSpacing: 8, verticalSpacing: 8) {
+                GridRow {
+                    pinButton(1); pinButton(2); pinButton(3)
+                    pinButton(game.pinsAvailable, special: true)
+                }
+                GridRow {
+                    pinButton(4); pinButton(5); pinButton(6)
+                    undoButton
+                }
+                GridRow {
+                    pinButton(7); pinButton(8); pinButton(9)
+                    scanButton
+                }
+                GridRow {
+                    pinButton(0).gridCellColumns(2)
+                    voiceButton.gridCellColumns(2)
                 }
             }
-            .padding(.vertical, 8)
-        } header: {
-            Text("Frame \(game.frameNumber) · Ball \(game.ballNumber)")
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.roundedRectangle(radius: 12))
+            .padding(.vertical, 4)
+            }
         } footer: {
-            Text("Tap pins knocked down on this roll. X = strike, / = spare, 0 = miss.")
+            Text("Tap pins knocked down. X = strike, / = spare, 0 = miss. Strike and spare bonuses settle after the next rolls.")
         }
+    }
+
+    private func pinButton(_ pins: Int, special: Bool = false) -> some View {
+        Button {
+            Task { await store.change { night in
+                guard !night.current.complete(selected) else { return }
+                var current = night.current.bowling(selected)
+                if current.add(pins) { night.rolls[selected] = current.rolls }
+            } }
+        } label: {
+            Text(special ? entryLabel(pins) : String(pins))
+                .font(.title3.bold().monospacedDigit())
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.borderedProminent)
+        .buttonBorderShape(.roundedRectangle(radius: 12))
+        .tint(special ? Color("BrandLime") : BA4LTheme.tint)
+        .foregroundStyle(special ? Color("BrandForest") : BA4LTheme.onTint)
+        .disabled(!store.canEdit || pins > game.pinsAvailable)
+        .accessibilityLabel(special ? (entryLabel(pins) == "X" ? "Strike, 10 pins" : "Spare, \(pins) pins") : "\(pins) pins")
+        .accessibilityIdentifier(special ? "pins-10" : "pins-\(pins)")
+    }
+
+    private var undoButton: some View {
+        Button {
+            Task { await store.change { night in
+                if night.finals?[selected] != nil { night.finals?[selected] = nil }
+                else if !night.rolls[selected].isEmpty { night.rolls[selected].removeLast() }
+            } }
+        } label: { keypadAction("Undo", systemImage: "arrow.uturn.backward") }
+        .disabled(!store.canEdit || (game.rolls.isEmpty && store.night.finals?[selected] == nil))
+        .accessibilityLabel("Undo last roll")
+        .accessibilityIdentifier("undoButton")
+    }
+
+    private var scanButton: some View {
+        Button { showScan = true } label: { keypadAction("Scan", systemImage: "camera.viewfinder") }
+            .disabled(!store.canEdit)
+            .accessibilityLabel("Scan the scoreboard")
+            .accessibilityIdentifier("scanButton")
+    }
+
+    private var voiceButton: some View {
+        Button { showVoice = true } label: { keypadAction("Voice", systemImage: "mic") }
+            .disabled(!store.canEdit)
+            .accessibilityLabel("Say a roll")
+    }
+
+    private var captureActions: some View {
+        HStack { scanButton; voiceButton }.buttonStyle(.bordered)
+    }
+
+    private func keypadAction(_ title: String, systemImage: String) -> some View {
+        VStack(spacing: 2) {
+            Image(systemName: systemImage)
+            Text(title).font(.caption)
+        }
+        .frame(maxWidth: .infinity, minHeight: 44)
     }
 
     private var framesSection: some View {
@@ -366,9 +453,9 @@ struct ScoreboardView: View {
     }
 
     private func entryLabel(_ pins: Int) -> String {
-        if pins == 10 { return "X" }
-        if pins == game.pinsAvailable && game.pinsAvailable < 10 { return "/" }
-        return String(pins)
+        var projected = game
+        guard projected.add(pins), let frame = projected.frames.last else { return String(pins) }
+        return projected.symbols(for: frame).split(separator: " ").last.map(String.init) ?? String(pins)
     }
 }
 

@@ -1,9 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-<rect width="1024" height="1024" fill="#203B2F"/>
-<circle cx="512" cy="405" r="258" fill="#D5E5A8"/>
-<circle cx="512" cy="405" r="220" fill="none" stroke="#203B2F" stroke-width="10"/>
-<circle cx="470" cy="330" r="34" fill="#203B2F"/>
-<circle cx="565" cy="330" r="34" fill="#203B2F"/>
-<circle cx="520" cy="425" r="39" fill="#203B2F"/>
-<text x="512" y="853" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-size="204" letter-spacing="-10" fill="#F6F6EE">BA4L</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#203B2F"/><g fill="#DDF29A"><path fill-rule="evenodd" d="M575 150H735L700 505H805L790 630H686L666 758H521L543 630H298L315 508ZM562 334L424 505H564Z"/><path d="M246 725C259 809 406 834 517 758L599 827C437 972 185 907 150 770Z"/><circle cx="213" cy="704" r="65"/><g fill="#203B2F"><circle cx="188" cy="680" r="10"/><circle cx="221" cy="672" r="10"/><circle cx="213" cy="710" r="12"/></g></g></svg>

@@ -1,8 +1,9 @@
 "use client";
 
-import { CircleDot, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useId, useRef, useState, type ReactNode } from "react";
+import { BrandMark } from "./brand-mark";
 import { BroGlyph } from "./bro-mark";
 
 /** A single set of section and account controls, disclosed when space is tight. */
@@ -16,7 +17,7 @@ export function Topbar({ right }: { right?: ReactNode }) {
       setOpen(false); toggle.current?.focus();
     }
   }}>
-    <Link className="brand" href="/" aria-label="Big Al's 4 Life home"><span className="brand-icon"><CircleDot size={23}/></span>BA4L</Link>
+    <Link className="brand" href="/" aria-label="Big Al's 4 Life home"><span className="brand-icon"><BrandMark size={36}/></span>BA4L</Link>
     <button ref={toggle} type="button" className="nav-toggle" aria-expanded={open} aria-controls={navigationId} onClick={() => setOpen(value => !value)}>
       {open ? <X size={19} aria-hidden="true"/> : <Menu size={19} aria-hidden="true"/>}{open ? "Close" : "Menu"}
     </button>

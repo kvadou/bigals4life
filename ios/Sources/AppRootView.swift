@@ -28,7 +28,7 @@ struct SignInView: View {
         NavigationStack {
             Form {
                 Section {
-                    Label("Big Al’s 4 Life", systemImage: "figure.bowling").font(.title.bold())
+                    HStack(spacing: 12) { BA4LBrandMark(size: 54).background(Color("BrandForest"), in: RoundedRectangle(cornerRadius: 12)); Text("Big Al’s 4 Life").font(.title.bold()) }
                     Text("Sign in with the same account you use on bigals4life.com. Your weeks, scores and team will appear here.")
                 }
                 Section("Your account") {
@@ -54,6 +54,7 @@ struct SignInView: View {
 }
 
 struct SignedInApp: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject var session: AccountSession
     @StateObject private var store: ScorebookStore
     private let accountID: String
@@ -134,7 +135,7 @@ struct SignedInApp: View {
                     Section { Link("BA4L on the web", destination: URL(string: ScorebookClient.origin)!) }
                 }.navigationTitle("Account")
             }.tabItem { Label("Account", systemImage: "person.crop.circle") }.tag(4)
-        }
+        }.tint(horizontalSizeClass == .regular && tab == 0 ? Color("BrandLime") : BA4LTheme.tint)
         }
         }.onChange(of: selectedBowler) { _, value in
             if let value { preferences.set(value, forKey: "selectedBowler") }

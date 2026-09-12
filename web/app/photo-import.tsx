@@ -26,7 +26,7 @@ async function prepare(file: File): Promise<Blob> {
   } finally { URL.revokeObjectURL(url); }
 }
 
-export default function PhotoImport({onApply,disabled}:{onApply:(updates:{index:number;rolls:number[]}[])=>void;disabled:boolean}) {
+export default function PhotoImport({onApply,disabled,requestedOpen=false}:{requestedOpen?:boolean;onApply:(updates:{index:number;rolls:number[]}[])=>void;disabled:boolean}) {
   const [open,setOpen] = useState(false);
   const [busy,setBusy] = useState(false);
   const [error,setError] = useState("");
@@ -38,6 +38,7 @@ export default function PhotoImport({onApply,disabled}:{onApply:(updates:{index:
   const camera = useRef<HTMLInputElement>(null);
   const gallery = useRef<HTMLInputElement>(null);
   const controller = useRef<AbortController|null>(null);
+  useEffect(()=>{if(requestedOpen)setOpen(true)},[requestedOpen]);
   useEffect(()=>{if(open)dialog.current?.showModal();else dialog.current?.close()},[open]);
   useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview)},[preview]);
   const close=()=>{controller.current?.abort();setBusy(false);setOpen(false)};
@@ -80,7 +81,7 @@ export default function PhotoImport({onApply,disabled}:{onApply:(updates:{index:
       {rows.length>0&&<><h3>Review the rolls</h3><p className="review-hint">These replace the selected bowlers’ scorecards for the current game. Edit any wrong pins below. Use spaces between rolls, X for strike, / for spare.</p>
         {rows.map((row,i)=><section className="photo-row" key={i}><label>Scoreboard row: <strong>{row.name || `Row ${i+1}`}</strong><select aria-label={`Assign row ${i+1} to bowler`} value={row.target} onChange={e=>setRows(r=>r.map((v,j)=>j===i?{...v,target:e.target.value}:v))}><option value="-1">Skip this row</option>{names.map((name,j)=><option key={name} value={j}>{name}</option>)}</select></label><label>Rolls, starting at frame 1<textarea rows={2} value={row.text} placeholder="X 7 / 9 0" onChange={e=>setRows(r=>r.map((v,j)=>j===i?{...v,text:e.target.value}:v))}/></label>{row.note&&<p className="photo-warning">{row.note}</p>}{parsed[i].error?<p className="photo-error">{parsed[i].error}</p>:<p className="review-score">Score {analyze(parsed[i].rolls).score} · Possible {maximum(parsed[i].rolls)} · {parsed[i].rolls.length} rolls</p>}</section>)}
         {duplicate&&<p className="photo-error">Assign each bowler only once.</p>}
-        <button className="primary" disabled={!canApply||busy} onClick={()=>{onApply(selected.map(r=>({index:Number(r.target),rolls:r.rolls})));setOpen(false);setApplied(true);setRows([]);setPreview("")}}>Apply {selected.length} bowler{selected.length===1?"":"s"}</button>
+        <button className="primary" disabled={disabled||!canApply||busy} onClick={()=>{onApply(selected.map(r=>({index:Number(r.target),rolls:r.rolls})));setOpen(false);setApplied(true);setRows([]);setPreview("")}}>Apply {selected.length} bowler{selected.length===1?"":"s"}</button>
       </>}
     </div></dialog>
   </>;
