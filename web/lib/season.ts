@@ -9,7 +9,9 @@ export type PointsSummary = { ours: number; theirs: number; remaining: number; t
 export type WeekSummary = {
   id: string; bowledOn: string; week: number | null; opponent: string | null; opponentGames: (number | null)[][];
   ourHandicaps: number[] | null;
-  games: GameSummary[]; series: (number | null)[]; teamSeries: number | null; finishedGames: number;
+  /** Who bowled this night. Fewer than four means a pre-bowl, and the team lines stay empty on purpose. */
+  prebowl: { week: number; bowlers: number[] } | null;
+  games: GameSummary[]; series: (number | null)[]; gamesBowled: number[]; teamSeries: number | null; finishedGames: number; recordedGames: number;
   points: PointsSummary | null;
 };
 
@@ -26,15 +28,19 @@ export function summarizeGames(night: Night): GameSummary[] {
 /** Calendar date of the night in league-local time, not UTC. */
 export const localDate = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
 
-/** One night's headline numbers. Only games all four finished count toward series. */
+/** One night's headline numbers. A bowler's series counts the games that bowler finished, so a pre-bowl alone still reads. Team lines still wait for all four. */
 export function summarizeWeek(id: string, night: Night, updatedAt: string, week: number | null): WeekSummary {
   const games = summarizeGames(night);
   const finished = games.filter(g => g.team != null);
-  const series = BOWLERS.map((_, i) => finished.length ? finished.reduce((s, g) => s + (g.scores[i] ?? 0), 0) : null);
+  const mine = BOWLERS.map((_, i) => games.filter(g => g.complete[i] && g.scores[i] != null));
+  const series = mine.map((gs, i) => gs.length ? gs.reduce((s, g) => s + (g.scores[i] ?? 0), 0) : null);
   return {
-    id, bowledOn: localDate(updatedAt), week: night.match?.week ?? week, opponent: night.match?.opponent.name ?? null, opponentGames: night.match?.opponentGames ?? [],
+    id, bowledOn: localDate(updatedAt), week: night.prebowl?.week ?? night.match?.week ?? week, opponent: night.match?.opponent.name ?? null, opponentGames: night.match?.opponentGames ?? [],
     ourHandicaps: night.match ? night.match.ours.map(b => b.handicap) : null,
-    games, series, teamSeries: finished.length ? finished.reduce((s, g) => s + (g.team ?? 0), 0) : null, finishedGames: finished.length, points: null,
+    prebowl: night.prebowl ?? null,
+    games, series, gamesBowled: mine.map(gs => gs.length),
+    teamSeries: finished.length ? finished.reduce((s, g) => s + (g.team ?? 0), 0) : null,
+    finishedGames: finished.length, recordedGames: games.filter(g => g.complete.some(Boolean)).length, points: null,
   };
 }
 

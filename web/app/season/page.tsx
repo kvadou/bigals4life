@@ -20,12 +20,12 @@ export default function SeasonPage() {
     {error && <p className="photo-error" role="alert">{error}</p>}
     {data && !data.weeks.length && <p className="score-note">No finished games yet. Bowl a game and it shows up here.</p>}
     <div className="week-list">{data?.weeks.map(w => <Link key={w.id} href={`/season/${w.id}`} className="week-card">
-      <div className="week-head"><div><div className="eyebrow">WEEK {w.week}</div><h2>{day(w.bowledOn)}{w.opponent ? <span className="muted-cell"> vs {title(w.opponent)}</span> : ""}</h2></div>
+      <div className="week-head"><div><div className="eyebrow">WEEK {w.week}{w.prebowl ? ` · PRE-BOWL · ${w.prebowl.bowlers.map(i => BOWLERS[i].toUpperCase()).join(" & ")}` : ""}</div><h2>{day(w.bowledOn)}{w.opponent ? <span className="muted-cell"> vs {title(w.opponent)}</span> : ""}</h2></div>
         <div className="week-team">{w.points ? <><span className="small-label">POINTS</span><strong><span className="won">{fmt(w.points.ours)}</span>–{fmt(w.points.theirs)}</strong><small>team series {w.teamSeries ?? "–"}</small></> : <><span className="small-label">TEAM SERIES</span><strong>{w.teamSeries ?? "–"}</strong><small>no match set</small></>}</div></div>
       <div className="league-scroll"><table className="league-table week-table"><thead><tr><th scope="col" className="left">Bowler</th>{w.games.map(g => <th key={g.game} scope="col">G{g.game}</th>)}<th scope="col">Series</th></tr></thead>
         <tbody>{BOWLERS.map((b, i) => <tr key={b}><td className="left"><strong>{b}</strong></td>{w.games.map(g => <td key={g.game} className={g.complete[i] ? "" : "muted-cell"}>{g.scores[i] ?? "–"}</td>)}<td><strong>{w.series[i] ?? "–"}</strong></td></tr>)}
           <tr className="ours"><td className="left"><strong>Team</strong></td>{w.games.map(g => <td key={g.game}>{g.team ?? "–"}</td>)}<td><strong>{w.teamSeries ?? "–"}</strong></td></tr></tbody></table></div>
-      <div className="week-foot"><span>{w.finishedGames} of {w.games.length} games finished</span><span className="week-open">Open week <ChevronRight size={14}/></span></div>
+      <div className="week-foot"><span>{w.prebowl ? `${Math.min(...w.prebowl.bowlers.map(i => w.gamesBowled[i]))} of ${w.games.length} games finished` : `${w.finishedGames} of ${w.games.length} games finished`}</span><span className="week-open">Open week <ChevronRight size={14}/></span></div>
     </Link>)}</div>
     <footer><span>BA4L</span><span>Big Al&rsquo;s 4 Life.</span></footer>
   </main>;

@@ -4,7 +4,7 @@ import { nightSchema } from "@/lib/scorebook";
 import { pointsSummary, summarizeWeek, type WeekSummary } from "@/lib/season";
 
 type Row = Record<string, any>;
-/** Every night this member can see, newest first, numbered as weeks of the current season. Test books with no finished game are hidden. */
+/** Every night this member can see, newest first, numbered as weeks of the current season. Books with no finished team game are hidden unless they are a marked pre-bowl. */
 export async function GET(request: Request) {
   const identity = await identify(request);
   if (!identity) return unauthorized("Sign in to see the season.");
@@ -24,6 +24,8 @@ export async function GET(request: Request) {
     let n = 0;
     for (const { id, updatedAt, night } of nights.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt))) {
       const w = summarizeWeek(id, night, updatedAt, null);
+      // Pre-bowls carry their own week number and never take one from the running count.
+      if (w.prebowl) { if (w.recordedGames) { w.points = pointsSummary(night); weeks.push(w); } continue; }
       if (!w.finishedGames) continue;
       n += 1; if (w.week == null) w.week = n;
       w.points = pointsSummary(night);

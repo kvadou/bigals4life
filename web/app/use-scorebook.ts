@@ -30,8 +30,11 @@ export function useScorebook(fresh:()=>Night,key:string){
   useEffect(()=>{
     let remembered:string|null=null;
     try{remembered=localStorage.getItem(`${key}:last-team`)}catch{}
+    const params=new URLSearchParams(window.location.search);
+    // ?new: a fresh night (a pre-bowl, next week) instead of the one this phone last had open.
+    if(params.has("new")){try{localStorage.removeItem(key)}catch{}show(fresh());setReady(true);setStatus("Not saved yet");return}
     let candidate:string|null;
-    try{candidate=resolveScorebookLink(new URLSearchParams(window.location.search).get("night"),remembered)}catch(e){setError((e as Error).message);return}
+    try{candidate=resolveScorebookLink(params.get("night"),remembered)}catch(e){setError((e as Error).message);return}
     if(candidate){
       try{localStorage.setItem(`${key}:last-team`,candidate)}catch{}
       const url=new URL(window.location.href);url.searchParams.set("night",candidate);

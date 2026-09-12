@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { PointsSummary, WeekSummary } from "@/lib/season";
+import { BOWLERS, type PointsSummary, type WeekSummary } from "@/lib/season";
 
 export const fmt = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1).replace(".5", "½");
 export const title = (s: string) => s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()).replace(/'S\b/i, "'s");
@@ -9,10 +9,13 @@ const splitClass = (s: [number, number]) => s[0] > s[1] ? "won" : s[1] > s[0] ? 
 /** Direction A's points hero: the 36 points, per-game 5-point chips, head-to-head and team lines. Falls back to scratch totals before a match is set up. */
 export function MatchHero({ week, setupHref }: { week: WeekSummary; setupHref?: string }) {
   const p = week.points;
-  const done = p ? p.remaining === 0 : week.finishedGames === week.games.length;
+  const pre = week.prebowl;
+  const done = pre ? pre.bowlers.every(i => week.gamesBowled[i] >= week.games.length && week.games.every(g => g.complete[i])) : p ? p.remaining === 0 : week.finishedGames === week.games.length;
   return <section className="match-hero" aria-label="Match points">
-    <div className="match-hero-top"><span className="eyebrow light">WEEK {week.week} · {dayLabel(week.bowledOn)}{week.opponent ? ` · VS ${title(week.opponent).toUpperCase()}` : ""}</span><span className={`match-state ${done ? "final" : ""}`}>{done ? "FINAL" : "LIVE"}</span></div>
-    {p ? <>
+    <div className="match-hero-top"><span className="eyebrow light">WEEK {week.week} · {dayLabel(week.bowledOn)}{pre ? ` · PRE-BOWL · ${pre.bowlers.map(i => BOWLERS[i].toUpperCase()).join(" & ")}` : week.opponent ? ` · VS ${title(week.opponent).toUpperCase()}` : ""}</span><span className={`match-state ${done ? "final" : ""}`}>{done ? "FINAL" : "LIVE"}</span></div>
+    {pre && <div className="match-body"><div className="match-score solo">{pre.bowlers.map(i => <div key={i}><span className="who">{BOWLERS[i]} · series</span><strong className="ours">{week.series[i] ?? "–"}</strong><span className="sub">{week.gamesBowled[i]} of {week.games.length} games · {week.gamesBowled[i] ? `avg ${Math.round((week.series[i] ?? 0) / week.gamesBowled[i])}` : "not started"}</span></div>)}</div>
+      <div className="split-chips three">{week.games.map(g => <div key={g.game} className="split-chip open"><span className="eyebrow light">G{g.game}</span><strong>{pre.bowlers.map(i => g.scores[i] ?? "–").join(" · ")}</strong><small>{pre.bowlers.every(i => g.complete[i]) ? "final" : "open"}</small></div>)}</div></div>}
+    {pre ? <div className="match-lines"><span>Bowled ahead of Thursday. Team lines and match points fill in when the rest of the team bowls week {week.week}.</span></div> : p ? <>
       <div className="match-body">
       <div className="match-score">
         <div><span className="who">Big Al&rsquo;s 4 Life</span><strong className="ours">{fmt(p.ours)}</strong></div>
@@ -44,8 +47,9 @@ export function GameRows({ week, hrefFor }: { week: WeekSummary; hrefFor: (game:
   const best = week.games.filter(g => g.team != null).sort((a, b) => (b.team ?? 0) - (a.team ?? 0))[0];
   return <div className="game-rows">
     {week.games.map((g, i) => { const gp = p?.games[i]; const hth = p ? p.bowlers.reduce((s, b) => [s[0] + (b.games[i]?.[0] ?? 0), s[1] + (b.games[i]?.[1] ?? 0)], [0, 0]) : null; const total: [number, number] | null = gp && hth ? [gp.split[0] + hth[0], gp.split[1] + hth[1]] : null;
-      const notes = [g.team != null ? `${g.team} scratch` : g.scores.some(s => s != null) ? "in progress" : "not started", gp && gp.ours != null && gp.theirs != null ? `${gp.ours} v ${gp.theirs} hdcp` : null, closest && closest.game === g.game && week.games.length > 1 ? (closest.ours! < closest.theirs! ? `lost by ${closest.theirs! - closest.ours!}` : `won by ${closest.ours! - closest.theirs!}`) + ", closest of the night" : null, best && best.game === g.game && g.team != null ? "best game" : null].filter(Boolean).join(" · ");
-      return <Link key={g.game} href={hrefFor(g.game)} className="game-row-link"><span className="game-index" aria-hidden="true">{g.game}</span><div><strong>Game {g.game}</strong><span>{notes}</span></div><div className="game-row-right">{total ? <b className={splitClass(total)}>{fmt(total[0])}–{fmt(total[1])}</b> : <b className="dim">{g.team ?? "–"}</b>}<span aria-hidden="true">›</span></div></Link>; })}
+      const pre = week.prebowl;
+      const notes = [pre ? pre.bowlers.map(i => `${BOWLERS[i]} ${g.scores[i] ?? "–"}${g.complete[i] ? "" : " (open)"}`).join(" · ") : g.team != null ? `${g.team} scratch` : g.scores.some(s => s != null) ? "in progress" : "not started", gp && gp.ours != null && gp.theirs != null ? `${gp.ours} v ${gp.theirs} hdcp` : null, closest && closest.game === g.game && week.games.length > 1 ? (closest.ours! < closest.theirs! ? `lost by ${closest.theirs! - closest.ours!}` : `won by ${closest.ours! - closest.theirs!}`) + ", closest of the night" : null, best && best.game === g.game && g.team != null ? "best game" : null].filter(Boolean).join(" · ");
+      return <Link key={g.game} href={hrefFor(g.game)} className="game-row-link"><span className="game-index" aria-hidden="true">{g.game}</span><div><strong>Game {g.game}</strong><span>{notes}</span></div><div className="game-row-right">{total ? <b className={splitClass(total)}>{fmt(total[0])}–{fmt(total[1])}</b> : <b className="dim">{pre ? pre.bowlers.map(i => g.scores[i] ?? "–").join(" · ") : g.team ?? "–"}</b>}<span aria-hidden="true">›</span></div></Link>; })}
     {p && <div className="game-row-link static"><span className="game-index" aria-hidden="true">Σ</span><div><strong>Series</strong><span>{p.series.ours != null && p.series.theirs != null ? `${p.series.ours} v ${p.series.theirs} hdcp` : "open"} · {week.teamSeries ?? "–"} scratch</span></div><div className="game-row-right"><b className={splitClass([p.series.split[0] + p.bowlers.reduce((s, b) => s + b.series[0], 0), p.series.split[1] + p.bowlers.reduce((s, b) => s + b.series[1], 0)])}>{fmt(p.series.split[0] + p.bowlers.reduce((s, b) => s + b.series[0], 0))}–{fmt(p.series.split[1] + p.bowlers.reduce((s, b) => s + b.series[1], 0))}</b></div></div>}
   </div>;
 }

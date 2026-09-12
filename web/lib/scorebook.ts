@@ -19,6 +19,8 @@ export const nightSchema = z.object({
   finals:scores.optional(),
   history:z.array(z.object({game:z.number().int().positive(),rolls:z.array(rolls).length(4),finals:scores.optional()})).max(500),
   match:matchSchema.optional(),
+  /** A night bowled early for a week the team has not played yet. bowlers are indexes into BOWLERS; only those columns count. */
+  prebowl:z.object({week:z.number().int().min(1).max(60),bowlers:z.array(z.number().int().min(0).max(3)).min(1).max(4)}).optional(),
   drinkTargets:z.object({high:z.number().int().min(0).max(300),low:z.number().int().min(0).max(300),qualificationRule:z.enum(["exact","threshold"]).nullable()}).optional(),
 });
 export type Night = z.infer<typeof nightSchema>;

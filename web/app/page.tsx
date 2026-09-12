@@ -25,7 +25,8 @@ export default function Home() {
       try { const r = await fetch("/api/league/standings", { cache: "no-store" }); if (r.ok) setStandings(await r.json()); } catch { /* standings are optional here */ }
     })();
   }, []);
-  const week = weeks?.[0] ?? null;
+  const week = weeks?.find(w => !w.prebowl) ?? weeks?.[0] ?? null;
+  const prebowls = weeks?.filter(w => w.prebowl && w.id !== week?.id) ?? [];
   const us = standings?.teams.find(t => t.ours);
   const ahead = us && standings ? standings.teams.find(t => t.place === us.place - 1) : null;
   const highGame = week ? week.games.flatMap(g => g.scores.map((s, i) => ({ s: s ?? 0, i }))).sort((a, b) => b.s - a.s)[0] : null;
@@ -43,8 +44,10 @@ export default function Home() {
       </div>
       <aside className="home-side">
         <Link href="/league" className="card mini-card-link"><div><div className="eyebrow"><Trophy size={13}/> STANDINGS</div><strong className="d">{us ? `${us.place}${["st", "nd", "rd"][us.place - 1] ?? "th"} of ${standings!.teams.length}` : "–"}</strong><span>{us ? (ahead ? `${fmt(ahead.pointsWon - us.pointsWon)} behind ${ahead.name.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase())}` : `${fmt(us.pointsWon)}–${fmt(us.pointsLost)}, top of the league`) : "From Gary's sheet"}</span></div><span aria-hidden="true">›</span></Link>
-        <Link href={`/season/${week.id}`} className="card mini-card-link"><div><div className="eyebrow">RECORDS · WEEK {week.week}</div><strong className="d">{highGame ? `${names[highGame.i]} ${highGame.s}` : "–"}</strong><span>{highSeries ? `high series ${names[highSeries.i]} ${highSeries.s} · team ${week.teamSeries}` : ""}</span></div><span aria-hidden="true">›</span></Link>
+        <Link href={`/season/${week.id}`} className="card mini-card-link"><div><div className="eyebrow">RECORDS · WEEK {week.week}</div><strong className="d">{highGame ? `${names[highGame.i]} ${highGame.s}` : "–"}</strong><span>{highSeries ? `high series ${names[highSeries.i]} ${highSeries.s}${week.teamSeries != null ? ` · team ${week.teamSeries}` : ""}` : ""}</span></div><span aria-hidden="true">›</span></Link>
+        {prebowls.map(w => <Link key={w.id} href={`/season/${w.id}`} className="card mini-card-link"><div><div className="eyebrow">PRE-BOWL · WEEK {w.week}</div><strong className="d">{w.prebowl!.bowlers.map(i => `${names[i]} ${w.series[i] ?? "–"}`).join(" · ")}</strong><span>{w.prebowl!.bowlers.map(i => `${w.games.filter(g => g.complete[i]).map(g => g.scores[i]).join(", ") || "not started"}`).join(" · ")}</span></div><span aria-hidden="true">›</span></Link>)}
         <Link href={`/season/${week.id}`} className="card mini-card-link"><div><div className="eyebrow">THIS WEEK</div><strong className="d">All four scorecards</strong><span>Every frame, head-to-head, handicap</span></div><span aria-hidden="true">›</span></Link>
+        <Link href="/night?new=1" className="text-button center-link">Start a new night (pre-bowl, next week) ›</Link>
         {weeks && weeks.length > 1 && <Link href="/season" className="text-button center-link">All {weeks.length} weeks ›</Link>}
       </aside>
     </div>}
