@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Alfa+Slab+One&display=swap">
+  <style>
+    body { margin: 0; background: #f7f7f2; color: #202d25; font-family: 'DM Sans', system-ui, sans-serif; font-size: 14px; }
+    a { color: #2d5139; } a:hover { color: #202d25; }
+    h1, h2, h3, p { margin: 0; }
+  </style>
+</helmet>
+<div style="width: 1180px; min-height: 900px; background: #f7f7f2; padding: 28px 32px 32px; display: flex; flex-direction: column; gap: 22px;">
+  <div>
+    <div style="font-size: 10px; letter-spacing: 1.7px; font-weight: 700; color: #727b72;">IDENTITY · ONE BALL, TWO NAMES</div>
+    <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 600; letter-spacing: -1.4px; line-height: 1.05; margin-top: 8px;">BA4L is the team. <em style="color: #2d5139; font-style: normal;">Bowling Bro’ is the coach who rides along.</em></h1>
+    <p style="font-size: 12px; line-height: 1.7; color: #727b72; margin-top: 8px; max-width: 640px;">Same ball, same forest green and lime, so it never looks like a second app. Bro’ adds one thing BA4L’s mark doesn’t have: the ball on its way into the pins. The hook is the whole product (meant-to vs actually-did), and it becomes the patch on the bowling shirt.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px;">
+    <div style="background: white; border: 1px solid #e0e4dc; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;"><span style="font-size: 10px; letter-spacing: 1.7px; font-weight: 700; color: #727b72;">A · THE PATCH</span><span style="font-size: 10px; color: #2d5139; font-weight: 700;">recommended</span></div>
+      <div style="background: #2d5139; border-radius: 12px; height: 300px; display: flex; align-items: center; justify-content: center;">
+        <svg width="240" height="240" viewBox="0 0 240 240">
+          <defs><path id="patch-bottom" d="M 40 120 A 80 80 0 0 0 200 120"></path><path id="patch-top" d="M 46 120 A 74 74 0 0 1 194 120"></path></defs>
+          <circle cx="120" cy="120" r="114" fill="#ddf29a" stroke="#f4efe6" stroke-width="6" stroke-dasharray="3 5"></circle>
+          <circle cx="120" cy="120" r="102" fill="none" stroke="#2d5139" stroke-width="3"></circle>
+          <text font-family="DM Sans, sans-serif" font-size="10" font-weight="700" fill="#2d5139" letter-spacing="3"><textPath href="#patch-top" startOffset="50%" text-anchor="middle">BIG AL’S · EST. 2026</textPath></text>
+          <g fill="#2d5139"><circle cx="120" cy="66" r="6"></circle><circle cx="108" cy="75" r="6"></circle><circle cx="132" cy="75" r="6"></circle><circle cx="96" cy="84" r="6"></circle><circle cx="144" cy="84" r="6"></circle></g>
+          <path d="M 92 150 C 94 132, 100 118, 112 106 C 118 100, 118 94, 117 88" fill="none" stroke="#2d5139" stroke-width="6" stroke-linecap="round"></path>
+          <circle cx="92" cy="148" r="18" fill="#2d5139"></circle>
+          <circle cx="87" cy="143" r="3" fill="#ddf29a"></circle><circle cx="97" cy="143" r="3" fill="#ddf29a"></circle><circle cx="92" cy="152" r="3.4" fill="#ddf29a"></circle>
+          <text font-family="Alfa Slab One, Space Grotesk, sans-serif" font-size="19" fill="#2d5139" letter-spacing="2"><textPath href="#patch-bottom" startOffset="50%" text-anchor="middle">BOWLING BRO’</textPath></text>
+        </svg>
+      </div>
+      <p style="font-size: 12px; line-height: 1.6;">Chenille-patch geometry, 1960s bowling-shirt lineage (Pete’s Lebowski brief). The BA4L ball hooking into the rack, type set on the curve. Stitched edge, slab wordmark. Works at 24 px as the ball-and-hook alone.</p>
+      <p style="font-size: 11px; line-height: 1.6; color: #727b72;">Tradeoff: the slab face is a third font in the system. Keep it to the patch only.</p>
+    </div>
+
+    <div style="background: white; border: 1px solid #e0e4dc; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+      <span style="font-size: 10px; letter-spacing: 1.7px; font-weight: 700; color: #727b72;">B · THE MARK, IN SYSTEM</span>
+      <div style="background: #f0f4e9; border-radius: 12px; height: 300px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 0; align-items: center; justify-items: center;">
+        <svg width="96" height="96" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#2d5139"></rect><circle cx="48" cy="48" r="30" fill="#ddf29a"></circle><circle cx="41" cy="41" r="4" fill="#2d5139"></circle><circle cx="55" cy="41" r="4" fill="#2d5139"></circle><circle cx="48" cy="54" r="4.5" fill="#2d5139"></circle></svg>
+        <svg width="96" height="96" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#2d5139"></rect><g stroke="#ddf29a" stroke-width="2" opacity="0.35" stroke-linecap="round"><line x1="30" y1="82" x2="40" y2="16"></line><line x1="66" y1="82" x2="56" y2="16"></line></g><g fill="#f4efe6"><circle cx="48" cy="17" r="3.2"></circle><circle cx="41" cy="22" r="3.2"></circle><circle cx="55" cy="22" r="3.2"></circle><circle cx="34" cy="27" r="3.2"></circle><circle cx="62" cy="27" r="3.2"></circle></g><path d="M 38 80 C 40 64, 44 52, 52 42 C 55 38, 52 34, 50 31" fill="none" stroke="#ddf29a" stroke-width="4" stroke-linecap="round"></path><circle cx="38" cy="78" r="9" fill="#ddf29a"></circle><circle cx="35.5" cy="75.5" r="1.4" fill="#2d5139"></circle><circle cx="40.5" cy="75.5" r="1.4" fill="#2d5139"></circle><circle cx="38" cy="80" r="1.6" fill="#2d5139"></circle></svg>
+        <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; color: #202d25; letter-spacing: -0.5px;">BA4L</span>
+        <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; color: #202d25; letter-spacing: -0.5px;">Bro’</span>
+      </div>
+      <p style="font-size: 12px; line-height: 1.6;">Left: today’s BA4L icon. Right: Bro’. Identical ball, identical tile, plus the arc. Side by side on a home screen they read as siblings. In the app, the coach’s avatar is this mark instead of a letter “C”.</p>
+      <p style="font-size: 11px; line-height: 1.6; color: #727b72;">Tradeoff: quiet. No retro flavor unless paired with A.</p>
+    </div>
+
+    <div style="background: white; border: 1px solid #e0e4dc; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+      <span style="font-size: 10px; letter-spacing: 1.7px; font-weight: 700; color: #727b72;">C · THE LOCKUP</span>
+      <div style="background: #f4efe6; border-radius: 12px; height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;">
+        <svg width="260" height="70" viewBox="0 0 260 70">
+          <g fill="#2d5139"><circle cx="66" cy="8" r="3.5"></circle><circle cx="58" cy="14" r="3.5"></circle><circle cx="74" cy="14" r="3.5"></circle></g>
+          <path d="M 18 58 C 22 44, 34 34, 52 28 C 60 25, 62 22, 62 19" fill="none" stroke="#2d5139" stroke-width="4" stroke-linecap="round"></path>
+          <circle cx="18" cy="56" r="10" fill="#2d5139"></circle><circle cx="15" cy="53" r="1.6" fill="#ddf29a"></circle><circle cx="21" cy="53" r="1.6" fill="#ddf29a"></circle><circle cx="18" cy="58.5" r="1.8" fill="#ddf29a"></circle>
+          <text x="96" y="44" font-family="Alfa Slab One, Space Grotesk, sans-serif" font-size="30" fill="#2d5139">Bowling Bro’</text>
+        </svg>
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 10px; letter-spacing: 2px; font-weight: 700; color: #727b72;"><span style="width: 24px; height: 1px; background: #c4ae86;"></span>A BA4L THING<span style="width: 24px; height: 1px; background: #c4ae86;"></span></div>
+      </div>
+      <p style="font-size: 12px; line-height: 1.6;">Horizontal lockup for the top of the review page, the debrief header, and the Friday tape. “A BA4L thing” is the endorsement line: Bro’ belongs to the team brand, the way a house label sits under a product name.</p>
+      <p style="font-size: 11px; line-height: 1.6; color: #727b72;">Tradeoff: needs 200 px of width; drop to the mark alone under that.</p>
+    </div>
+  </div>
+
+  <div style="background: white; border: 1px solid #e0e4dc; border-radius: 14px; padding: 20px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 10px; letter-spacing: 1.7px; font-weight: 700; color: #727b72;">HOW THEY FIT TOGETHER</span>
+      <div style="font-size: 12px; line-height: 1.7; display: flex; flex-direction: column; gap: 6px;">
+        <span><strong>BA4L</strong> stays the app, the domain, the icon, the team. Standings, scorebook, records, recap. Public-facing name for the league.</span>
+        <span><strong>Bowling Bro’</strong> is the coach inside it: Review, Debrief, Shot replay, My Game, the lane cam. Every coaching surface carries the lockup; nothing else does.</span>
+        <span>Pete’s prototype content (arsenal, notes, sketcher) lands in Bro’ surfaces. His brief is the product spec for that half; BA4L’s design system is the visual spec for all of it.</span>
+        <span>If Bro’ ever leaves the team (Big Al’s buys it, another league wants it) the mark and the coaching pages lift out cleanly; the ball stays, the “A BA4L thing” line goes.</span>
+      </div>
+    </div>
+    <div style="background: #f7f7f2; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+      <span style="font-size: 10px; letter-spacing: 1.7px; font-weight: 700; color: #727b72;">IN THE NAV</span>
+      <div style="display: flex; gap: 14px; align-items: center; font-size: 10px; letter-spacing: 1.5px; font-weight: 700; color: #727b72;"><span style="display: flex; align-items: center; gap: 5px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #2d5139;"></span>SEASON</span><span style="display: flex; align-items: center; gap: 5px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #2d5139;"></span>STANDINGS</span><span style="display: flex; align-items: center; gap: 5px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #2d5139;"></span>RECORDS</span><span style="display: flex; align-items: center; gap: 6px; color: #202d25;"><svg width="14" height="14" viewBox="0 0 96 96"><g fill="#2d5139"><circle cx="48" cy="17" r="7"></circle><circle cx="34" cy="27" r="7"></circle><circle cx="62" cy="27" r="7"></circle></g><path d="M 38 80 C 40 64, 44 52, 52 42 C 55 38, 52 34, 50 31" fill="none" stroke="#2d5139" stroke-width="9" stroke-linecap="round"></path><circle cx="38" cy="78" r="13" fill="#2d5139"></circle></svg>BRO’</span></div>
+      <p style="font-size: 11px; line-height: 1.6; color: #727b72;">A fourth item. Not a tab bar, not a second app, not a mode switch. Tap it and the lockup takes over the header for the coaching pages.</p>
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
+        <svg width="40" height="40" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#2d5139"></rect><circle cx="48" cy="48" r="30" fill="#ddf29a"></circle><circle cx="41" cy="41" r="4" fill="#2d5139"></circle><circle cx="55" cy="41" r="4" fill="#2d5139"></circle><circle cx="48" cy="54" r="4.5" fill="#2d5139"></circle></svg>
+        <svg width="40" height="40" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#2d5139"></rect><g stroke="#ddf29a" stroke-width="2" opacity="0.35" stroke-linecap="round"><line x1="30" y1="82" x2="40" y2="16"></line><line x1="66" y1="82" x2="56" y2="16"></line></g><g fill="#f4efe6"><circle cx="48" cy="17" r="3.2"></circle><circle cx="41" cy="22" r="3.2"></circle><circle cx="55" cy="22" r="3.2"></circle><circle cx="34" cy="27" r="3.2"></circle><circle cx="62" cy="27" r="3.2"></circle></g><path d="M 38 80 C 40 64, 44 52, 52 42 C 55 38, 52 34, 50 31" fill="none" stroke="#ddf29a" stroke-width="4" stroke-linecap="round"></path><circle cx="38" cy="78" r="9" fill="#ddf29a"></circle><circle cx="35.5" cy="75.5" r="1.4" fill="#2d5139"></circle><circle cx="40.5" cy="75.5" r="1.4" fill="#2d5139"></circle><circle cx="38" cy="80" r="1.6" fill="#2d5139"></circle></svg>
+        <span style="font-size: 11px; color: #727b72;">iPad lane cam ships as the BA4L iOS app with the Bro’ mark on its Lane Cam tab. One App Store listing.</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

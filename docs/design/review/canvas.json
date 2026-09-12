@@ -1,0 +1,112 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Phase 1 · Review"
+    },
+    {
+      "id": "page-2",
+      "name": "The vision · Lane cam"
+    },
+    {
+      "id": "page-3",
+      "name": "Identity · Bro’ and BA4L"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 1480,
+      "title": "Review · Pete, week 2",
+      "page": "page-1"
+    },
+    {
+      "file": "Debrief.dc.html",
+      "x": 480,
+      "y": 0,
+      "w": 390,
+      "h": 1180,
+      "title": "Debrief · coach turn",
+      "page": "page-1"
+    },
+    {
+      "file": "Rig.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 880,
+      "h": 620,
+      "title": "The rig · iPad on the approach",
+      "page": "page-2"
+    },
+    {
+      "file": "LaneCam.dc.html",
+      "x": 0,
+      "y": 780,
+      "w": 1180,
+      "h": 820,
+      "title": "Lane cam · iPad, live",
+      "page": "page-2"
+    },
+    {
+      "file": "ShotReplay.dc.html",
+      "x": 1280,
+      "y": 0,
+      "w": 390,
+      "h": 1320,
+      "title": "Shot replay · phone",
+      "page": "page-2"
+    },
+    {
+      "file": "Baseline.dc.html",
+      "x": 1760,
+      "y": 0,
+      "w": 390,
+      "h": 1360,
+      "title": "My game · your standard",
+      "page": "page-2"
+    },
+    {
+      "file": "TeamTape.dc.html",
+      "x": 2240,
+      "y": 0,
+      "w": 390,
+      "h": 1240,
+      "title": "Friday tape · team",
+      "page": "page-2"
+    },
+    {
+      "file": "Logo.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1180,
+      "h": 900,
+      "title": "Logo directions",
+      "page": "page-3"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "flow",
+      "x": 0,
+      "y": -150,
+      "w": 420,
+      "page": "page-1",
+      "text": "Last Night in Review, phase 1.\nLeft: the review page a bowler lands on after a night. Scores and strike/spare counts are derived; ball, tags, note and lanes are optional.\nRight: the coach turn after tapping Now. Summary, up to three sourced ideas, one follow-up question."
+    },
+    {
+      "id": "vision",
+      "x": 1000,
+      "y": 0,
+      "w": 240,
+      "page": "page-2",
+      "text": "Phase 2 and 3.\niPad on the approach runs the iOS app as a lane cam: speed, break point, entry angle per shot, on-device.\nPhone gets the replay with the measured path; My Game learns your pocket shot from your own shots; Friday tape cuts the night for the group text.\nOrder: rig + speed first (one week), path overlay, then baseline learning."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-3"
+  }
+}

@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #0f1512; color: white; font-family: 'DM Sans', system-ui, sans-serif; font-size: 14px; }
+    a { color: #ddf29a; } a:hover { color: white; }
+    h1, h2, h3, p { margin: 0; }
+  </style>
+</helmet>
+<div style="width: 1180px; height: 820px; background: #0f1512; position: relative; overflow: hidden; font-family: 'DM Sans', sans-serif;">
+  <svg width="1180" height="820" viewBox="0 0 1180 820" style="position: absolute; inset: 0;">
+    <defs>
+      <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5c4a33"></stop><stop offset="1" stop-color="#a98a5c"></stop></linearGradient>
+      <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f1512" stop-opacity="0"></stop><stop offset="1" stop-color="#0f1512" stop-opacity="0.9"></stop></linearGradient>
+    </defs>
+    <rect width="1180" height="820" fill="#1b2420"></rect>
+    <polygon points="470,120 710,120 1080,820 100,820" fill="url(#wood)"></polygon>
+    <polygon points="440,120 470,120 100,820 40,820" fill="#2a2f2b"></polygon>
+    <polygon points="710,120 740,120 1140,820 1080,820" fill="#2a2f2b"></polygon>
+    <g stroke="#3a2e1f" stroke-width="1" opacity="0.5">
+      <line x1="500" y1="120" x2="220" y2="820"></line><line x1="530" y1="120" x2="340" y2="820"></line><line x1="560" y1="120" x2="460" y2="820"></line><line x1="590" y1="120" x2="590" y2="820"></line><line x1="620" y1="120" x2="720" y2="820"></line><line x1="650" y1="120" x2="840" y2="820"></line><line x1="680" y1="120" x2="960" y2="820"></line>
+    </g>
+    <g fill="#2b2118"><polygon points="455,560 470,540 485,560"></polygon><polygon points="500,560 515,540 530,560"></polygon><polygon points="545,560 560,540 575,560"></polygon><polygon points="575,555 590,535 605,555"></polygon><polygon points="605,560 620,540 635,560"></polygon><polygon points="650,560 665,540 680,560"></polygon><polygon points="695,560 710,540 725,560"></polygon></g>
+    <g fill="#f4efe6"><ellipse cx="590" cy="118" rx="9" ry="16"></ellipse><ellipse cx="574" cy="128" rx="9" ry="16"></ellipse><ellipse cx="606" cy="128" rx="9" ry="16"></ellipse><ellipse cx="558" cy="138" rx="9" ry="16"></ellipse><ellipse cx="590" cy="138" rx="9" ry="16"></ellipse><ellipse cx="622" cy="138" rx="9" ry="16"></ellipse><ellipse cx="542" cy="148" rx="9" ry="16"></ellipse><ellipse cx="574" cy="148" rx="9" ry="16"></ellipse><ellipse cx="606" cy="148" rx="9" ry="16"></ellipse><ellipse cx="638" cy="148" rx="9" ry="16"></ellipse></g>
+    <path d="M 300 800 C 420 640, 560 420, 596 150" fill="none" stroke="#ddf29a" stroke-width="4" stroke-linecap="round" opacity="0.95"></path>
+    <path d="M 300 800 C 420 640, 560 420, 596 150" fill="none" stroke="#ddf29a" stroke-width="14" stroke-linecap="round" opacity="0.15"></path>
+    <circle cx="420" cy="620" r="8" fill="#ddf29a"></circle><circle cx="520" cy="430" r="8" fill="#ddf29a"></circle><circle cx="560" cy="330" r="8" fill="#ddf29a"></circle><circle cx="583" cy="230" r="8" fill="#ddf29a"></circle>
+    <circle cx="596" cy="150" r="14" fill="none" stroke="#ddf29a" stroke-width="3"></circle>
+    <g stroke="#ddf29a" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.6"><line x1="430" y1="548" x2="750" y2="548"></line><line x1="560" y1="395" x2="640" y2="395"></line></g>
+    <rect x="0" y="600" width="1180" height="220" fill="url(#fade)"></rect>
+  </svg>
+
+  <div style="position: absolute; top: 20px; left: 24px; right: 24px; display: flex; justify-content: space-between; align-items: flex-start;">
+    <div style="display: flex; align-items: center; gap: 10px; background: rgba(15,21,18,0.7); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 10px 14px; backdrop-filter: blur(6px);">
+      <span style="width: 10px; height: 10px; border-radius: 50%; background: #ff5a4e;"></span>
+      <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.5px;">LANE CAM · LANE 7</span>
+      <span style="font-size: 11px; color: #c9d8c3;">Game 2 · Frame 6 · Pete</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <div style="background: rgba(15,21,18,0.7); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 10px 14px; font-size: 11px; color: #c9d8c3;">Auto-detect: <strong style="color: white;">on</strong></div>
+      <div style="background: rgba(15,21,18,0.7); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 10px 14px; font-size: 11px; color: #c9d8c3;">Framing <strong style="color: #ddf29a;">good</strong></div>
+    </div>
+  </div>
+
+  <div style="position: absolute; top: 96px; right: 24px; width: 260px; background: rgba(15,21,18,0.78); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 16px; backdrop-filter: blur(6px); display: flex; flex-direction: column; gap: 12px;">
+    <div style="font-size: 10px; letter-spacing: 1.7px; font-weight: 700; color: #c9d8c3;">LAST SHOT · MEASURED</div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+      <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 10px; letter-spacing: 1px; color: #c9d8c3;">SPEED</span><strong style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 600; letter-spacing: -1px; line-height: 1;">15.4</strong><span style="font-size: 11px; color: #c9d8c3;">mph</span></div>
+      <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 10px; letter-spacing: 1px; color: #c9d8c3;">BREAK</span><strong style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 600; letter-spacing: -1px; line-height: 1;">39 ft</strong><span style="font-size: 11px; color: #c9d8c3;">down lane</span></div>
+      <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 10px; letter-spacing: 1px; color: #c9d8c3;">ARROWS</span><strong style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 600; letter-spacing: -1px; line-height: 1;">12</strong><span style="font-size: 11px; color: #c9d8c3;">board</span></div>
+      <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 10px; letter-spacing: 1px; color: #c9d8c3;">ENTRY</span><strong style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 600; letter-spacing: -1px; line-height: 1;">High</strong><span style="font-size: 11px; color: #c9d8c3;">left the 4-9</span></div>
+    </div>
+    <div style="border-top: 1px solid rgba(255,255,255,0.12); padding-top: 12px; font-size: 12px; line-height: 1.55; color: #c9d8c3;">Numbers only while you bowl. The coach talks after the game.</div>
+  </div>
+
+  <div style="position: absolute; top: 96px; left: 24px; width: 190px; background: rgba(15,21,18,0.78); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 14px 16px; backdrop-filter: blur(6px); display: flex; flex-direction: column; gap: 10px;">
+    <div style="font-size: 10px; letter-spacing: 1.7px; font-weight: 700; color: #c9d8c3;">TONIGHT · 6 SHOTS</div>
+    <div style="display: flex; align-items: baseline; gap: 6px;"><strong style="font-family: 'Space Grotesk', sans-serif; font-size: 34px; font-weight: 600; letter-spacing: -1.5px; line-height: 1; color: #ddf29a;">4</strong><span style="font-size: 11px; color: #c9d8c3;">strikes · 1 spare</span></div>
+    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: #c9d8c3;">
+      <div style="display: flex; justify-content: space-between;"><span>Avg speed</span><strong style="color: white;">15.9</strong></div>
+      <div style="display: flex; justify-content: space-between;"><span>Break spread</span><strong style="color: white;">±2.1 ft</strong></div>
+      <div style="display: flex; justify-content: space-between;"><span>Ball</span><strong style="color: white;">Bionic</strong></div>
+    </div>
+  </div>
+
+  <div style="position: absolute; bottom: 24px; left: 24px; right: 24px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; gap: 8px;">
+      <div style="min-height: 52px; padding: 0 18px; border-radius: 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><polygon points="11 19 2 12 11 5 11 19"></polygon><polygon points="22 19 13 12 22 5 22 19"></polygon></svg>Replay</div>
+      <div style="min-height: 52px; padding: 0 18px; border-radius: 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600;">Missed a shot? Redo</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <span style="font-size: 11px; color: #c9d8c3;">Next up</span>
+      <div style="display: flex; gap: 6px;">
+        <span style="width: 40px; height: 40px; border-radius: 50%; background: #2d5139; color: #ddf29a; display: flex; align-items: center; justify-content: center; font-weight: 700; font-family: 'Space Grotesk', sans-serif;">P</span>
+        <span style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; font-weight: 700; font-family: 'Space Grotesk', sans-serif;">D</span>
+        <span style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; font-weight: 700; font-family: 'Space Grotesk', sans-serif;">M</span>
+        <span style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; font-weight: 700; font-family: 'Space Grotesk', sans-serif;">K</span>
+      </div>
+      <div style="min-height: 52px; padding: 0 22px; border-radius: 12px; background: #ddf29a; color: #202d25; display: flex; align-items: center; font-size: 13px; font-weight: 700;">Pete is up · tap when he throws</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
