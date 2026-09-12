@@ -88,3 +88,19 @@ playwright-cli state-save auth.json
 ```
 
 Hand-writing the cookie is the tempting shortcut and the wrong one: `@supabase/ssr` chunks it and prefixes `base64-`, so the format is the library's business. Only dougkvamme@gmail.com is ever used as a test recipient.
+
+## A signed-in teammate could not start a new night
+
+`/night` always reopened the latest scorebook you belong to (or the one this phone remembered), so a pre-bowl or next week's night would have been typed over week 1. `/night?new=1` starts a fresh local night; the flag stays in the URL until "Save & share" replaces it with `?night=<id>`, because React strict mode runs the effect twice and stripping it on the first pass made the second pass fall back to the remembered book.
+
+## The revision trigger fired on every scorebooks update
+
+`record_scorebook_revision` inserted a `(scorebook_id, revision)` row on any update, including the owner-only PATCH from claiming a legacy book, and hit the primary key. Migration `202609120001` records a revision only when `new.revision` moves. Symptom was a 503 on `/claim` with `23505` in the server log.
+
+## Scores that need all four bowlers hide a pre-bowl
+
+`finishedGames` counts games all four finished, so a night with one bowler was filtered out of `/api/season` entirely. Per-bowler series now count that bowler's own finished games (`gamesBowled`), and an explicit `night.prebowl` `{week, bowlers}` files the night under its week without taking a number from the running count. Partial books without the flag stay hidden as before.
+
+## Signing out in the playwright session revokes the saved state
+
+`playwright-cli state-save auth.json` then clicking Sign out in the same session invalidates the refresh token, so a later `pw-verify --state auth.json` lands on `/login`. Mint again after any sign-out.
