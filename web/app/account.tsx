@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { LogIn, LogOut, Users, X } from "lucide-react";
+import { KeyRound, LogIn, LogOut, Users, X } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
 export type Me = { user: { id: string; email: string }; admin: boolean; profile: { displayName: string; bowlerName: string | null }; scorebooks: { id: string; role: string; updatedAt: string | null }[]; legacy: { id: string; updatedAt: string; games: number }[] };
@@ -14,7 +14,7 @@ export function useMe() {
 }
 
 export function AccountBar({ me, nightId, role, onClaimed }: { me: Me | null | false; nightId: string; role: string; onClaimed: () => void }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<false | "team" | "password">(false);
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => { if (open) dialog.current?.showModal(); else dialog.current?.close(); }, [open]);
   const next = typeof window === "undefined" ? "/" : window.location.pathname + window.location.search;
@@ -23,12 +23,39 @@ export function AccountBar({ me, nightId, role, onClaimed }: { me: Me | null | f
   const canManage = nightId && (role === "owner" || (role === "legacy" && me.admin));
   return <>
     <span className="account-email">{me.user.email}</span>
-    {canManage && <button className="secondary" onClick={() => setOpen(true)}><Users size={15}/> Teammates</button>}
+    {canManage && <button className="secondary" onClick={() => setOpen("team")}><Users size={15}/> Teammates</button>}
+    <button className="text-button" onClick={() => setOpen("password")}><KeyRound size={15}/> Password</button>
     <button className="text-button" onClick={async () => { await supabaseBrowser().auth.signOut(); window.location.reload(); }}><LogOut size={15}/> Sign out</button>
     <dialog ref={dialog} onCancel={() => setOpen(false)} onClick={e => { if (e.target === e.currentTarget) setOpen(false); }}><div className="dialog-inner">
       <button className="close-button" aria-label="Close dialog" onClick={() => setOpen(false)}><X size={20}/></button>
-      {open && <Teammates nightId={nightId} role={role} admin={me.admin} onClaimed={() => { onClaimed(); }}/>}
+      {open === "team" && <Teammates nightId={nightId} role={role} admin={me.admin} onClaimed={() => { onClaimed(); }}/>}
+      {open === "password" && <PasswordForm email={me.user.email} onDone={() => setOpen(false)}/>}
     </div></dialog>
+  </>;
+}
+
+/** Set or change the password used to skip the emailed code. */
+function PasswordForm({ email, onDone }: { email: string; onDone: () => void }) {
+  const [password, setPassword] = useState(""); const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [saved, setSaved] = useState(false);
+  const save = async () => {
+    if (password.length < 8) { setError("Use at least 8 characters."); return; }
+    setBusy(true); setError("");
+    const { error } = await supabaseBrowser().auth.updateUser({ password, data: { has_password: true } });
+    setBusy(false);
+    if (error) { setError(error.message.includes("different") ? "Pick a password you have not used here before." : "Could not save that password. Try again in a minute."); return; }
+    try { localStorage.setItem("ba4l-login", "password"); } catch { /* fine */ }
+    setSaved(true);
+  };
+  return <>
+    <div className="eyebrow">SIGN-IN</div><h2>Password</h2>
+    {saved ? <><p>Saved. Next time, sign in to <strong>{email}</strong> with your password instead of a code.</p><button className="primary" onClick={onDone}>Done</button></> : <>
+      <p>Set a password for <strong>{email}</strong> and skip the emailed code. The code still works if you forget it.</p>
+      <form onSubmit={e => { e.preventDefault(); void save(); }}>
+        <label className="field">New password<input type="password" autoComplete="new-password" minLength={8} autoFocus value={password} onChange={e => setPassword(e.target.value)} disabled={busy}/></label>
+        <button className="primary" type="submit" disabled={busy}>{busy ? "Saving…" : "Save password"}</button>
+      </form>
+    </>}
+    {error && <p className="photo-error" role="alert">{error}</p>}
   </>;
 }
 
