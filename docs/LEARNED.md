@@ -104,3 +104,19 @@ Hand-writing the cookie is the tempting shortcut and the wrong one: `@supabase/s
 ## Signing out in the playwright session revokes the saved state
 
 `playwright-cli state-save auth.json` then clicking Sign out in the same session invalidates the refresh token, so a later `pw-verify --state auth.json` lands on `/login`. Mint again after any sign-out.
+
+## Gemini 2.5 Flash spends thinking tokens out of maxOutputTokens
+
+With `maxOutputTokens: 1200` the debrief came back cut mid-sentence, and when the format was JSON that surfaced as "Unterminated string" and "Unexpected token" parse errors that looked like a formatting problem. The model was out of budget, not out of manners. Use 4000 like the recap does.
+
+## Do not ask a chat model for JSON when a label per line will do
+
+Quotes inside a summary and raw newlines both break `JSON.parse`. The debrief route (`app/api/review/[id]/debrief/route.ts`) asks for `SUMMARY:` / `QUESTION:` / `IDEAS:` / `CLOSING:` lines and reads them with a regex whose terminator is the next label or end of input (`(?![\s\S])`, not `\s*$`, which stops at the first line break under the `m` flag).
+
+## Ideas come from the library, never from the model
+
+The coach picks idea keys; the server resolves them to `lib/review/ideas.ts` rows. That is what keeps every suggestion attributed to a real source and makes "3 of 3 sources agree" honest. A key the model invents is simply dropped.
+
+## A game entered as a final score has no frames
+
+Photo imports and the sheet can leave `finals[i]` set with empty `rolls[i]`. Strike and spare counts are then 0, which reads as "0X · 0/ · 0 open" and lies. `statLine` says "score only" when `framesPlayed` is 0 and the coach is told the same.

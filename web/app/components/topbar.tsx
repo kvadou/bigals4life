@@ -1,6 +1,7 @@
 import { CircleDot } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { BroGlyph } from "./bro-mark";
 
 /** Team-first header: brand, then Season and Standings, then whatever the page adds (account, actions). */
 export function Topbar({ right }: { right?: ReactNode }) {
@@ -10,6 +11,7 @@ export function Topbar({ right }: { right?: ReactNode }) {
       <Link className="league-tag" href="/season"><span/> SEASON</Link>
       <Link className="league-tag" href="/league"><span/> STANDINGS</Link>
       <Link className="league-tag" href="/records"><span/> RECORDS</Link>
+      <Link className="league-tag bro" href="/review"><span/><BroGlyph size={13} color="#2d5139"/> BRO’</Link>
       {right}
     </nav>
   </header>;
