@@ -5,13 +5,15 @@ import { access, decide, denied, identify, unauthorized } from "@/lib/auth-serve
 import { sameOrigin } from "@/lib/scorebook-server";
 import { uuidSchema } from "@/lib/scorebook";
 import { BOWLERS } from "@/lib/season";
-import { reviewSchema, type Review, type Tag } from "@/lib/review/schema";
+import { profileSchema, reviewSchema, type Review, type Tag } from "@/lib/review/schema";
 import { candidateIdeas } from "@/lib/review/ideas";
 import { factsText } from "@/lib/review/facts";
-import { loadNight, loadReviewAndProfile, pickBowler, saveReview } from "@/lib/review/server";
+import { loadNight, loadReviewAndProfile, pickBowler } from "@/lib/review/server";
+
+import { prepareConditionalSave, ReviewConflict, conflictResponse } from "@/lib/review/conditional-save";
 
 type Context = { params: Promise<{ id: string }> };
-const bodySchema = z.object({ bowler: z.number().int().min(0).max(3), review: reviewSchema, answer: z.string().max(1000).optional() });
+const bodySchema = z.object({ bowler: z.number().int().min(0).max(3), review: reviewSchema, answer: z.string().max(1000).optional(), expectedReview: reviewSchema.optional(), expectedProfile: profileSchema.optional() });
 const turnSchema = z.object({ summary: z.string().min(1).max(900), question: z.string().max(240).default(""), ideaKeys: z.array(z.string()).max(3).default([]), closing: z.string().max(300).default("") });
 
 /**
@@ -30,12 +32,13 @@ export async function POST(request: Request, context: Context) {
   if (!allow(`debrief:${identity.user.id}`, 12, 10 * 60_000)) return Response.json({ error: "That is plenty of coaching for ten minutes. Bowl a bit and come back." }, { status: 429 });
   let body; try { body = bodySchema.parse(await request.json()); } catch { return Response.json({ error: "That did not look right." }, { status: 400 }); }
   try {
+    const pending = await prepareConditionalSave(id.data, identity.user.id, body);
     const loaded = await loadNight(id.data);
     if (!loaded) return Response.json({ error: "Night not found." }, { status: 404 });
     const mine = await loadReviewAndProfile(id.data, identity.user.id);
     const bowler = pickBowler(body.bowler, mine.bowler, mine.bowlerName, loaded.night);
     const review: Review = { ...body.review, debrief: [...body.review.debrief] };
-    if (review.debrief.length >= 8) return Response.json({ error: "That is plenty for one night. Pick it up next week." }, { status: 400 });
+    if (review.debrief.length + (body.answer?.trim() ? 2 : 1) > 8) return Response.json({ error: "That is plenty for one night. Pick it up next week." }, { status: 400 });
     const now = new Date().toISOString();
     if (body.answer?.trim()) review.debrief.push({ role: "bowler", text: body.answer.trim(), at: now });
 
@@ -65,11 +68,13 @@ CLOSING: <${closing ? "one concrete target for next week with a number in it (a 
     const ideas = turn.ideaKeys.map(k => fresh.find(i => i.key === k)).filter((i): i is NonNullable<typeof i> => !!i).map(i => ({ key: i.key, text: i[language], source: i.source, url: i.url, agree: i.agree }));
     review.debrief.push({ role: "coach", text: closing && turn.closing ? `${turn.summary}\n\nAim for next week: ${turn.closing}` : turn.summary, question: closing ? undefined : turn.question || undefined, ideas: ideas.length ? ideas : undefined, at: new Date().toISOString() });
     if (closing) review.closed = true;
-    await saveReview(id.data, identity.user.id, bowler, review);
+    await pending.checkProfile();
+    await pending.review(review, bowler);
     return Response.json({ review });
   } catch (error) {
+    if (error instanceof ReviewConflict) return conflictResponse();
     console.error("Debrief failed", error instanceof Error ? error.message : "unknown");
-    return Response.json({ error: "The coach is not answering right now. Your notes are saved; try again in a minute." }, { status: 503 });
+    return Response.json({ error: "The coach is not answering right now. Keep your notes and try again in a minute." }, { status: 503 });
   }
 }
 
