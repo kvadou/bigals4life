@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @main
 struct BA4LApp: App {
@@ -9,8 +10,10 @@ struct ScoreboardView: View {
     @StateObject private var store = ScorebookStore()
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ScaledMetric(relativeTo: .title3) private var pinWidth = 66.0
     @State private var selected = 0
+    @State private var teamExpanded = false
     @State private var showNewGame = false
     @State private var showDiscard = false
     @State private var showTeam = false
@@ -24,37 +27,28 @@ struct ScoreboardView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                syncSection
-                teamSection
-                scoreSection
-                if !complete { entrySection }
-                Section {
-                    Button("Scan the scoreboard", systemImage: "camera.viewfinder") { showScan = true }
-                        .disabled(!store.canEdit)
-                        .accessibilityIdentifier("scanButton")
-                } footer: { Text("Take a photo of the lane monitor. Review the rolls, then apply them to the current game.") }
-                framesSection
-                Section {
-                    Button("Undo last roll", systemImage: "arrow.uturn.backward") {
-                        Task { await store.change { night in
-                            if night.finals?[selected] != nil { night.finals?[selected] = nil }
-                            else if !night.rolls[selected].isEmpty { night.rolls[selected].removeLast() }
-                        } }
+            GeometryReader { geometry in
+                if horizontalSizeClass == .regular && geometry.size.width >= 760 && !dynamicTypeSize.isAccessibilitySize {
+                    HStack(spacing: 0) {
+                        List {
+                            syncSection
+                            teamSection
+                        }
+                        .frame(width: min(360, geometry.size.width * 0.36))
+                        .accessibilityIdentifier("teamPane")
+                        Divider()
+                        List { gameSections }
+                            .accessibilityIdentifier("scorecardPane")
                     }
-                    .disabled(!store.canEdit || (game.rolls.isEmpty && store.night.finals?[selected] == nil))
-                    Button("Start next game", systemImage: "arrow.clockwise") { showNewGame = true }
-                        .disabled(!store.canEdit || store.night.game >= 1000 || store.night.history.count >= 500)
-                    NavigationLink { HistoryView(history: store.night.history) } label: {
-                        Label("Game history", systemImage: "clock.arrow.circlepath")
+                } else {
+                    List {
+                        syncSection
+                        compactTeamSection
+                        gameSections
                     }
-                }
-                if !store.legacy.isEmpty {
-                    Section {
-                        Button("Original device scorecards", systemImage: "archivebox") { showLegacy = true }
-                    } footer: { Text("Your original iPhone scorecards are preserved separately.") }
                 }
             }
+            .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("BA4L")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -94,6 +88,38 @@ struct ScoreboardView: View {
             .sheet(isPresented: $showTeam) { teamSheet }
             .sheet(isPresented: $showLegacy) { legacySheet }
             .sheet(isPresented: $showScan) { ScanSheet(store: store) }
+            .tint(BA4LTheme.tint)
+        }
+    }
+
+    @ViewBuilder
+    private var gameSections: some View {
+        scoreSection
+        if !complete { entrySection }
+        Section {
+            Button("Scan the scoreboard", systemImage: "camera.viewfinder") { showScan = true }
+                .disabled(!store.canEdit)
+                .accessibilityIdentifier("scanButton")
+        } footer: { Text("Take a photo of the lane monitor. Review the rolls, then apply them to the current game.") }
+        framesSection
+        Section {
+            Button("Undo last roll", systemImage: "arrow.uturn.backward") {
+                Task { await store.change { night in
+                    if night.finals?[selected] != nil { night.finals?[selected] = nil }
+                    else if !night.rolls[selected].isEmpty { night.rolls[selected].removeLast() }
+                } }
+            }
+            .disabled(!store.canEdit || (game.rolls.isEmpty && store.night.finals?[selected] == nil))
+            Button("Start next game", systemImage: "arrow.clockwise") { showNewGame = true }
+                .disabled(!store.canEdit || store.night.game >= 1000 || store.night.history.count >= 500)
+            NavigationLink { HistoryView(history: store.night.history) } label: {
+                Label("Game history", systemImage: "clock.arrow.circlepath")
+            }
+        }
+        if !store.legacy.isEmpty {
+            Section {
+                Button("Original device scorecards", systemImage: "archivebox") { showLegacy = true }
+            } footer: { Text("Your original iPhone scorecards are preserved separately.") }
         }
     }
 
@@ -122,41 +148,62 @@ struct ScoreboardView: View {
                     .disabled(!store.canEdit)
             }
         } footer: {
-            Text(store.teamID == nil ? "Saved on this iPhone. Open your web team link to use the same scorebook." : "This iPhone and the web app share this team's scores. Anyone with the link can view and edit.")
+            Text(store.teamID == nil ? "Saved on this device. Open your web team link to use the same scorebook." : "This device and the web app share this team’s scores.")
+        }
+    }
+
+    private var compactTeamSection: some View {
+        Section {
+            DisclosureGroup(isExpanded: $teamExpanded) {
+                teamRows
+            } label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Bowling as \(Night.names[selected])")
+                        .font(.headline)
+                    Text("Tonight’s team · \(Night.names.indices.reduce(0) { $0 + store.night.current.score($1) }) scored")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
+                .frame(minHeight: 44, alignment: .leading)
+            }
+            .accessibilityIdentifier("teamSelector")
+            .accessibilityHint("Expand to choose a bowler or see everyone’s scores")
         }
     }
 
     private var teamSection: some View {
-        Section("Tonight’s team") {
-            ForEach(Night.names.indices, id: \.self) { index in
-                Button { selected = index } label: {
-                    let rowLayout = dynamicTypeSize.isAccessibilitySize
-                        ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
-                        : AnyLayout(HStackLayout(spacing: 12))
-                    rowLayout {
-                        Image(systemName: selected == index ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(selected == index ? Color.accentColor : Color.secondary)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(Night.names[index]).font(.headline).foregroundStyle(.primary)
-                            Text(store.night.current.complete(index) ? "Game complete" : "Frame \(store.night.current.bowling(index).frameNumber)")
-                                .font(.caption).foregroundStyle(.secondary)
-                        }
-                        if !dynamicTypeSize.isAccessibilitySize { Spacer() }
-                        VStack(alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .trailing, spacing: 4) {
-                            Text("\(store.night.current.score(index)) scored").font(.subheadline.monospacedDigit()).foregroundStyle(.primary)
-                            Text("\(store.night.maximum(index)) \(store.night.current.complete(index) ? "final" : "possible")")
-                                .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                        }
+        Section("Tonight’s team") { teamRows }
+    }
+
+    @ViewBuilder
+    private var teamRows: some View {
+        ForEach(Night.names.indices, id: \.self) { index in
+            Button { selected = index; teamExpanded = false } label: {
+                let rowLayout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                    : AnyLayout(HStackLayout(spacing: 12))
+                rowLayout {
+                    Image(systemName: selected == index ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(selected == index ? BA4LTheme.tint : Color.secondary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(Night.names[index]).font(.headline).foregroundStyle(.primary)
+                        Text(store.night.current.complete(index) ? "Game complete" : "Frame \(store.night.current.bowling(index).frameNumber)")
+                            .font(.caption).foregroundStyle(.secondary)
                     }
-                    .frame(minHeight: 44)
+                    if !dynamicTypeSize.isAccessibilitySize { Spacer() }
+                    VStack(alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .trailing, spacing: 4) {
+                        Text("\(store.night.current.score(index)) scored").font(.subheadline.monospacedDigit()).foregroundStyle(.primary)
+                        Text("\(store.night.maximum(index)) \(store.night.current.complete(index) ? "final" : "possible")")
+                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    }
                 }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("bowler-\(index)")
-                .accessibilityAddTraits(selected == index ? [.isSelected] : [])
+                .frame(minHeight: 44)
             }
-            LabeledContent("Team score", value: "\(Night.names.indices.reduce(0) { $0 + store.night.current.score($1) })")
-            LabeledContent("Team potential", value: "\(Night.names.indices.reduce(0) { $0 + store.night.maximum($1) })")
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("bowler-\(index)")
+            .accessibilityAddTraits(selected == index ? [.isSelected] : [])
         }
+        LabeledContent("Team score", value: "\(Night.names.indices.reduce(0) { $0 + store.night.current.score($1) })")
+        LabeledContent("Team potential", value: "\(Night.names.indices.reduce(0) { $0 + store.night.maximum($1) })")
     }
 
     private var scoreSection: some View {
@@ -192,7 +239,9 @@ struct ScoreboardView: View {
                             if current.add(pins) { night.rolls[selected] = current.rolls }
                         } }
                     } label: {
-                        Text(entryLabel(pins)).font(.title3.bold()).frame(maxWidth: .infinity, minHeight: 48)
+                        Text(entryLabel(pins)).font(.title3.bold())
+                            .foregroundStyle(BA4LTheme.onTint)
+                            .frame(maxWidth: .infinity, minHeight: 48)
                     }
                     .buttonStyle(.borderedProminent).disabled(!store.canEdit)
                     .accessibilityLabel(pins == 10 ? "Strike, 10 pins" : "\(pins) pins")
@@ -210,16 +259,34 @@ struct ScoreboardView: View {
     private var framesSection: some View {
         Section("Scorecard") {
             ForEach(0..<10, id: \.self) { index in
-                HStack {
-                    Text("\(index + 1)").foregroundStyle(.secondary).frame(minWidth: 28, alignment: .leading)
-                    Text(index < game.frames.count ? game.symbols(for: game.frames[index]) : "·").font(.body.monospaced().bold())
-                    Spacer()
-                    Text(index < game.cumulativeScores.count ? game.cumulativeScores[index].map(String.init) ?? "·" : "·")
-                        .font(.body.monospacedDigit())
+                ViewThatFits(in: .horizontal) {
+                    frameRow(index, stacked: false)
+                    frameRow(index, stacked: true)
                 }
-                .accessibilityElement(children: .combine)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Frame \(index + 1)")
+                .accessibilityValue(frameDescription(index))
             }
         }
+    }
+
+    private func frameDescription(_ index: Int) -> String {
+        let marks = index < game.frames.count ? game.symbols(for: game.frames[index]) : "Not played"
+        let total = index < game.cumulativeScores.count ? game.cumulativeScores[index].map(String.init) ?? "Pending bonuses" : "Not scored"
+        return "\(marks), total \(total)"
+    }
+
+    private func frameRow(_ index: Int, stacked: Bool) -> some View {
+        let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 12))
+        return layout {
+            Text("\(index + 1)").foregroundStyle(.secondary).frame(minWidth: 28, alignment: .leading)
+            Text(index < game.frames.count ? game.symbols(for: game.frames[index]) : "·")
+                .font(.body.monospaced().bold())
+            if !stacked { Spacer() }
+            Text(index < game.cumulativeScores.count ? game.cumulativeScores[index].map(String.init) ?? "·" : "·")
+                .font(.body.monospacedDigit())
+        }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var teamSheet: some View {
@@ -245,6 +312,8 @@ struct ScoreboardView: View {
                 }
             }
             .navigationTitle("Team scorebook")
+            .navigationBarTitleDisplayMode(.inline)
+            .scrollDismissesKeyboard(.interactively)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { showTeam = false } } }
         }
     }
@@ -268,6 +337,7 @@ struct ScoreboardView: View {
                 if let error = store.error { Text(error).foregroundStyle(.red) }
             }
             .navigationTitle("Original scorecards")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { showLegacy = false } } }
         }
     }
@@ -303,5 +373,18 @@ struct HistoryView: View {
             }
         }
         .navigationTitle("Game history")
+        .navigationBarTitleDisplayMode(.inline)
     }
+}
+
+/// A forest tint in daylight, a readable sage tint in dark bowling alleys.
+enum BA4LTheme {
+    static let onTint = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark ? .black : .white
+    })
+    static let tint = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.70, green: 0.84, blue: 0.56, alpha: 1)
+            : UIColor(red: 0.18, green: 0.33, blue: 0.24, alpha: 1)
+    })
 }

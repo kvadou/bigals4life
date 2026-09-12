@@ -102,8 +102,8 @@ struct ScanSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    Button("Take photo", systemImage: "camera") { picker = .camera }.disabled(busy)
-                    Button("Choose from library", systemImage: "photo.on.rectangle") { picker = .photoLibrary }.disabled(busy)
+                    Button("Take photo", systemImage: "camera") { picker = .camera }.disabled(busy).frame(minHeight: 44)
+                    Button("Choose from library", systemImage: "photo.on.rectangle") { picker = .photoLibrary }.disabled(busy).frame(minHeight: 44)
                     if busy { ProgressView("Reading the frame marks…") }
                     if let error { Text(error).foregroundStyle(.red) }
                     if !warning.isEmpty { Text(warning).font(.callout).foregroundStyle(.orange) }
@@ -116,11 +116,15 @@ struct ScanSheet: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(row.name.isEmpty ? "Row \(row.id + 1)" : row.name).font(.headline)
                                 Text(row.rolls.isEmpty ? "No usable rolls" : row.rolls.map { $0 == 10 ? "X" : String($0) }.joined(separator: " ")).font(.body.monospaced())
+                                    .fixedSize(horizontal: false, vertical: true)
                                 if !row.note.isEmpty { Text(row.note).font(.caption).foregroundStyle(.secondary) }
                                 Picker("Assign to", selection: Binding(get: { targets[row.id] ?? -1 }, set: { targets[row.id] = $0 < 0 ? nil : $0 })) {
                                     Text("Skip").tag(-1)
                                     ForEach(Night.names.indices, id: \.self) { Text(Night.names[$0]).tag($0) }
                                 }
+                                .pickerStyle(.menu)
+                                .frame(minHeight: 44)
+                                .accessibilityLabel("Assign \(row.name.isEmpty ? "row \(row.id + 1)" : row.name) to bowler")
                                 .disabled(row.rolls.isEmpty)
                             }
                             .padding(.vertical, 4)
@@ -143,6 +147,8 @@ struct ScanSheet: View {
                 }
             }
             .navigationTitle("Scan scoreboard")
+            .navigationBarTitleDisplayMode(.inline)
+            .tint(BA4LTheme.tint)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
             .sheet(item: $picker) { source in
                 CameraPicker(source: source) { image in
