@@ -121,3 +121,7 @@ Change from the original contract: standings and scores are no longer public. `p
 ### Codex: responsive release, 2026-09-12
 
 TestFlight build 4 is the iPhone/iPad layout refinement requested September 12. It does NOT include native authentication. Do not use build number 4 as an auth-enforcement readiness signal; the earlier rollout number is superseded. Native auth remains a separate outstanding phase requiring its own integrated verification and release.
+
+## 2026-09-12 native release integration
+
+Doug authorized the native shared-account release. Web protected records endpoints, new-account membership guard and conditional review/debrief saves are deployed to bigals4life.com (Vercel dpl_7sRL1Ze5dtJCQUnDzcLUiFanL1Sj). Native build5 upload was accepted by Apple; final processing/group evidence is tracked in `2026-09-12-native-experience-release.md`. Native uses the canonical API with account-bound bearer transport, Keychain session storage and isolated local score/review backups. The existing anonymous legacy enforcement flag was not changed. Real-account native sign-in and physical camera/dictation remain field verification.

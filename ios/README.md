@@ -27,7 +27,7 @@ The bundle identifier remains `com.dougkvamme.StrikeCeiling`, preserving upgrade
 
 Run `bun ios/Tests/run.ts` for scoring/store, account security/lifecycle, voice entry, model contract, web-schema payload and match-point parity tests. Tests use synthetic responses, not production accounts. The DEBUG-only simulator fixture transport cannot use real networking and is excluded from Release builds.
 
-2026-09-12: gap analysis confirmed Week 1 on the signed-in website, team series 1849 and match 26-10. Native/API tests and simulator checks cover the new feature surfaces. See `docs/plans/2026-09-12-native-feature-parity.md` for final evidence. Doug authorized the build 5 release; final deployment evidence is recorded in the experience release plan. Real-account native login and physical-device camera/dictation remain field verification. Doug explicitly authorized Vercel and TestFlight deployment on September 12.
+2026-09-12: gap analysis confirmed Week 1 on the signed-in website, team series 1849 and match 26-10. Native/API tests and simulator checks cover the new feature surfaces. See `docs/plans/2026-09-12-native-feature-parity.md` for final evidence. Build 1.0(5) is VALID in App Store Connect and available to the internal TestFlight group; web APIs are live on bigals4life.com. Real-account native login and physical-device camera/dictation remain field verification. Doug explicitly authorized Vercel and TestFlight deployment on September 12.
 
 ## TestFlight release
 
