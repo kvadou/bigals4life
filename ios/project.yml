@@ -45,7 +45,7 @@ targets:
         CFBundleDisplayName: BA4L
         ITSAppUsesNonExemptEncryption: false
         NSCameraUsageDescription: BA4L uses the camera for live lane observation and scoreboard photos.
-        NSMicrophoneUsageDescription: BA4L would use microphone access for voice in a shared session. Video-only sessions do not use it.
+        NSMicrophoneUsageDescription: BA4L records a short team sound only when you choose to record. Live video does not automatically share your microphone.
         NSPhotoLibraryUsageDescription: BA4L reads a scoreboard photo you choose to fill in rolls.
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:

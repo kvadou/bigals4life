@@ -12,6 +12,7 @@ import { Topbar } from "../components/topbar";
 import Camera, { type CameraSource } from "./camera";
 import Clips from "./clips";
 import PeanutGallery from "./gallery";
+import Soundboard from "./soundboard";
 import { activityNames, audienceNames, api, terminalSessionError, validId, type Activity, type Audience, type Health, type Observation, type StudioSession } from "./types";
 import "./studio.css";
 type Session = StudioSession & { isOwner?: boolean };
@@ -26,6 +27,7 @@ export default function Studio({ initialSessionId }: { initialSessionId: string 
   const [listing, setListing] = useState(false), [configured, setConfigured] = useState<boolean | null>(null); const [email,setEmail] = useState(""); const [inviting,setInviting] = useState(false);
   const competitive = activity === "league" || activity === "prebowl";
   const eligibleBooks = weeks.filter(week => activity === "prebowl" ? !!week.prebowl : !week.prebowl);
+  const [connectionId,setConnectionId]=useState("");
   const [stopSignal, setStopSignal] = useState(0);
   const epoch = useRef(0); const room = useRef<Room | null>(null); const localStream = useRef<MediaStream | null>(null); const localTrack = useRef<LocalVideoTrack | null>(null);
   const pending = useRef<AbortController | null>(null); const timer = useRef<ReturnType<typeof setInterval> | null>(null); const expiryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -33,7 +35,7 @@ export default function Studio({ initialSessionId }: { initialSessionId: string 
   const observe = useCallback((id: string, value: Observation) => { if (value.frames || value.bytes) observations.current.set(id,value); else observations.current.delete(id); }, []);
   const element = useCallback((id: string, video: HTMLVideoElement | null) => { if (video) videos.current.set(id,video); else videos.current.delete(id); setVideoVersion(value => value+1); }, []);
   const dispose = useCallback(() => {
-    epoch.current++; pending.current?.abort(); pending.current=null;
+    setConnectionId(""); epoch.current++; pending.current?.abort(); pending.current=null;
     if (timer.current) clearInterval(timer.current); timer.current=null;
     if (expiryTimer.current) clearTimeout(expiryTimer.current); expiryTimer.current=null;
     room.current?.removeAllListeners(); void room.current?.disconnect(); room.current=null;
@@ -97,7 +99,7 @@ export default function Studio({ initialSessionId }: { initialSessionId: string 
         await liveRoom.localParticipant.publishTrack(track,{source:Track.Source.Camera});
         if (version!==epoch.current) { track.stop(); await liveRoom.disconnect(); return; }
       }
-      sync(); setStatus("connected");
+      sync(); setConnectionId(token.connectionId); setStatus("connected");
       const last=new Map<string,Observation>(); let reporting=false;
       const report=async () => {
         if (reporting || version!==epoch.current) return; reporting=true;
@@ -133,7 +135,7 @@ export default function Studio({ initialSessionId }: { initialSessionId: string 
   const selectedVideo=videos.current.get(selected) ?? null; void videoVersion;
   const connected=status!=="idle"; const freshHealth=health && Date.now()-Date.parse(health.observedAt)<15000 ? health : null;
   return <main className="studio-shell"><Topbar/><Link className="studio-back" href="/">← Tonight</Link>
-    <header className="studio-heading"><div><p className="studio-kicker">BA4L · Live studio</p><h1>Your lane. Your audience.</h1><p>Practice privately, bowl with the team, or invite someone to watch.</p></div><span className="studio-tag"><Lock size={15}/> Microphone off</span></header>
+    <header className="studio-heading"><div><p className="studio-kicker">BA4L · Live studio</p><h1>Your lane. Your audience.</h1><p>Practice privately, bowl with the team, or invite someone to watch.</p></div><span className="studio-tag"><Lock size={15}/> Live microphone off</span></header>
     {error && <div className="studio-error" role="alert">{error}</div>}{message && <p className="studio-notice" role="status">{message}</p>}
     <div className="studio-workspace"><aside className="studio-setup" aria-label="Studio setup">
       <h2>{session ? session.title : "Set up your studio"}</h2>
@@ -161,6 +163,7 @@ export default function Studio({ initialSessionId }: { initialSessionId: string 
     <section className="studio-stage" aria-label="Live cameras"><div className="studio-stage-heading"><h2>{session ? "Shared cameras" : "Private preview"}</h2><span role="status" className="studio-tag">{status==="idle"?"Camera off":status==="joining"?"Starting…":status==="reconnecting"?"Reconnecting…":session?"Room connected":"Only on this device"}</span></div>
       {session && connected && <p className="studio-caption">{freshHealth ? `${freshHealth.cameraCount} published cameras · ${freshHealth.receivingCount} devices report receiving video` : "Waiting for device-reported video health."} These reports are from viewers’ devices, not server confirmation of image content.</p>}
       {sources.length ? <div className="studio-cameras">{sources.map(source=><Camera key={source.id} source={source} selected={selected===source.id} choose={()=>setSelected(source.id)} element={element} observe={observe}/>)}</div> : <div className="studio-empty-stage">{connected?<Radio size={36}/>:<VideoOff size={36}/>}<h3>{status==="joining"?"Getting the studio ready":connected?"Waiting for a camera":"Ready when you are"}</h3><p>{connected?"Video appears when real frames reach this browser. Joining a room does not start recording.":"Choose who can watch, then start your camera. Recording remains off until you enable it."}</p></div>}
+    {session && <Soundboard key={`sound-${session.id}`} sessionId={session.id} connectionId={connectionId} connected={status==="connected"} isOwner={!!session.isOwner}/>}
     {session && <PeanutGallery key={session.id} sessionId={session.id} connected={status==="connected"} isOwner={!!session.isOwner}/>}
     </section></div>
     <Clips source={selectedSource} video={selectedVideo} stopSignal={stopSignal}/>

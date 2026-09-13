@@ -1,5 +1,6 @@
 import { AccessToken, RoomServiceClient, TrackSource } from "livekit-server-sdk";
 import { z } from "zod";
+import { soundboard } from "./live-soundboard";
 import { access, identify, isTeammate, type Identity } from "./auth-server";
 import { database, sameOrigin } from "./scorebook-server";
 import { allow } from "./rate-limit";
@@ -56,7 +57,7 @@ async function load(id:string,who:Identity){
  return {session,grants};
 }
 const view=(s:Session,canPublish:boolean,isOwner:boolean)=>({id:s.id,activity:s.activity,audience:s.audience,scorebookId:s.scorebook_id,teamScopeId:s.team_scope_id,title:s.title,expiresAt:s.expires_at,canPublish,isOwner});
-export async function liveV2(request:Request,action:"list"|"create"|"read"|"end"|"token"|"health"|"invites"|"gallery",id?:string){
+export async function liveV2(request:Request,action:"list"|"create"|"read"|"end"|"token"|"health"|"invites"|"gallery"|"soundboard",id?:string){
  try{
   const who=await caller(request,action==="gallery"?`gallery-${request.method.toLowerCase()}`:action);
   if(action==="create"){
@@ -82,6 +83,7 @@ export async function liveV2(request:Request,action:"list"|"create"|"read"|"end"
    return reply({sessions,configured:!!configuration()});
   }
   const {session:s,grants}=await load(id??"",who);
+  if(action==="soundboard")return soundboard(request,s,who);
   if(action==="read")return reply({session:view(s,grants.publish,s.owner_id===who.user.id)});
   if(action==="gallery"){
    type Event={id:string;user_id:string;kind:"reaction"|"comment"|"coach";text:string;author:string;created_at:string};

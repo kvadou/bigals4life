@@ -135,6 +135,7 @@ struct StudioBroadcastView: View {
                         }
                         LaneReplayPanel(replay: replay, sources: cameras.map { (name: $0.local ? "Your camera" : "Team camera", track: $0.track) })
                     }
+                    NativeSoundboardView(sessionID: session.id, isHost: session.isOwner == true, connected: connection.room?.connectionState == .connected, connectionID: connection.connectionID, send: send)
                     NativeGalleryView(sessionID: session.id, isHost: session.isOwner == true, connected: connection.room?.connectionState == .connected, send: send)
                     if let moment = replay.moment {
                         Button("Save kept replay to private library", systemImage: "square.and.arrow.down") {
@@ -149,7 +150,7 @@ struct StudioBroadcastView: View {
                         else if session.canPublish { Button("Start camera", systemImage: "video") { join(publish: true) } }
                         Button("Reconnect") { join(publish: connection.publishing) }
                     }.buttonStyle(.bordered).controlSize(.large).disabled(connection.busy || expired)
-                    Text("Keep this screen open while sharing. Backgrounding stops the stream. Microphone is off.").font(.callout).foregroundStyle(BA4LTheme.secondary)
+                    Text("Keep this screen open while sharing. Backgrounding stops the stream. Live video does not share your microphone. Soundboard recording stays local until you share the clip.").font(.callout).foregroundStyle(BA4LTheme.secondary)
                     if let id = session.scorebookId, let url = URL(string: ScorebookClient.origin + "/season/" + id) {
                         Link("Open attached scorebook", destination: url).frame(minHeight: 44)
                     }

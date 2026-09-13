@@ -29,7 +29,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>BA4L uses the camera for live lane observation and scoreboard photos.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>BA4L would use microphone access for voice in a shared session. Video-only sessions do not use it.</string>
+	<string>BA4L records a short team sound only when you choose to record. Live video does not automatically share your microphone.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>BA4L reads a scoreboard photo you choose to fill in rolls.</string>
 	<key>UILaunchScreen</key>

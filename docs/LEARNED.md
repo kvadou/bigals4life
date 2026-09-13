@@ -148,3 +148,7 @@ A successful token request and room connection do not establish video delivery. 
 ## Session commentary must remain separate from video and scoring
 
 Peanut Gallery posts inherit current session access but never grant video publishing or change scores. Display names come from verified auth responses and remain display-only. Clamp the feed and stored event slots; enforce host pause/end at insert time under a database row lock. Client polling must discard reads that overlap a successful mutation, otherwise a removed post or resumed state can reappear. Hide/disconnect stops gallery polling without touching the room.
+
+## Soundboard mute must outrun slow audio downloads
+
+Do not await custom audio downloads in the session-state polling loop. Fetch independently, cancel older cues, and check the playback generation, current connection, enabled/listening state, recording state and ten-second freshness immediately before playing. Cancel downloads on mute, recording start, hide and disconnect. A short speaker lease needs a local deadline even when a renewal request hangs. Serialize release then claim so an old release cannot erase a newer claim. Native permission prompts can temporarily make the scene inactive; preserve a pending permission request while still stopping on background.
