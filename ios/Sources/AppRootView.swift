@@ -12,7 +12,8 @@ struct AppRootView: View {
     var body: some View {
         Group {
             if let userID = session.userID, session.signedIn {
-                SignedInApp(session: session, userID: userID).id(userID)
+                if session.needsPasswordReset { SetPasswordView(session: session).id("reset-password") }
+                else { SignedInApp(session: session, userID: userID).id(userID) }
             } else { SignInView(session: session) }
         }.tint(BA4LTheme.tint)
     }
@@ -24,6 +25,7 @@ struct SignInView: View {
     @State private var password = ""
     @State private var code = ""
     @State private var usePassword = true
+    @State private var recoveryMode = false
     var body: some View {
         NavigationStack {
             Form {
@@ -36,12 +38,13 @@ struct SignInView: View {
                     if usePassword {
                         SecureField("Password", text: $password).textContentType(.password)
                         Button("Sign in") { Task { _ = await session.signIn(email: email, password: password) } }.disabled(email.isEmpty || password.isEmpty)
-                        Button("Use an emailed sign-in code instead") { code = ""; session.error = nil; usePassword = false }.frame(minHeight: 44)
+                        Button("Forgot password?") { code = ""; session.error = nil; recoveryMode = true; usePassword = false }.frame(minHeight: 44)
+                        Button("Use an emailed sign-in code instead") { code = ""; session.error = nil; recoveryMode = false; usePassword = false }.frame(minHeight: 44)
                     } else {
                         Button(session.codeSent ? "Send another code" : "Email me a sign-in code") { Task { _ = await session.requestCode(email: email) } }.disabled(email.isEmpty)
                         if session.codeSent {
                             TextField("Email code", text: $code).textContentType(.oneTimeCode).keyboardType(.numberPad)
-                            Button("Verify & sign in") { Task { _ = await session.verifyCode(email: email, code: code) } }.disabled(code.isEmpty)
+                            Button(recoveryMode ? "Verify & reset password" : "Verify & sign in") { Task { _ = await session.verifyCode(email: email, code: code, recovery: recoveryMode) } }.disabled(code.isEmpty)
                         }
                         Button("Use my password instead") { session.error = nil; usePassword = true }.frame(minHeight: 44)
                     }
@@ -50,6 +53,27 @@ struct SignInView: View {
                 if let error = session.error { Section { Text(error).foregroundStyle(.red) } }
                 Section { Text("Existing device scorecards remain backed up on this device. Signing in loads your shared team data.").font(.footnote) }
             }.navigationTitle("Welcome to BA4L")
+        }
+    }
+}
+
+private struct SetPasswordView: View {
+    @ObservedObject var session: AccountSession
+    @State private var password = ""
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Label("Choose a new password", systemImage: "key.fill").font(.title2)
+                    Text("Your email is verified. Set a password for faster sign-in next time.")
+                }
+                Section("New password") {
+                    SecureField("Password", text: $password).textContentType(.newPassword)
+                    Button("Save password") { Task { _ = await session.updatePassword(password) } }.disabled(password.count < 8)
+                }
+                if let error = session.error { Section { Text(error).foregroundStyle(.red) } }
+            }
+            .navigationTitle("Reset password")
         }
     }
 }

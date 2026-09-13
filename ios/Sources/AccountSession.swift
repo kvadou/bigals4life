@@ -80,6 +80,7 @@ final class AccountSession: ObservableObject {
     @Published var error: String?
     @Published private(set) var codeSent = false
     @Published private(set) var hasPassword = false
+    @Published private(set) var needsPasswordReset = false
     var signedIn: Bool { session != nil }
     var configured: Bool { configuration != nil }
 
@@ -162,7 +163,7 @@ final class AccountSession: ObservableObject {
     }
 
     @discardableResult
-    func verifyCode(email: String, code: String) async -> Bool {
+    func verifyCode(email: String, code: String, recovery: Bool = false) async -> Bool {
         await operation {
             guard session == nil else { throw Failure.message("Sign out before switching accounts.") }
             let address = try Self.address(email)
@@ -171,6 +172,7 @@ final class AccountSession: ObservableObject {
             let current = generation
             let data = try await auth("verify", body: ["email": address, "token": digits, "type": "email"])
             try accept(data, generation: current)
+            needsPasswordReset = recovery
             codeSent = false
         }
     }
@@ -184,6 +186,7 @@ final class AccountSession: ObservableObject {
             let current = generation
             let data = try await auth("token?grant_type=password", body: ["email": address, "password": password])
             try accept(data, generation: current)
+            needsPasswordReset = false
         }
     }
 
@@ -199,6 +202,7 @@ final class AccountSession: ObservableObject {
             guard Self.valid(user), user.id == updated.user.id else { throw Failure.response }
             updated.user = user
             try persist(updated)
+            needsPasswordReset = false
         }
     }
 
@@ -215,6 +219,7 @@ final class AccountSession: ObservableObject {
         }
         publish(nil)
         codeSent = false
+        needsPasswordReset = false
         error = nil
         // Local scope keeps the user's web session intact. Local credentials stay removed even when offline.
         if let oldToken { _ = try? await auth("logout?scope=local", body: nil, bearer: oldToken) }

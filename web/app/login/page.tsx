@@ -19,6 +19,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   // Password is the fast returning-user path. The emailed code remains the recovery and first-time path.
   const [mode, setMode] = useState<"code" | "password">("password");
+  const [recovery, setRecovery] = useState(false);
   const remember = () => { try { localStorage.setItem("ba4l-login", "password"); } catch { /* fine */ } };
   const [stage, setStage] = useState<"email" | "code" | "setPassword" | "done">("email");
   const [busy, setBusy] = useState(false);
@@ -40,8 +41,8 @@ function LoginForm() {
     const { data, error } = await supabaseBrowser().auth.verifyOtp({ email, token, type: "email" });
     setBusy(false);
     if (error) { setError("That code did not work. Codes last 10 minutes; request a new one if needed."); return; }
-    // First time through, offer a password so the next sign-in is one step. Skippable.
-    if (data.user?.user_metadata?.has_password) finish(); else { setPassword(""); setStage("setPassword"); }
+    // Recovery always ends by choosing a fresh password. First-time users get the same offer.
+    if (recovery || !data.user?.user_metadata?.has_password) { setPassword(""); setStage("setPassword"); } else finish();
   };
   const signInWithPassword = async () => {
     const address = email.trim().toLowerCase();
@@ -67,17 +68,18 @@ function LoginForm() {
       <div className="eyebrow">{stage === "email" && mode === "password" ? <><KeyRound size={15}/> SECURE SIGN IN</> : <><Mail size={15}/> EMAIL CODE</>}</div>
       {stage === "email" && <>
         <h1>Big Al&rsquo;s 4 Life.</h1>
-        <p>The team scorebook, standings, and Thursday night. {mode === "password" ? "Use your BA4L email and password." : "We’ll email you a six-digit code."}</p>
+        <p>The team scorebook, standings, and Thursday night. {mode === "password" ? "Use your BA4L email and password." : recovery ? "We’ll email a code so you can choose a new password." : "We’ll email you a six-digit code."}</p>
         <form onSubmit={e => { e.preventDefault(); void (mode === "password" ? signInWithPassword() : send()); }}>
           <label className="field">Email<input type="email" autoComplete="username" inputMode="email" autoFocus value={email} onChange={e => setEmail(e.target.value)} disabled={busy}/></label>
           {mode === "password" && <label className="field">Password<input type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} disabled={busy}/></label>}
           <button className="primary" type="submit" disabled={busy}>{busy ? (mode === "password" ? "Signing in…" : "Sending…") : (mode === "password" ? "Sign in" : "Email me a code")}</button>
-          <button className="text-button" type="button" disabled={busy} onClick={() => { setError(""); setMode(m => m === "password" ? "code" : "password"); }}>{mode === "password" ? "Use an emailed sign-in code instead" : "Use my password instead"}</button>
+          {mode === "password" && <button className="text-button" type="button" disabled={busy} onClick={() => { setError(""); setRecovery(true); setMode("code"); }}>Forgot password?</button>}
+          <button className="text-button" type="button" disabled={busy} onClick={() => { setError(""); setRecovery(false); setMode(m => m === "password" ? "code" : "password"); }}>{mode === "password" ? "Use an emailed sign-in code instead" : "Use my password instead"}</button>
         </form>
       </>}
       {stage === "setPassword" && <>
         <h1>You&rsquo;re in. Skip the code next time?</h1>
-        <p>Set a password for <strong>{email}</strong> and future sign-ins are one step. The emailed code always works too.</p>
+        <p>{recovery ? <>Choose a new password for <strong>{email}</strong>. You can still use an emailed code if you forget it.</> : <>Set a password for <strong>{email}</strong> and future sign-ins are one step. The emailed code always works too.</>}</p>
         <form onSubmit={e => { e.preventDefault(); void savePassword(); }}>
           <label className="field">New password<input type="password" autoComplete="new-password" minLength={8} autoFocus value={password} onChange={e => setPassword(e.target.value)} disabled={busy}/></label>
           <button className="primary" type="submit" disabled={busy}>{busy ? "Saving…" : "Save password"}</button>
