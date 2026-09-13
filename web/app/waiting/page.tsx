@@ -1,10 +1,10 @@
-import { CircleDot } from "lucide-react";
+import { BrandMark } from "../components/brand-mark";
 import Link from "next/link";
 import SignOut from "./sign-out";
 
 export default function WaitingPage() {
   return <main>
-    <header className="topbar"><Link className="brand" href="/" aria-label="Big Al's 4 Life home"><span className="brand-icon"><CircleDot size={23}/></span>BA4L</Link><span className="league-tag"><span/> TEAM ONLY</span></header>
+    <header className="topbar"><Link className="brand" href="/" aria-label="Big Al's 4 Life home"><span className="brand-icon"><BrandMark size={36}/></span>BA4L</Link><span className="league-tag"><span/> TEAM ONLY</span></header>
     <section className="login-card">
       <div className="eyebrow">ALMOST</div>
       <h1>You&rsquo;re signed in, but not on the team yet.</h1>

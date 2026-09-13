@@ -1,7 +1,8 @@
 "use client";
 import { Suspense, useState } from "react";
-import { CircleDot, KeyRound, Mail } from "lucide-react";
+import { KeyRound, Mail } from "lucide-react";
 import Link from "next/link";
+import { BrandMark } from "../components/brand-mark";
 import { useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
@@ -61,7 +62,7 @@ function LoginForm() {
     remember(); finish();
   };
   return <main>
-    <header className="topbar"><Link className="brand" href="/" aria-label="Strike Ceiling home"><span className="brand-icon"><CircleDot size={23}/></span>BA4L</Link><span className="league-tag"><span/> SIGN IN</span></header>
+    <header className="topbar"><Link className="brand" href="/" aria-label="Big Al's 4 Life home"><span className="brand-icon"><BrandMark size={36}/></span>BA4L</Link><span className="league-tag"><span/> SIGN IN</span></header>
     <section className="login-card">
       <div className="eyebrow">{stage === "email" && mode === "password" ? <><KeyRound size={15}/> MEMBERS ONLY</> : <><Mail size={15}/> EMAIL CODE</>}</div>
       {stage === "email" && <>
@@ -95,7 +96,7 @@ function LoginForm() {
       {stage === "done" && <><h1>You&rsquo;re in.</h1><p>Taking you back to the scorebook…</p></>}
       {error && <p className="photo-error" role="alert">{error}</p>}
     </section>
-    <footer><span>STRIKE CEILING</span><span>Big Al&rsquo;s 4 Life.</span></footer>
+    <footer><span>BA4L</span><span>Big Al&rsquo;s 4 Life.</span></footer>
   </main>;
 }
 

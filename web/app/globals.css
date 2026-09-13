@@ -178,3 +178,7 @@ body{font-family:var(--display)}h1,h2,h3{font-weight:700}.primary{background:var
 .mark-keys button{border-color:#b49754}.entry-save{background:var(--gold-surface)}.match-state,.match-state.final{color:var(--gold)}.entry-tools .photo-launch{background:var(--gold-surface);border-color:#d8c797}
 
 a.center-link{color:var(--gold-ink)}
+
+/* Shared action links and roster initials retain the same accessible brand palette. */
+.secondary{color:var(--ink);text-decoration:none}
+.avatar-1{color:#78582f}.avatar-2{color:#46646c}
