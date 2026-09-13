@@ -7,6 +7,9 @@ import LiveKit
     @Published private(set) var busy = false
     @Published private(set) var publishing = false
     @Published private(set) var error: String?
+    private var localFrameProbe: LaneFrameProbe?
+    private var localVideoTrack: VideoTrack?
+    var cameraFramesArriving: Bool { localFrameProbe?.hasRecentFrames == true }
     private var generation = 0
     private var accessCheck: Task<Void, Never>?
     private var idleTimerWasDisabled: Bool?
@@ -18,6 +21,7 @@ import LiveKit
         accessCheck?.cancel(); accessCheck = nil
         generation += 1
         let attempt = generation
+        stopFrameProbe()
         busy = true; error = nil; publishing = false
         let previous = room
         room = nil
@@ -43,6 +47,11 @@ import LiveKit
                 // Camera only. Never request or enable microphone capture.
                 try await next.localParticipant.setCamera(enabled: true, captureOptions: CameraCaptureOptions(position: .back))
                 guard attempt == generation, !Task.isCancelled else { await next.disconnect(); return }
+                if let track = next.localParticipant.videoTracks.compactMap({ $0.track as? VideoTrack }).first {
+                    let probe = LaneFrameProbe()
+                    localVideoTrack = track; localFrameProbe = probe
+                    track.add(videoRenderer: probe)
+                }
                 publishing = true
             }
             if idleTimerWasDisabled == nil { idleTimerWasDisabled = UIApplication.shared.isIdleTimerDisabled }
@@ -74,6 +83,7 @@ import LiveKit
         } catch {
             await next.disconnect()
             guard attempt == generation else { return }
+            stopFrameProbe()
             room = nil
             self.error = (error as NSError).domain == "BA4L.Live"
                 ? error.localizedDescription
@@ -84,12 +94,17 @@ import LiveKit
     }
 
     func leave() {
+        stopFrameProbe()
         accessCheck?.cancel(); accessCheck = nil
         generation += 1
         let previous = room
         room = nil; busy = false; publishing = false
         restoreIdleTimer()
         Task { await previous?.disconnect() }
+    }
+    private func stopFrameProbe() {
+        if let localVideoTrack, let localFrameProbe { localVideoTrack.remove(videoRenderer: localFrameProbe) }
+        localVideoTrack = nil; localFrameProbe = nil
     }
     private func restoreIdleTimer() {
         if let previous = idleTimerWasDisabled { UIApplication.shared.isIdleTimerDisabled = previous }
@@ -129,14 +144,11 @@ struct SharedLiveLaneView: View {
                                 ContentUnavailableView("Waiting for a lane camera", systemImage: "video", description: Text("A teammate can publish a mounted camera from this scorebook."))
                             } else {
                                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: 16)], spacing: 16) {
-                                    ForEach(cameras.indices, id: \.self) { index in
+                                    ForEach(cameras, id: \.id) { camera in
                                         VStack(alignment: .leading) {
-                                            LaneVideoView(track: cameras[index].track)
-                                                .aspectRatio(4 / 3, contentMode: .fit)
-                                                .background(Color("BrandForest"))
-                                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                                .accessibilityLabel(cameras[index].name + " live camera")
-                                            Text(cameras[index].name).font(.headline)
+                                            SharedLaneVideoTile(track: camera.track, name: camera.name, isLocal: camera.isLocal,
+                                                                retry: { join(publish: session.publishing) })
+                                            Text(camera.name).font(.headline)
                                         }
                                     }
                                 }
@@ -245,7 +257,7 @@ struct SharedLiveLaneView: View {
                     guard let track = publication.track as? LocalVideoTrack else { return false }
                     return !publication.isMuted && track.capturer.captureState == .started
                 }
-                return active ? "Your camera is broadcasting" : "Camera paused"
+                return active && session.cameraFramesArriving ? "Your camera video is live" : "Waiting for your camera video"
             }
             return "Watching with the team"
         case .connecting: return "Joining the team…"
@@ -255,32 +267,91 @@ struct SharedLiveLaneView: View {
     }
     private func connectionLabel(_ state: ConnectionState) -> String {
         switch state {
-        case .connected: return "Connected · live video"
+        case .connected: return "Connected to team"
         case .connecting: return "Connecting…"
         case .reconnecting: return "Reconnecting · video may pause"
         default: return "Disconnected · join again to watch"
         }
     }
-    private struct Camera { let name: String; let track: VideoTrack }
+    private struct Camera {
+        let name: String; let track: VideoTrack; let isLocal: Bool
+        var id: ObjectIdentifier { ObjectIdentifier(track) }
+    }
     private func tracks(in room: Room) -> [Camera] {
         var result: [Camera] = []
         for participant in room.remoteParticipants.values.sorted(by: { ($0.identity?.stringValue ?? "") < ($1.identity?.stringValue ?? "") }) {
             for publication in participant.videoTracks {
                 if let track = publication.track as? VideoTrack, !publication.isMuted {
-                    result.append(Camera(name: participant.name ?? "Lane camera", track: track))
+                    result.append(Camera(name: participant.name ?? "Lane camera", track: track, isLocal: false))
                 }
             }
         }
         for publication in room.localParticipant.videoTracks {
-            if let track = publication.track as? VideoTrack, !publication.isMuted { result.append(Camera(name: "Your camera", track: track)) }
+            if let track = publication.track as? VideoTrack, !publication.isMuted { result.append(Camera(name: "Your camera", track: track, isLocal: true)) }
         }
         return result
     }
 }
 
-private struct LaneVideoView: UIViewRepresentable {
+/// Room membership and camera startup do not prove that video is rendering.
+struct SharedLaneVideoTile: View {
     let track: VideoTrack
-    func makeUIView(context: Context) -> LiveKit.VideoView { LiveKit.VideoView() }
-    func updateUIView(_ view: LiveKit.VideoView, context: Context) { view.track = track }
-    static func dismantleUIView(_ view: LiveKit.VideoView, coordinator: ()) { view.track = nil }
+    let name: String
+    let isLocal: Bool
+    let retry: () -> Void
+    @State private var rendering = false
+    @State private var alternateDisplay = false
+    @State private var waitingSince = Date()
+
+    var body: some View {
+        ZStack {
+            LiveKit.SwiftUIVideoView(track, layoutMode: .fit, renderMode: alternateDisplay ? .sampleBuffer : .auto, isRendering: $rendering)
+                .id(alternateDisplay)
+                .accessibilityLabel(name + (rendering ? " live video" : " video waiting"))
+            if !rendering {
+                Color.black.opacity(0.88)
+                TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                    VStack(spacing: 12) {
+                        Image(systemName: "video.slash").font(.title2)
+                        Text(isLocal ? "Waiting for camera frames" : "Waiting for live video").font(.headline)
+                        if timeline.date.timeIntervalSince(waitingSince) >= 8 {
+                            Text(isLocal ? "The camera connected but video has not arrived. Try restarting it." : "No video frames are arriving. The broadcaster may have paused or lost connection.")
+                                .font(.callout).multilineTextAlignment(.center)
+                            Button(isLocal ? "Restart camera" : "Reconnect video", action: retry)
+                                .buttonStyle(.borderedProminent).tint(BA4LTheme.tint).foregroundStyle(BA4LTheme.onTint)
+                        } else { ProgressView().tint(.white) }
+                    }.padding(20).foregroundStyle(.white)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .aspectRatio(4.0 / 3.0, contentMode: .fit)
+        .background(Color("BrandForest"))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Button("Refresh picture", systemImage: "arrow.clockwise") {
+                rendering = false; waitingSince = Date(); alternateDisplay.toggle()
+            }.font(.callout).frame(minHeight: 44).frame(maxWidth: .infinity)
+                .foregroundStyle(.primary).background(Color("BrandIvory"))
+                .accessibilityHint("Reopens the video display without stopping the broadcast")
+        }
+        .onChange(of: rendering, initial: true) { _, active in
+            if !active { waitingSince = Date() }
+        }
+    }
+}
+
+/// Measures frame arrival without storing images or depending on preview visibility.
+private final class LaneFrameProbe: NSObject, VideoRenderer, @unchecked Sendable {
+    private let lock = NSLock()
+    private var lastFrame = Date.distantPast
+    var hasRecentFrames: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return Date().timeIntervalSince(lastFrame) < 3
+    }
+    @MainActor var isAdaptiveStreamEnabled: Bool { false }
+    @MainActor var adaptiveStreamSize: CGSize { .zero }
+    nonisolated func render(frame: VideoFrame) {
+        lock.lock(); lastFrame = Date(); lock.unlock()
+    }
 }
