@@ -288,7 +288,7 @@ struct ReviewView: View {
         Form {
             if let error = model.error {
                 Section {
-                    Label(error, systemImage: "exclamationmark.circle").foregroundStyle(.secondary)
+                    Label(error, systemImage: "exclamationmark.circle").foregroundStyle(BA4LTheme.secondary)
                     Button(model.localWriteFailed ? "Retry saving on this device" : model.payload == nil ? "Retry loading" : model.dirty ? "Retry saving" : "Reload review") {
                         Task { if model.dirty || model.localWriteFailed { await model.save() } else { await model.load() } }
                     }
@@ -318,7 +318,7 @@ struct ReviewView: View {
             } else if model.busy {
                 ProgressView("Opening your night…")
             }
-            if !model.status.isEmpty { Section { Text(model.status).font(.footnote).foregroundStyle(.secondary).accessibilityLabel("Review status: \(model.status)") } }
+            if !model.status.isEmpty { Section { Text(model.status).font(.footnote).foregroundStyle(BA4LTheme.secondary).accessibilityLabel("Review status: \(model.status)") } }
         }
         .navigationTitle("Bowling Bro’")
         .toolbar {
@@ -336,7 +336,7 @@ struct ReviewView: View {
         Section {
             Text("How’d it go, \(model.name)?").font(.title2.weight(.semibold))
             Text([p.night.week.map { "Week \($0)" }, p.night.bowledOn, p.night.prebowl != nil ? "Pre-bowl" : p.night.opponent.map { "vs \($0)" }].compactMap { $0 }.joined(separator: " · "))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(BA4LTheme.secondary)
             if p.night.prebowl?.bowlers.count != 1 {
                 Picker("Bowler", selection: Binding(get: { p.bowler }, set: { value in
                     Task { await model.load(bowler: value) }
@@ -346,7 +346,7 @@ struct ReviewView: View {
             if !done.isEmpty {
                 LabeledContent("Series", value: String(done.reduce(0) { $0 + $1.stats.score }))
                 LabeledContent("Games finished", value: String(done.count))
-            } else { Text("No finished games yet. You can add notes now and talk with the coach after a game.").foregroundStyle(.secondary) }
+            } else { Text("No finished games yet. You can add notes now and talk with the coach after a game.").foregroundStyle(BA4LTheme.secondary) }
         } footer: { Text("Scores are already in. Everything else is optional.") }
     }
 
@@ -360,7 +360,7 @@ struct ReviewView: View {
                     LabeledContent("First ball average", value: game.stats.firstBallAvg.formatted(.number.precision(.fractionLength(0...1))))
                     if !game.stats.tenth.isEmpty { LabeledContent("Tenth frame", value: game.stats.tenth) }
                 }
-            } else { Text("Final score from the sheet. No frame detail.").font(.subheadline).foregroundStyle(.secondary) }
+            } else { Text("Final score from the sheet. No frame detail.").font(.subheadline).foregroundStyle(BA4LTheme.secondary) }
             Picker("Ball", selection: gameBinding(index, \.ball, fallback: nil)) {
                 Text("Not specified").tag(String?.none)
                 let existing = gameValue(index).ball
@@ -378,7 +378,7 @@ struct ReviewView: View {
                     }))
                     .disabled(!gameValue(index).tags.contains(tag) && gameValue(index).tags.count >= 6)
                 }
-                Text("Choose up to six observations.").font(.footnote).foregroundStyle(.secondary)
+                Text("Choose up to six observations.").font(.footnote).foregroundStyle(BA4LTheme.secondary)
             }
             TextField("Anything worth remembering", text: Binding(get: { gameValue(index).note }, set: { value in model.changeGame(index) { $0.note = String(value.prefix(600)) } }), axis: .vertical)
                 .lineLimit(3...8).accessibilityLabel("Game \(game.game) notes")
@@ -432,7 +432,7 @@ struct ReviewView: View {
                             Text(idea.text)
                             if let url = URL(string: idea.url), ["https", "http"].contains(url.scheme?.lowercased() ?? "") {
                                 Link(destination: url) { Label(idea.source, systemImage: "arrow.up.right") }.font(.footnote)
-                            } else { Text(idea.source).font(.footnote).foregroundStyle(.secondary) }
+                            } else { Text(idea.source).font(.footnote).foregroundStyle(BA4LTheme.secondary) }
                         }
                     }
                 }.padding(.vertical, 6)
@@ -444,10 +444,10 @@ struct ReviewView: View {
                 Button("Send answer") { Task { await model.talk(answer: model.answer.trimmingCharacters(in: .whitespacesAndNewlines)) } }
                     .disabled(model.answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !model.canTalk)
             } else if p.review.debrief.isEmpty {
-                Text("Talk through the night now, or come back tomorrow. Your notes will still be here.").foregroundStyle(.secondary)
+                Text("Talk through the night now, or come back tomorrow. Your notes will still be here.").foregroundStyle(BA4LTheme.secondary)
                 Button("Talk with the coach") { Task { await model.talk(answer: nil) } }.disabled(!model.canTalk)
             }
-            if p.review.debrief.count >= 8 && !p.review.closed { Text("That is plenty for one night. Pick it up next week.").foregroundStyle(.secondary) }
+            if p.review.debrief.count >= 8 && !p.review.closed { Text("That is plenty for one night. Pick it up next week.").foregroundStyle(BA4LTheme.secondary) }
         }
     }
 

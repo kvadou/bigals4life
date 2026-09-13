@@ -141,15 +141,15 @@ struct LaneReplayPanel: View {
                 Label("Replay & moment of the night", systemImage: "gobackward").font(.headline)
                 Text(replay.status).font(.subheadline).accessibilityIdentifier("laneReplayStatus")
                 if replay.enabled {
-                    Text("Recording silently on this device · \(replay.sourceName)").font(.caption).foregroundStyle(.secondary)
+                    Text("Recording silently on this device · \(replay.sourceName)").font(.caption).foregroundStyle(BA4LTheme.secondary)
                     Button("Stop local replays", role: .destructive) { replay.stop() }.buttonStyle(.bordered).frame(minHeight: 44)
                 } else if sources.count == 1, let source = sources.first {
-                    Button("Enable local replays", systemImage: "record.circle") { replay.enable(track: source.track, name: source.name) }.buttonStyle(.borderedProminent).controlSize(.large)
+                    Button("Enable local replays", systemImage: "record.circle") { replay.enable(track: source.track, name: source.name) }.buttonStyle(.borderedProminent).foregroundStyle(BA4LTheme.onTint).controlSize(.large)
                 } else if sources.count > 1 {
                     Menu("Enable replays from a camera") {
                         ForEach(sources.indices, id: \.self) { index in Button(sources[index].name) { replay.enable(track: sources[index].track, name: sources[index].name) } }
                     }.frame(minHeight: 44)
-                } else { Text("A connected lane camera is needed to enable replays.").font(.caption).foregroundStyle(.secondary) }
+                } else { Text("A connected lane camera is needed to enable replays.").font(.caption).foregroundStyle(BA4LTheme.secondary) }
                 if let clip = replay.recent {
                     HStack {
                         Button("Replay recent footage") { playback = replay.playbackCopy(of: clip) }.frame(minHeight: 44)
@@ -160,11 +160,11 @@ struct LaneReplayPanel: View {
                     Text("Moment of the night · candidate").font(.headline)
                     Text(replay.momentLabel ?? "Recent lane footage").font(.subheadline)
                     Text("\(moment.source) · Received \(moment.capturedAt.formatted(date: .omitted, time: .standard)) · \(Int(moment.seconds.rounded())) seconds").font(.caption)
-                    Text("Scorebook event and video are not synchronized. Confirm the footage before attributing a delivery.").font(.caption).foregroundStyle(.secondary)
-                    Button("Watch kept moment") { playback = replay.playbackCopy(of: moment) }.buttonStyle(.borderedProminent).frame(minHeight: 44)
+                    Text("Scorebook event and video are not synchronized. Confirm the footage before attributing a delivery.").font(.caption).foregroundStyle(BA4LTheme.secondary)
+                    Button("Watch kept moment") { playback = replay.playbackCopy(of: moment) }.buttonStyle(.borderedProminent).foregroundStyle(BA4LTheme.onTint).frame(minHeight: 44)
                     ShareLink("Save or share moment", item: moment.url).frame(minHeight: 44)
                 }
-                Text("Keeps up to 30 seconds of recent video plus one moment locally. Automatic candidates require a fresh, single-roll score update. Nothing is uploaded. Save a kept moment before leaving this session.").font(.caption).foregroundStyle(.secondary)
+                Text("Keeps up to 30 seconds of recent video plus one moment locally. Automatic candidates require a fresh, single-roll score update. Nothing is uploaded. Save a kept moment before leaving this session.").font(.caption).foregroundStyle(BA4LTheme.secondary)
             }.frame(maxWidth: .infinity, alignment: .leading)
         }.sheet(item: $playback) { clip in LaneReplayPlayer(clip: clip) }
     }

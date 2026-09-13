@@ -45,14 +45,14 @@ struct LiveLaneView: View {
         return VStack(alignment: .leading, spacing: 8) {
             Label(context.title, systemImage: "dot.radiowaves.left.and.right")
                 .font(.system(.title, design: .serif, weight: .bold))
-            Text(context.explanation).font(.subheadline).foregroundStyle(.secondary)
+            Text(context.explanation).font(.subheadline).foregroundStyle(BA4LTheme.secondary)
             Menu {
                 Picker("Session context", selection: $intent) {
                     ForEach(LiveLaneContext.Intent.allCases) { value in Text(value.title).tag(value) }
                 }
             } label: { Label("Context: \(intent.title)", systemImage: "slider.horizontal.3").frame(minHeight: 44) }
             Text("Thursday · warm-up 7:00 PM · league about 7:10 PM Central")
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.caption).foregroundStyle(BA4LTheme.secondary)
         }
     }
     private func cameraPanel(at date: Date) -> some View {
@@ -72,24 +72,24 @@ struct LiveLaneView: View {
                 .accessibilityLabel("Live camera preview")
             Label(cameraStatus(at: date), systemImage: camera.state == .watching ? "video.fill" : "video.slash")
                 .font(.headline).accessibilityIdentifier("liveLaneStatus")
-            if let error = camera.observationError { Text(error).foregroundStyle(.secondary) }
+            if let error = camera.observationError { Text(error).foregroundStyle(BA4LTheme.secondary) }
             HStack {
                 if camera.state == .watching {
-                    Button("Pause", systemImage: "pause.fill") { camera.pause() }.buttonStyle(.borderedProminent).frame(minHeight: 44)
+                    Button("Pause", systemImage: "pause.fill") { camera.pause() }.buttonStyle(.borderedProminent).foregroundStyle(BA4LTheme.onTint).frame(minHeight: 44)
                     Button("Stop", systemImage: "stop.fill") { camera.stop() }.buttonStyle(.bordered).frame(minHeight: 44)
                 } else {
                     Button(camera.state == .paused ? "Resume framing preview" : "Check camera framing", systemImage: "video.fill") {
                         Task { await camera.start() }
-                    }.buttonStyle(.borderedProminent).controlSize(.large)
+                    }.buttonStyle(.borderedProminent).foregroundStyle(BA4LTheme.onTint).controlSize(.large)
                         .disabled(camera.state == .starting).accessibilityIdentifier("liveLaneStart")
                 }
             }
             if case .unavailable(let message) = camera.state {
-                Text(message).foregroundStyle(.secondary)
+                Text(message).foregroundStyle(BA4LTheme.secondary)
                 if let settings = URL(string: UIApplication.openSettingsURLString) { Link("Open Settings", destination: settings).frame(minHeight: 44) }
             }
             Text("Local preview and people detection. No audio, recording or broadcast. Keep Live Lane open while watching.")
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.caption).foregroundStyle(BA4LTheme.secondary)
         }
     }
     private func cameraStatus(at date: Date) -> String {
@@ -119,10 +119,10 @@ struct LiveLaneView: View {
                                 guard !Task.isCancelled else { return }
                                 showShared = true
                             }
-                        }.buttonStyle(.borderedProminent).controlSize(.large).accessibilityIdentifier("joinTeamLive")
+                        }.buttonStyle(.borderedProminent).foregroundStyle(BA4LTheme.onTint).controlSize(.large).accessibilityIdentifier("joinTeamLive")
                     } else { Text("Open a night from Season to join its shared live video.") }
-                    Text("Replays and coaching are not connected yet. Video does not automatically update scores.")
-                        .font(.caption).foregroundStyle(.secondary)
+                    Text("Enable local replays inside the shared session. Coaching is not connected yet, and video does not automatically update scores.")
+                        .font(.caption).foregroundStyle(BA4LTheme.secondary)
                 }.frame(maxWidth: .infinity, alignment: .leading).fixedSize(horizontal: false, vertical: true)
             }
     }
@@ -135,13 +135,13 @@ struct LiveLaneView: View {
                     Label("Ball path · tracking not connected", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
                     Label("Oil pattern · no pattern supplied", systemImage: "drop")
                     Text("A hidden release needs another angle. Missing path segments must remain unknown.")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.caption).foregroundStyle(BA4LTheme.secondary)
                 }.frame(maxWidth: .infinity, alignment: .leading).fixedSize(horizontal: false, vertical: true)
             }
             GroupBox {
                 VStack(alignment: .leading, spacing: 10) {
                     Label("Scorebook · Game \(store.night.game)", systemImage: "list.bullet.rectangle").font(.headline)
-                    Text("Existing scorebook, not camera-detected scores.").font(.caption).foregroundStyle(.secondary)
+                    Text("Existing scorebook, not camera-detected scores.").font(.caption).foregroundStyle(BA4LTheme.secondary)
                     ForEach(Night.names.indices, id: \.self) { index in
                         HStack {
                             Text(Night.names[index]); Spacer()
@@ -149,7 +149,7 @@ struct LiveLaneView: View {
                                 .monospacedDigit().fontWeight(.semibold)
                         }
                     }
-                    Text(store.status).font(.caption).foregroundStyle(.secondary)
+                    Text(store.status).font(.caption).foregroundStyle(BA4LTheme.secondary)
                 }.frame(maxWidth: .infinity, alignment: .leading).fixedSize(horizontal: false, vertical: true)
             }
 
@@ -250,8 +250,8 @@ struct DiscoveredLiveLaneView: View {
                         Text(listing.title).font(.title2.bold())
                         if model.loading { ProgressView("Opening this scorebook…") }
                         if let error = model.error {
-                            Text(error).multilineTextAlignment(.center).foregroundStyle(.secondary)
-                            Button("Try again") { Task { await model.load() } }.buttonStyle(.borderedProminent).controlSize(.large)
+                            Text(error).multilineTextAlignment(.center).foregroundStyle(BA4LTheme.secondary)
+                            Button("Try again") { Task { await model.load() } }.buttonStyle(.borderedProminent).foregroundStyle(BA4LTheme.onTint).controlSize(.large)
                         }
                     }.padding().frame(maxWidth: .infinity, maxHeight: .infinity).background(Color("BrandIvory"))
                         .navigationTitle("Watch the team").navigationBarTitleDisplayMode(.inline)

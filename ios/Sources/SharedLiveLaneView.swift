@@ -117,13 +117,13 @@ struct SharedLiveLaneView: View {
                             .font(.title2.bold()).accessibilityIdentifier("sharedLaneStatus")
                     }
                     Text("Only members of this scorebook can join. Shared video uses no microphone.")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(BA4LTheme.secondary)
                     TimelineView(.periodic(from: .now, by: 1)) { timeline in
                         let context = LiveLaneContext.resolve(at: timeline.date, intent: sessionIntent)
                         Text(context.title + ((store.night.prebowl?.week ?? store.night.match?.week).map { " · Week \($0)" } ?? "")).font(.headline)
-                        Text(store.night.prebowl != nil ? "Bowling ahead of league night. Scores stay attached to this pre-bowl’s week." : "Watch with the team. Scores update from this shared scorebook.").font(.caption).foregroundStyle(.secondary)
+                        Text(store.night.prebowl != nil ? "Bowling ahead of league night. Scores stay attached to this pre-bowl’s week." : "Watch with the team. Scores update from this shared scorebook.").font(.caption).foregroundStyle(BA4LTheme.secondary)
                         if let room = session.room {
-                            Text(connectionLabel(room.connectionState)).font(.subheadline).foregroundStyle(.secondary)
+                            Text(connectionLabel(room.connectionState)).font(.subheadline).foregroundStyle(BA4LTheme.secondary)
                             let cameras = tracks(in: room)
                             if cameras.isEmpty {
                                 ContentUnavailableView("Waiting for a lane camera", systemImage: "video", description: Text("A teammate can publish a mounted camera from this scorebook."))
@@ -148,7 +148,7 @@ struct SharedLiveLaneView: View {
                     if !session.busy {
                         if session.room == nil || session.room?.connectionState == .disconnected {
                             Button("Join live video", systemImage: "arrow.clockwise") { join(publish: false) }
-                                .buttonStyle(.borderedProminent).controlSize(.large)
+                                .buttonStyle(.borderedProminent).foregroundStyle(BA4LTheme.onTint).controlSize(.large)
                         }
                         if store.canEdit && store.error == nil && (store.role == .owner || store.role == .editor) && !session.publishing {
                             Button(publishTitle, systemImage: "video.badge.plus") { join(publish: true) }
@@ -164,7 +164,7 @@ struct SharedLiveLaneView: View {
                             ForEach(Night.names.indices, id: \.self) { index in
                                 HStack { Text(Night.names[index]); Spacer(); Text(scoreLabel(index)).monospacedDigit() }
                             }
-                            Text("Scores come from your shared scorebook, not video detection.").font(.caption).foregroundStyle(.secondary)
+                            Text("Scores come from your shared scorebook, not video detection.").font(.caption).foregroundStyle(BA4LTheme.secondary)
                         }.padding(.top, 8)
                     }
                     stakesPanel
@@ -173,7 +173,7 @@ struct SharedLiveLaneView: View {
                         LaneReplayPanel(replay: replay, sources: cameras.map { (name: $0.name, track: $0.track) })
                     }
                     Text("Automatic bowler recognition, ball tracking and coaching are not connected yet. Keep this screen open while broadcasting.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                        .font(.footnote).foregroundStyle(BA4LTheme.secondary)
                 }.padding().frame(maxWidth: 1200)
             }.background(Color("BrandIvory"))
                 .navigationTitle("Team Live Lane").navigationBarTitleDisplayMode(.inline)
@@ -207,14 +207,14 @@ struct SharedLiveLaneView: View {
                     Label("What’s on the line", systemImage: "trophy").font(.headline)
                     Text("Game \(store.night.game) · Individual points").font(.subheadline)
                     let active = cards.filter { $0.status != .waiting }
-                    if active.isEmpty { Text("Individual stakes appear when both lineups and scores are ready.").foregroundStyle(.secondary) }
+                    if active.isEmpty { Text("Individual stakes appear when both lineups and scores are ready.").foregroundStyle(BA4LTheme.secondary) }
                     ForEach(active.indices, id: \.self) { index in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(active[index].title).font(.subheadline.bold())
-                            Text(active[index].detail).font(.caption).foregroundStyle(.secondary)
+                            Text(active[index].detail).font(.caption).foregroundStyle(BA4LTheme.secondary)
                         }
                     }
-                    Text("Each game matchup is worth 1 point; a tie splits it.").font(.caption).foregroundStyle(.secondary)
+                    Text("Each game matchup is worth 1 point; a tie splits it.").font(.caption).foregroundStyle(BA4LTheme.secondary)
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }
         }

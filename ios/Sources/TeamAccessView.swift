@@ -134,14 +134,14 @@ struct TeamAccessView: View {
             if let me = model.account {
                 Section("Your account") {
                     Text(me.profile.displayName).font(.headline)
-                    Text(me.user.email).foregroundStyle(.secondary).textSelection(.enabled)
+                    Text(me.user.email).foregroundStyle(BA4LTheme.secondary).textSelection(.enabled)
                     if let bowler = me.profile.bowlerName { LabeledContent("Bowler", value: bowler) }
                     if me.admin { Label("League admin", systemImage: "person.badge.shield.checkmark") }
                 }
             }
             if let error = model.error {
                 Section {
-                    Label(error, systemImage: "exclamationmark.circle").foregroundStyle(.secondary)
+                    Label(error, systemImage: "exclamationmark.circle").foregroundStyle(BA4LTheme.secondary)
                     Button("Reload team access") { Task { await model.load(bookID: store.teamID) } }
                 }
             }
@@ -153,32 +153,32 @@ struct TeamAccessView: View {
             } else if let members = model.members {
                 Section("This scorebook") {
                     LabeledContent("Your access", value: accessName(members.role))
-                    Text(accessDescription(members.role)).foregroundStyle(.secondary)
+                    Text(accessDescription(members.role)).foregroundStyle(BA4LTheme.secondary)
                     if let link = store.shareURL { ShareLink(item: link) { Label("Share scorebook link", systemImage: "square.and.arrow.up") } }
                     if members.role == "legacy" {
                         if model.account?.admin == true {
                             Button("Claim this scorebook") { claimBookID = model.bookID; showClaim = true }.disabled(!model.canClaim)
-                        } else { Text("Only the league admin can claim this earlier scorebook.").font(.footnote).foregroundStyle(.secondary) }
+                        } else { Text("Only the league admin can claim this earlier scorebook.").font(.footnote).foregroundStyle(BA4LTheme.secondary) }
                     }
                 }
                 Section("Members") {
-                    if members.members.isEmpty { Text("No account memberships yet.").foregroundStyle(.secondary) }
+                    if members.members.isEmpty { Text("No account memberships yet.").foregroundStyle(BA4LTheme.secondary) }
                     ForEach(Array(members.members.enumerated()), id: \.element.id) { index, member in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(member.userId == model.account?.user.id ? "You" : "Team member \(index + 1)").font(.headline)
-                            Text(accessName(member.role)).font(.subheadline).foregroundStyle(.secondary)
+                            Text(accessName(member.role)).font(.subheadline).foregroundStyle(BA4LTheme.secondary)
                             if member.userId != model.account?.user.id {
-                                Text("Account \(member.userId.prefix(8))").font(.caption).foregroundStyle(.secondary)
+                                Text("Account \(member.userId.prefix(8))").font(.caption).foregroundStyle(BA4LTheme.secondary)
                             }
                         }
                     }
                 }
                 Section("Pending invitations") {
-                    if members.invites.isEmpty { Text("No pending invitations.").foregroundStyle(.secondary) }
+                    if members.invites.isEmpty { Text("No pending invitations.").foregroundStyle(BA4LTheme.secondary) }
                     ForEach(members.invites) { invite in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(invite.email).textSelection(.enabled)
-                            Text(accessName(invite.role)).font(.subheadline).foregroundStyle(.secondary)
+                            Text(accessName(invite.role)).font(.subheadline).foregroundStyle(BA4LTheme.secondary)
                         }
                     }
                 }

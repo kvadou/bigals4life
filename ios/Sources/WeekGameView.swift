@@ -43,7 +43,7 @@ struct WeekGameView: View {
             VStack(alignment: .leading, spacing: 24) {
                 if let error = model.error {
                     VStack(alignment: .leading, spacing: 12) {
-                        Label(error, systemImage: "exclamationmark.circle").foregroundStyle(.secondary)
+                        Label(error, systemImage: "exclamationmark.circle").foregroundStyle(BA4LTheme.secondary)
                         Button("Retry scorecards") { Task { await model.refresh() } }.buttonStyle(.bordered)
                     }
                 }
@@ -55,16 +55,16 @@ struct WeekGameView: View {
                     }.pickerStyle(.menu)
                     if let recorded = model.games.first(where: { $0.game == gameNumber }) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(weekTitle).font(.subheadline).foregroundStyle(.secondary)
+                            Text(weekTitle).font(.subheadline).foregroundStyle(BA4LTheme.secondary)
                             Text("Game \(recorded.game)").font(.largeTitle.bold())
                             if let prebowl = model.night?.prebowl {
-                                Text("Pre-bowl · \(prebowl.bowlers.map { frameBowlerName($0) }.joined(separator: ", "))").foregroundStyle(.secondary)
+                                Text("Pre-bowl · \(prebowl.bowlers.map { frameBowlerName($0) }.joined(separator: ", "))").foregroundStyle(BA4LTheme.secondary)
                             }
                             let teamDone = (0..<4).allSatisfy { recorded.complete($0) }
                             if teamDone {
                                 Text("Team scratch total \((0..<4).reduce(0) { $0 + recorded.score($1) })").font(.headline).monospacedDigit()
-                            } else { Text("Team total waits for all four final scores.").foregroundStyle(.secondary) }
-                            Text("Read-only scorecards. Frame totals wait for strike and spare bonuses.").font(.footnote).foregroundStyle(.secondary)
+                            } else { Text("Team total waits for all four final scores.").foregroundStyle(BA4LTheme.secondary) }
+                            Text("Read-only scorecards. Frame totals wait for strike and spare bonuses.").font(.footnote).foregroundStyle(BA4LTheme.secondary)
                         }
                         LazyVGrid(columns: dynamicTypeSize.isAccessibilitySize || horizontalSizeClass != .regular ? [GridItem(.flexible())] : [GridItem(.adaptive(minimum: 300), spacing: 20)], alignment: .leading, spacing: 20) {
                             ForEach(0..<4, id: \.self) { index in
@@ -98,14 +98,14 @@ private struct BowlerFrameCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text(frameBowlerName(index)).font(.title2.bold())
-            if !participates { Text("Not part of this pre-bowl").font(.subheadline).foregroundStyle(.secondary) }
+            if !participates { Text("Not part of this pre-bowl").font(.subheadline).foregroundStyle(BA4LTheme.secondary) }
             if let final {
                 Text("Final \(final)").font(.headline).monospacedDigit()
                 Text(game.rolls.isEmpty ? "Final score entered without frames. No roll-by-roll detail was recorded." : "Final score was entered separately. The frames below show only recorded rolls; their totals may differ.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(BA4LTheme.secondary)
             } else if !game.rolls.isEmpty {
                 Text("\(game.isComplete ? "Final" : "Settled score") \(game.settledScore)").font(.headline).monospacedDigit()
-            } else { Text("No scores recorded").font(.subheadline).foregroundStyle(.secondary) }
+            } else { Text("No scores recorded").font(.subheadline).foregroundStyle(BA4LTheme.secondary) }
             if !game.rolls.isEmpty {
                 Divider()
                 ForEach(0..<10, id: \.self) { frame in
@@ -129,16 +129,16 @@ private struct BowlerFrameCard: View {
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Frame \(frame + 1)").font(.subheadline).foregroundStyle(.secondary)
+                    Text("Frame \(frame + 1)").font(.subheadline).foregroundStyle(BA4LTheme.secondary)
                     Text(marks).font(.headline).monospacedDigit()
                     if !running.isEmpty { Text("Total: \(running)").font(.subheadline).monospacedDigit() }
                 }
             } else {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text(String(frame + 1)).font(.subheadline).foregroundStyle(.secondary).frame(width: 24, alignment: .leading)
+                    Text(String(frame + 1)).font(.subheadline).foregroundStyle(BA4LTheme.secondary).frame(width: 24, alignment: .leading)
                     Text(marks).font(.headline).monospacedDigit()
                     Spacer(minLength: 8)
-                    Text(running).font(.subheadline).monospacedDigit().foregroundStyle(.secondary)
+                    Text(running).font(.subheadline).monospacedDigit().foregroundStyle(BA4LTheme.secondary)
                 }
             }
         }

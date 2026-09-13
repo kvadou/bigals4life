@@ -83,12 +83,12 @@ struct TonightView: View {
             // then follow the expanded/minimized tab bar and window resizing.
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { availableWidth = $0 }
             .tint(BA4LTheme.tint)
-            .background(Color("BrandForest"), ignoresSafeAreaEdges: .top)
+            .background(Color("HomeBackground"), ignoresSafeAreaEdges: .all)
             .navigationTitle("Tonight")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color("BrandForest"), for: .navigationBar)
+            .toolbarBackground(Color("HomeBackground"), for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbarBackground(horizontalSizeClass == .regular ? Color("BrandForest") : Color("BrandIvory"), for: .tabBar)
+            .toolbarBackground(horizontalSizeClass == .regular ? Color("HomeBackground") : Color("BrandIvory"), for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)
             .toolbar {
                 ToolbarItem(placement: .principal) {
@@ -102,7 +102,7 @@ struct TonightView: View {
                         Label("Season", systemImage: "calendar").labelStyle(.iconOnly)
                             .frame(minWidth: 44, minHeight: 44)
                             .foregroundStyle(Color("BrandGold"))
-                            .background(Color("BrandForest"), in: Circle())
+
                     }
                         .buttonStyle(.plain).accessibilityIdentifier("tonightSeason")
                 }
@@ -141,6 +141,7 @@ struct TonightView: View {
                 Text(profile?.greeting ?? "Your team. Your scorebook.")
                     .font(.subheadline).foregroundStyle(Color("BrandGold"))
             }
+            resultPanel
             ForEach(liveDiscovery.sessions) { live in
                 Button { watchingLive = live } label: {
                     VStack(alignment: .leading, spacing: 10) {
@@ -152,28 +153,27 @@ struct TonightView: View {
                             Label("Watch live", systemImage: "arrow.up.right").font(.headline)
                         }
                     }.frame(maxWidth: .infinity, alignment: .leading).padding(18)
-                        .foregroundStyle(Color("BrandForest"))
-                        .background(Color("BrandGoldSurface"), in: RoundedRectangle(cornerRadius: 18))
+                        .foregroundStyle(Color("OnGoldSurface"))
+                        .background(Color("BrandGoldSurface"), in: RoundedRectangle(cornerRadius: 16))
                 }.buttonStyle(.plain).accessibilityIdentifier("watchLive-" + live.scorebookId)
-            }
-            if let message = liveDiscovery.message {
-                Label(message, systemImage: "video.slash").font(.caption).foregroundStyle(Color("OnForest"))
-                    .accessibilityIdentifier("liveDiscoveryMessage")
             }
             Button { showLiveLane = true } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "video.fill")
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Live Lane").font(.headline)
-                        Text("Share a lane camera or watch the team").font(.caption)
+                        Text(liveDiscovery.sessions.isEmpty ? "Start a camera for your teammates" : "Share a lane camera or watch the team").font(.subheadline)
                     }
                     Spacer(minLength: 8)
                     Image(systemName: "arrow.up.right")
                 }.frame(minHeight: 52).padding(14)
-                    .foregroundStyle(Color("BrandForest"))
+                    .foregroundStyle(Color("OnGoldSurface"))
                     .background(Color("BrandGoldSurface"), in: RoundedRectangle(cornerRadius: 14))
             }.buttonStyle(.plain).accessibilityIdentifier("openLiveLane")
-            resultPanel
+            if let message = liveDiscovery.message {
+                Text(message).font(.caption).foregroundStyle(Color("OnForest"))
+                    .accessibilityIdentifier("liveDiscoveryMessage")
+            }
             personalPanel
             NavigationLink { MatchInsightsView(store: store, send: send) } label: {
                 HStack(spacing: 12) {
@@ -202,11 +202,11 @@ struct TonightView: View {
                 HStack { Text(currentTitle).fontWeight(.semibold); Spacer(); Text(nightState) }
                 VStack(alignment: .leading, spacing: 4) { Text(currentTitle).fontWeight(.semibold); Text(nightState) }
             }.font(.subheadline)
-            if let summary { Text(summary.dateLabel).font(.caption).foregroundStyle(.secondary) }
+            if let summary { Text(summary.dateLabel).font(.caption).foregroundStyle(BA4LTheme.secondary) }
             if let match = store.night.match, let points {
                 matchup(points, opponent: match.opponent.name)
                 VStack(spacing: 6) {
-                    Text(completed ? "Team scratch series" : "Scratch pins · completed games").font(.caption).foregroundStyle(.secondary)
+                    Text(completed ? "Team scratch series" : "Scratch pins · completed games").font(.caption).foregroundStyle(BA4LTheme.secondary)
                     Text(teamSeries.formatted()).font(.title3.bold().monospacedDigit())
                 }.frame(maxWidth: .infinity)
                 Divider()
@@ -220,7 +220,7 @@ struct TonightView: View {
                     .background(Color("BrandGoldSurface"), in: RoundedRectangle(cornerRadius: 10))
                 if points.remaining > 0 {
                     Text("\(formatted(points.remaining)) of 36 points still available. Open games are not counted yet.")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.caption).foregroundStyle(BA4LTheme.secondary)
                 }
             } else {
                 VStack(alignment: .leading, spacing: 8) {
@@ -228,8 +228,8 @@ struct TonightView: View {
                         .font(.title2.bold())
                     Text(teamSeries.formatted()).font(.system(size: scoreSize, weight: .bold, design: .rounded).monospacedDigit())
                     Text(store.night.prebowl != nil ? "Scratch pins from completed pre-bowl games" : "Team scratch pins from completed games")
-                        .font(.subheadline).foregroundStyle(.secondary)
-                    if store.night.match == nil { Text("Match points appear after the opponent and handicaps are set.").font(.caption).foregroundStyle(.secondary) }
+                        .font(.subheadline).foregroundStyle(BA4LTheme.secondary)
+                    if store.night.match == nil { Text("Match points appear after the opponent and handicaps are set.").font(.caption).foregroundStyle(BA4LTheme.secondary) }
                 }
             }
             primaryAction
@@ -237,13 +237,13 @@ struct TonightView: View {
                 Button("View scorecards") { onScore() }.frame(maxWidth: .infinity, minHeight: 44)
             }
             Label(store.status, systemImage: store.pending ? "icloud.and.arrow.up" : store.error == nil ? "checkmark.icloud" : "exclamationmark.icloud")
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.caption).foregroundStyle(BA4LTheme.secondary)
             if let error = store.error {
                 Text(error).font(.callout).foregroundStyle(.red)
                 Button("Retry score sync") { Task { await store.retry() } }.disabled(store.busy).frame(minHeight: 44)
             }
-            if store.pending { Text("Includes your latest local changes, waiting to sync.").font(.caption).foregroundStyle(.secondary) }
-            if store.teamID == nil { Text("Saved on this device. Open a night from Season to join your shared scorebook.").font(.caption).foregroundStyle(.secondary) }
+            if store.pending { Text("Includes your latest local changes, waiting to sync.").font(.caption).foregroundStyle(BA4LTheme.secondary) }
+            if store.teamID == nil { Text("Saved on this device. Open a night from Season to join your shared scorebook.").font(.caption).foregroundStyle(BA4LTheme.secondary) }
         }
         .padding(20).frame(maxWidth: .infinity, alignment: .leading)
         .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 16))
@@ -253,10 +253,10 @@ struct TonightView: View {
             VStack(alignment: .leading, spacing: 14) {
                 Text("BA4L").font(.headline)
                 Text(formatted(points.total[0])).font(.system(size: scoreSize, weight: .black, design: .rounded).monospacedDigit())
-                Text("Our points").font(.caption).foregroundStyle(.secondary)
+                Text("Our points").font(.caption).foregroundStyle(BA4LTheme.secondary)
                 Text(opponent.capitalized).font(.headline)
                 Text(formatted(points.total[1])).font(.system(size: scoreSize, weight: .black, design: .rounded).monospacedDigit())
-                Text("Their points").font(.caption).foregroundStyle(.secondary)
+                Text("Their points").font(.caption).foregroundStyle(BA4LTheme.secondary)
             }.accessibilityElement(children: .combine)
         } else {
             Grid(horizontalSpacing: 12, verticalSpacing: 6) {
@@ -271,9 +271,9 @@ struct TonightView: View {
                     Text(formatted(points.total[1])).font(.system(size: scoreSize, weight: .black, design: .rounded).monospacedDigit())
                 }
                 GridRow {
-                    Text("Our points").font(.caption).foregroundStyle(.secondary)
+                    Text("Our points").font(.caption).foregroundStyle(BA4LTheme.secondary)
                     Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-                    Text("Their points").font(.caption).foregroundStyle(.secondary)
+                    Text("Their points").font(.caption).foregroundStyle(BA4LTheme.secondary)
                 }
             }.accessibilityElement(children: .combine)
         }
@@ -287,9 +287,9 @@ struct TonightView: View {
                     return [total[0] + bowler.games[index][0], total[1] + bowler.games[index][1]]
                 }
                 VStack(spacing: 4) {
-                    Text("Game \(game.game)").font(.caption).foregroundStyle(.secondary)
+                    Text("Game \(game.game)").font(.caption).foregroundStyle(BA4LTheme.secondary)
                     Text(pointPair(split)).font(.title3.bold().monospacedDigit())
-                    Text("Game points").font(.caption2).foregroundStyle(.secondary)
+                    Text("Game points").font(.caption2).foregroundStyle(BA4LTheme.secondary)
                 }.frame(maxWidth: .infinity).accessibilityElement(children: .combine)
             }
         }
@@ -318,6 +318,10 @@ struct TonightView: View {
             }.frame(minHeight: 44).accessibilityIdentifier("tonightBowler")
             if let index = selected {
                 let game = store.night.current
+                if let prebowl = store.night.prebowl, !prebowl.bowlers.contains(index) {
+                    Text("Your next league night").font(.headline)
+                    Text("This pre-bowl belongs to your teammates. Your scorecard is ready for league night.").font(.callout).foregroundStyle(BA4LTheme.secondary)
+                } else {
                 let personalLayout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 10))
                 personalLayout {
                     Text("\(game.score(index))").font(.title.bold().monospacedDigit())
@@ -325,12 +329,10 @@ struct TonightView: View {
                 }
                 if !game.complete(index) {
                     Text("Frame \(game.bowling(index).frameNumber) · ball \(game.bowling(index).ballNumber) · up to \(store.night.maximum(index))")
-                        .font(.subheadline).foregroundStyle(.secondary)
+                        .font(.subheadline).foregroundStyle(BA4LTheme.secondary)
                 }
-                if let prebowl = store.night.prebowl, !prebowl.bowlers.contains(index) {
-                    Text("This pre-bowl is for your teammates. Your scorecard is not part of its result.").font(.callout).foregroundStyle(.secondary)
                 }
-            } else { Text("Your choice stays with this account on this device.").font(.callout).foregroundStyle(.secondary) }
+            } else { Text("Your choice stays with this account on this device.").font(.callout).foregroundStyle(BA4LTheme.secondary) }
             if !canReview {
                 Button { onReview() } label: { Label("Bowling Bro’ · review notes", systemImage: "text.bubble") }
                     .disabled(store.teamID == nil).frame(minHeight: 44)
@@ -352,7 +354,7 @@ struct TonightView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(Night.names[index]).font(.headline).foregroundStyle(.primary)
                             Text(store.night.prebowl != nil && !participants.contains(index) ? "Not in this pre-bowl" : completed ? "Series recorded" : game.complete(index) ? "Game complete" : "Frame \(game.bowling(index).frameNumber)")
-                                .font(.caption).foregroundStyle(.secondary)
+                                .font(.caption).foregroundStyle(BA4LTheme.secondary)
                         }
                     }.frame(minHeight: 44)
                 }.buttonStyle(.plain).accessibilityLabel("Open \(Night.names[index])’s scorecard, \(score) scratch pins")
@@ -363,11 +365,11 @@ struct TonightView: View {
     private func previousPanel(_ result: SeasonWeek) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Last completed league night").font(.headline)
-            Text("\(result.title) · \(result.dateLabel)").font(.subheadline).foregroundStyle(.secondary)
+            Text("\(result.title) · \(result.dateLabel)").font(.subheadline).foregroundStyle(BA4LTheme.secondary)
             if let opponent = result.opponent { Text("vs \(opponent.capitalized)") }
             if let points = result.points {
                 LabeledContent("Match points", value: "\(formatted(points.ours)) – \(formatted(points.theirs))")
-                if points.remaining > 0 { Text("\(formatted(points.remaining)) points await opponent scores.").font(.caption).foregroundStyle(.secondary) }
+                if points.remaining > 0 { Text("\(formatted(points.remaining)) points await opponent scores.").font(.caption).foregroundStyle(BA4LTheme.secondary) }
             }
             if let score = result.teamSeries { LabeledContent("Team scratch series", value: score.formatted()) }
             Button("Open \(result.title)") { onOpenNight(result.id) }.disabled(!store.canSwitchTeam).frame(minHeight: 44)

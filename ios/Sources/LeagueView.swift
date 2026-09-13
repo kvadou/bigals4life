@@ -110,7 +110,7 @@ private struct LeagueStandingsView: View {
                     }
                     Text(standings.season.name).font(.headline)
                     Text("Week \(standings.week.number) of \(standings.season.weeksTotal) · \(standings.season.house)")
-                    Text("Sheet dated \(standings.week.bowledOn)").font(.caption).foregroundStyle(.secondary)
+                    Text("Sheet dated \(standings.week.bowledOn)").font(.caption).foregroundStyle(BA4LTheme.secondary)
                 }
                 errorSection
                 recapSection(standings)
@@ -131,7 +131,7 @@ private struct LeagueStandingsView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("\(team.place). \(team.name.capitalized)").font(.headline)
                                 Text("\(leagueNumber(team.pointsWon)) won · \(leagueNumber(team.pointsLost)) lost\(team.ours ? " · Our team" : "")")
-                                    .font(.subheadline).foregroundStyle(team.ours ? BA4LTheme.tint : .secondary)
+                                    .font(.subheadline).foregroundStyle(team.ours ? BA4LTheme.tint : BA4LTheme.secondary)
                             }.frame(minHeight: 44)
                         }
                     }
@@ -150,7 +150,7 @@ private struct LeagueStandingsView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(bowler.name.capitalized).font(.headline)
                                 Text("Average \(leagueNumber(bowler.average)) · handicap \(leagueNumber(bowler.handicap))")
-                                    .font(.subheadline).foregroundStyle(.secondary)
+                                    .font(.subheadline).foregroundStyle(BA4LTheme.secondary)
                             }.frame(minHeight: 44)
                         }
                     }
@@ -161,7 +161,7 @@ private struct LeagueStandingsView: View {
                     }
                 }
                 Section("Our week by week") {
-                    if standings.history.isEmpty { Text("More weekly sheets will add the team's history.").foregroundStyle(.secondary) }
+                    if standings.history.isEmpty { Text("More weekly sheets will add the team's history.").foregroundStyle(BA4LTheme.secondary) }
                     ForEach(standings.history.reversed()) { week in
                         LeagueValue("Week \(week.week)", "\(leagueNumber(week.points)) of 36", detail: (week.opponent?.capitalized ?? "Opponent unavailable") + (week.place.map { " · place \($0)" } ?? ""))
                     }
@@ -173,12 +173,12 @@ private struct LeagueStandingsView: View {
                                 ForEach(Array(night.discrepancies.enumerated()), id: \.offset) { _, difference in
                                     LeagueValue("\(difference.who.capitalized) · \(difference.field)", "Ours \(difference.ours) · sheet \(difference.gary)")
                                 }
-                                Text("Gary’s sheet is the official record.").font(.caption).foregroundStyle(.secondary)
+                                Text("Gary’s sheet is the official record.").font(.caption).foregroundStyle(BA4LTheme.secondary)
                             } label: {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("vs \(night.opponent.capitalized)")
                                     Text("\(night.checked) checked · \(night.discrepancies.count) differences")
-                                        .font(.caption).foregroundStyle(.secondary)
+                                        .font(.caption).foregroundStyle(BA4LTheme.secondary)
                                 }.frame(minHeight: 44)
                             }
                         }
@@ -204,7 +204,7 @@ private struct LeagueStandingsView: View {
             if let recap = current.week.recap, !recap.isEmpty {
                 Text(recap).textSelection(.enabled)
                 ShareLink(item: recap) { Label("Share recap", systemImage: "square.and.arrow.up") }
-            } else { Text("No recap yet for this week.").foregroundStyle(.secondary) }
+            } else { Text("No recap yet for this week.").foregroundStyle(BA4LTheme.secondary) }
             Button(current.week.recap == nil ? "Write recap" : "Rewrite recap", systemImage: "sparkles") {
                 Task { await writeRecap(current) }
             }.disabled(recapBusy || busy).frame(minHeight: 44)
@@ -275,7 +275,7 @@ private struct LeagueRecordsView: View {
                         Text("All time").tag("")
                         ForEach(book.seasons) { Text($0.name).tag($0.name) }
                     }
-                    Text("Computed from the weekly standings sheets.").font(.caption).foregroundStyle(.secondary)
+                    Text("Computed from the weekly standings sheets.").font(.caption).foregroundStyle(BA4LTheme.secondary)
                 }
                 if let error { Section { Text(error).foregroundStyle(.red); Button("Retry") { Task { await load() } } } }
                 ForEach(book.coverage.filter { !$0.missing.isEmpty }) { gap in
@@ -286,12 +286,12 @@ private struct LeagueRecordsView: View {
                     highs(book.records, series: true)
                 }
                 Section("Every bowler · \(filtered.count)") {
-                    if filtered.isEmpty { Text(search.isEmpty ? "No records in this season yet." : "No bowlers match your search.").foregroundStyle(.secondary) }
+                    if filtered.isEmpty { Text(search.isEmpty ? "No records in this season yet." : "No bowlers match your search.").foregroundStyle(BA4LTheme.secondary) }
                     ForEach(filtered) { record in
                         NavigationLink { LeagueCareerView(id: record.blsId, send: send) } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(record.name.capitalized).font(.headline)
-                                Text(record.teamName.capitalized + (record.teamName == book.ourTeam ? " · Our team" : "")).font(.caption).foregroundStyle(.secondary)
+                                Text(record.teamName.capitalized + (record.teamName == book.ourTeam ? " · Our team" : "")).font(.caption).foregroundStyle(BA4LTheme.secondary)
                                 Text("Avg \(leagueNumber(record.average)) · high \(leagueNumber(record.highGame?.value)) · \(record.gamesBowled) games")
                                     .font(.subheadline)
                             }.frame(minHeight: 44)
@@ -318,7 +318,7 @@ private struct LeagueRecordsView: View {
         let cutoff = sorted.count > 10 ? mark(sorted[9])!.value : 0
         let leaders = sorted.filter { mark($0)!.value >= cutoff }
         return Section(series ? "High series" : "High game") {
-            if leaders.isEmpty { Text("No counted nights yet.").foregroundStyle(.secondary) }
+            if leaders.isEmpty { Text("No counted nights yet.").foregroundStyle(BA4LTheme.secondary) }
             ForEach(leaders) { record in
                 let value = mark(record)!
                 let place = (sorted.firstIndex { mark($0)!.value == value.value } ?? 0) + 1
@@ -379,7 +379,7 @@ private struct LeagueCareerView: View {
                         ForEach(Array(record.trend.enumerated()), id: \.offset) { _, point in
                             LeagueValue("\(point.seasonName) · week \(point.week)", String(point.average))
                         }
-                        if record.trend.isEmpty { Text("No averages recorded yet.").foregroundStyle(.secondary) }
+                        if record.trend.isEmpty { Text("No averages recorded yet.").foregroundStyle(BA4LTheme.secondary) }
                     }
                 }
                 Section("By season") {
@@ -402,7 +402,7 @@ private struct LeagueCareerView: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("\(night.seasonName) · week \(night.week)").font(.headline)
-                                Text("\(night.bowledOn) · \(night.series) series").font(.subheadline).foregroundStyle(.secondary)
+                                Text("\(night.bowledOn) · \(night.series) series").font(.subheadline).foregroundStyle(BA4LTheme.secondary)
                             }.frame(minHeight: 44)
                         }
                     }
@@ -438,7 +438,7 @@ private struct LeagueValue: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             LabeledContent(label) { Text(value).monospacedDigit().foregroundStyle(.primary) }
-            if let detail { Text(detail).font(.caption).foregroundStyle(.secondary) }
+            if let detail { Text(detail).font(.caption).foregroundStyle(BA4LTheme.secondary) }
         }
         .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .combine)

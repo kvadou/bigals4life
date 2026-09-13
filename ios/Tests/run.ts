@@ -22,6 +22,7 @@ function run(command: string, args: string[], capture = false) {
 }
 
 try {
+  run("bun", ["ios/Tests/theme-contrast.ts"]);
   writeFileSync(fixtures, run("bun", ["ios/Tests/scoring-fixtures.ts"], true)!);
   run("swiftc", ["-O", "ios/Sources/BowlingGame.swift", "ios/Tests/main.swift", "-o", binary]);
   run(binary, []);

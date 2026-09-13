@@ -17,9 +17,9 @@ struct DeviceArchiveView: View {
                 Label("Earlier device scorecards", systemImage: "archivebox").font(.headline)
                 Text("These files were saved before accounts were introduced. They are not assigned to the account signed in now.")
                 Text("Preview or share an original for recovery. Nothing here imports scores, changes your team, or sends data to BA4L.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(BA4LTheme.secondary)
             }
-            if let loadError { Section { Label(loadError, systemImage: "exclamationmark.triangle").foregroundStyle(.secondary) } }
+            if let loadError { Section { Label(loadError, systemImage: "exclamationmark.triangle").foregroundStyle(BA4LTheme.secondary) } }
             if !files.isEmpty {
                 Section("Original backup files") {
                     ForEach(files) { file in
@@ -28,8 +28,8 @@ struct DeviceArchiveView: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(file.title).font(.headline)
-                                Text(file.url.lastPathComponent).font(.caption).foregroundStyle(.secondary).lineLimit(2)
-                                if let date = file.modified { Text(date, format: .dateTime.month().day().year().hour().minute()).font(.caption).foregroundStyle(.secondary) }
+                                Text(file.url.lastPathComponent).font(.caption).foregroundStyle(BA4LTheme.secondary).lineLimit(2)
+                                if let date = file.modified { Text(date, format: .dateTime.month().day().year().hour().minute()).font(.caption).foregroundStyle(BA4LTheme.secondary) }
                             }.padding(.vertical, 4)
                         }
                     }
@@ -38,13 +38,13 @@ struct DeviceArchiveView: View {
             if let legacyData {
                 Section("Original bowler archive") {
                     Text("The earliest version stored these scorecards on this device. They have not been assigned to an account.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                    if let legacyError { Label(legacyError, systemImage: "exclamationmark.triangle").foregroundStyle(.secondary) }
+                        .font(.footnote).foregroundStyle(BA4LTheme.secondary)
+                    if let legacyError { Label(legacyError, systemImage: "exclamationmark.triangle").foregroundStyle(BA4LTheme.secondary) }
                     ForEach(Array(legacyBowlers.enumerated()), id: \.offset) { _, bowler in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(bowler.name).font(.headline)
                             Text("\(bowler.game.settledScore) points · \(bowler.game.isComplete ? "Final" : "In progress")")
-                            Text("\(bowler.game.rolls.count) recorded rolls").font(.caption).foregroundStyle(.secondary)
+                            Text("\(bowler.game.rolls.count) recorded rolls").font(.caption).foregroundStyle(BA4LTheme.secondary)
                         }.padding(.vertical, 4)
                     }
                     ShareLink(item: LegacyArchiveTransfer(data: legacyData), preview: SharePreview("Original bowler archive")) {
@@ -119,15 +119,15 @@ private struct DeviceArchiveDetail: View {
             Section {
                 Text(file.url.lastPathComponent).font(.caption).textSelection(.enabled)
                 Text("Read-only original. Sharing this file does not import or apply its scores to your current account.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(BA4LTheme.secondary)
                 ShareLink(item: file.url) { Label("Share original backup", systemImage: "square.and.arrow.up") }
             }
-            if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.secondary) } }
+            if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(BA4LTheme.secondary) } }
             if let backup {
                 Section("Backup status") {
                     Label(backup.pending ? "Pending edit in this backup" : "No pending edit recorded", systemImage: backup.pending ? "exclamationmark.arrow.triangle.2.circlepath" : "checkmark.circle")
-                    if backup.pending { Text("This edit may not have reached the team. Keep the original and compare it with the current team scorebook before restoring anything.").font(.footnote).foregroundStyle(.secondary) }
-                    if let id = backup.id { Text("Original team ID").font(.caption).foregroundStyle(.secondary); Text(id).font(.caption).textSelection(.enabled) }
+                    if backup.pending { Text("This edit may not have reached the team. Keep the original and compare it with the current team scorebook before restoring anything.").font(.footnote).foregroundStyle(BA4LTheme.secondary) }
+                    if let id = backup.id { Text("Original team ID").font(.caption).foregroundStyle(BA4LTheme.secondary); Text(id).font(.caption).textSelection(.enabled) }
                     LabeledContent("Saved revision", value: String(backup.revision))
                     LabeledContent("Current game", value: String(backup.night.game))
                 }
@@ -139,7 +139,7 @@ private struct DeviceArchiveDetail: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 LabeledContent(Night.names[index], value: String(final ?? bowling.settledScore))
                                 Text(final != nil || bowling.isComplete ? "Final" : bowling.rolls.isEmpty ? "No rolls recorded" : "In progress · \(bowling.rolls.count) recorded rolls")
-                                    .font(.caption).foregroundStyle(.secondary)
+                                    .font(.caption).foregroundStyle(BA4LTheme.secondary)
                             }
                         }
                     }

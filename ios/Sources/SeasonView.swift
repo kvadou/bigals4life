@@ -165,7 +165,7 @@ struct SeasonView: View {
                 if let error = model.error {
                     Section {
                         Label(error, systemImage: "exclamationmark.arrow.triangle.2.circlepath")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(BA4LTheme.secondary)
                         Button("Retry season") { Task { await model.refresh() } }
                     }
                 }
@@ -191,7 +191,7 @@ struct SeasonView: View {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Label("Open scorebook", systemImage: "sportscourt")
                                         Text("\(book.role.capitalized) · \(shortDate(book.updatedAt))")
-                                            .font(.caption).foregroundStyle(.secondary)
+                                            .font(.caption).foregroundStyle(BA4LTheme.secondary)
                                     }
                                 }
                             }
@@ -205,7 +205,7 @@ struct SeasonView: View {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Label("Unclaimed scorebook", systemImage: "tray")
                                         Text("\(book.games) recorded games · \(shortDate(book.updatedAt))")
-                                            .font(.caption).foregroundStyle(.secondary)
+                                            .font(.caption).foregroundStyle(BA4LTheme.secondary)
                                     }
                                 }
                             }
@@ -214,7 +214,7 @@ struct SeasonView: View {
                 }
                 if let error = model.accountError {
                     Section("Scorebook discovery") {
-                        Text(error).foregroundStyle(.secondary)
+                        Text(error).foregroundStyle(BA4LTheme.secondary)
                         Button("Retry scorebooks") { Task { await model.refresh() } }
                     }
                 }
@@ -247,16 +247,16 @@ private struct SeasonWeekRow: View {
         VStack(alignment: .leading, spacing: 7) {
             HStack(alignment: .firstTextBaseline) {
                 Text(week.title).font(.headline)
-                if week.prebowl != nil { Text("Pre-bowl").font(.caption).foregroundStyle(.secondary) }
+                if week.prebowl != nil { Text("Pre-bowl").font(.caption).foregroundStyle(BA4LTheme.secondary) }
             }
-            Text(week.dateLabel).font(.subheadline).foregroundStyle(.secondary)
+            Text(week.dateLabel).font(.subheadline).foregroundStyle(BA4LTheme.secondary)
             if let opponent = week.opponent { Text("vs \(opponent)").font(.subheadline) }
             if let points = week.points { Text("\(number(points.ours))–\(number(points.theirs)) points").font(.headline).monospacedDigit() }
             else if let total = week.teamSeries { Text("Team series \(total)").font(.subheadline).monospacedDigit() }
             if let prebowl = week.prebowl {
                 Text(prebowl.bowlers.map { bowlerName($0) }.joined(separator: ", ")).font(.subheadline)
             }
-            Text(week.progressLabel).font(.caption).foregroundStyle(.secondary)
+            Text(week.progressLabel).font(.caption).foregroundStyle(BA4LTheme.secondary)
         }
         .padding(.vertical, 6)
     }
@@ -273,9 +273,9 @@ struct SeasonWeekDetail: View {
                 if let opponent = week.opponent { Text("vs \(opponent)") }
                 if week.prebowl != nil {
                     Label("Pre-bowl for \(week.participants.map { bowlerName($0) }.joined(separator: ", "))", systemImage: "calendar.badge.clock")
-                    Text("Only participating bowlers count. Team totals wait for the whole team.").foregroundStyle(.secondary)
+                    Text("Only participating bowlers count. Team totals wait for the whole team.").foregroundStyle(BA4LTheme.secondary)
                 }
-                Text(week.progressLabel).foregroundStyle(.secondary)
+                Text(week.progressLabel).foregroundStyle(BA4LTheme.secondary)
                 Button { onOpenNight(week.id) } label: { Label("Open live scorebook", systemImage: "sportscourt") }
             }
             Section("Frame-by-frame") {
@@ -302,7 +302,7 @@ struct SeasonWeekDetail: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(bowlerName(index)).font(.headline)
                             Text(week.participants.contains(index) ? "Series \(scoreText(week.series.at(index) ?? nil))" : "Not part of this pre-bowl")
-                                .font(.subheadline).foregroundStyle(.secondary)
+                                .font(.subheadline).foregroundStyle(BA4LTheme.secondary)
                         }
                     }
                 }
@@ -338,13 +338,13 @@ struct SeasonWeekDetail: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("\(bowler.name) vs \(bowler.opponent)").font(.headline)
-                                Text("\(splitText(bowler.total)) points").foregroundStyle(.secondary)
+                                Text("\(splitText(bowler.total)) points").foregroundStyle(BA4LTheme.secondary)
                             }
                         }
                     }
                 }
             } else {
-                Section("Match points") { Text("No match has been set up for this night.").foregroundStyle(.secondary) }
+                Section("Match points") { Text("No match has been set up for this night.").foregroundStyle(BA4LTheme.secondary) }
             }
             if !week.opponentGames.isEmpty {
                 Section("Opponent scratch scores · lane order") {
@@ -365,7 +365,7 @@ struct SeasonWeekDetail: View {
         LabeledContent(title) {
             VStack(alignment: .trailing, spacing: 2) {
                 Text(scoreText(score)).monospacedDigit()
-                if !complete { Text(score == nil ? "Not recorded" : "Unfinished").font(.caption).foregroundStyle(.secondary) }
+                if !complete { Text(score == nil ? "Not recorded" : "Unfinished").font(.caption).foregroundStyle(BA4LTheme.secondary) }
             }
         }
     }

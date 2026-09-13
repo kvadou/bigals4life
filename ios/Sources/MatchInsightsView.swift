@@ -85,7 +85,7 @@ struct MatchInsightsView: View {
             if let match = store.night.match, let points = NativeMatchScoring.points(store.night) {
                 Section("\(match.season) · Week \(match.week)") {
                     Text("vs \(match.opponent.name.capitalized)").font(.headline)
-                    if store.pending { Label("Includes your local unsaved scores", systemImage: "icloud.slash").font(.caption).foregroundStyle(.secondary) }
+                    if store.pending { Label("Includes your local unsaved scores", systemImage: "icloud.slash").font(.caption).foregroundStyle(BA4LTheme.secondary) }
                     InsightsValue("Match points", split(points.total))
                     InsightsValue("Still available", number(points.remaining))
                     InsightsValue("Team points", split(points.team))
@@ -97,7 +97,7 @@ struct MatchInsightsView: View {
                     }
                     InsightsValue("Series", contest(points.series.ours, points.series.theirs, points.series.split))
                     Text("5 points per team game and 5 for the series. Ties split. Unfinished contests stay open.")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.caption).foregroundStyle(BA4LTheme.secondary)
                 }
                 Section("Head to head") {
                     ForEach(Array(points.bowlers.enumerated()), id: \.offset) { _, bowler in
@@ -109,7 +109,7 @@ struct MatchInsightsView: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("\(bowler.name) vs \(bowler.opponent.capitalized)").font(.headline)
-                                Text("\(split(bowler.total)) points").font(.subheadline).foregroundStyle(.secondary)
+                                Text("\(split(bowler.total)) points").font(.subheadline).foregroundStyle(BA4LTheme.secondary)
                             }.frame(minHeight: 44)
                         }
                     }
@@ -137,7 +137,7 @@ struct MatchInsightsView: View {
             if let targets = store.night.drinkTargets {
                 Text("Chalkboard: \(targets.high) high · \(targets.low) low").font(.headline)
             } else {
-                Text("Set the chalkboard numbers in the scorebook to track beer targets.").font(.callout).foregroundStyle(.secondary)
+                Text("Set the chalkboard numbers in the scorebook to track beer targets.").font(.callout).foregroundStyle(BA4LTheme.secondary)
             }
             ForEach(Night.names.indices, id: \.self) { index in
                 let finished = games.compactMap { $0[index] }
@@ -148,9 +148,9 @@ struct MatchInsightsView: View {
                     Text(Night.names[index]).font(.headline)
                     if let row = bowler, let average = row.average, let raise = row.toRaise, rosterMatchesSeason {
                         Text(left > 0 ? "\(max(0, raise - series)) more over \(left) game\(left == 1 ? "" : "s") raises the \(average) average." : series >= raise ? "Series \(series) raises the average." : "Series \(series). Below the series needed to raise the average.")
-                        if let drop = row.toDrop { Text("Series below \(drop) drops the average.").font(.caption).foregroundStyle(.secondary) }
+                        if let drop = row.toDrop { Text("Series below \(drop) drops the average.").font(.caption).foregroundStyle(BA4LTheme.secondary) }
                     } else {
-                        Text("No matching league average available.").foregroundStyle(.secondary)
+                        Text("No matching league average available.").foregroundStyle(BA4LTheme.secondary)
                     }
                     if let target = store.night.drinkTargets {
                         ForEach(Array(Set([target.high, target.low])).sorted(), id: \.self) { value in
@@ -164,17 +164,17 @@ struct MatchInsightsView: View {
                 }.padding(.vertical, 6)
             }
             Text("Average targets count completed games 1–3. Chalkboard checks use the current game’s scratch score; a target in range is not a guarantee of an exact finish.")
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.caption).foregroundStyle(BA4LTheme.secondary)
         }
     }
 
     private func draftSection(_ match: LeagueMatch) -> some View {
         Section("Lineup draft") {
             Text(match.lane == .odd ? "Odd lane: we hand names in first." : match.lane == .even ? "Even lane: they hand names in first." : "Set odd or even lane in match setup before asking the coach.")
-                .font(.callout).foregroundStyle(.secondary)
+                .font(.callout).foregroundStyle(BA4LTheme.secondary)
             ForEach(Array(match.ours.enumerated()), id: \.offset) { slot, bowler in
                 InsightsValue("\(slot + 1). \(bowler.name)", "vs \(slot < match.opponent.bowlers.count ? match.opponent.bowlers[slot].name.capitalized : "Not assigned")")
-                if let scores = draftKnown[bowler.name] { Text("Pre-bowled: \(scores.map(String.init).joined(separator: " · "))").font(.caption).foregroundStyle(.secondary) }
+                if let scores = draftKnown[bowler.name] { Text("Pre-bowled: \(scores.map(String.init).joined(separator: " · "))").font(.caption).foregroundStyle(BA4LTheme.secondary) }
             }
             if let coach, coachedMatch == match {
                 Text(coach.take).textSelection(.enabled)
@@ -183,13 +183,13 @@ struct MatchInsightsView: View {
                     Text("Recommended order: \(best.order.joined(separator: ", "))").font(.headline)
                     Text("Expected \(number(best.expected)) of 16 individual points.").font(.subheadline)
                 }
-                Text("Recommendation only. Your saved lineup has not changed.").font(.caption).foregroundStyle(.secondary)
+                Text("Recommendation only. Your saved lineup has not changed.").font(.caption).foregroundStyle(BA4LTheme.secondary)
             }
             Button(coaching ? "Asking the coach…" : "Ask lineup coach", systemImage: "sparkles") { Task { await askCoach(match) } }
                 .disabled(coaching || loading || coachInput(match) == nil)
                 .frame(minHeight: 44)
             if coachInput(match) == nil {
-                Text("Coaching needs four opponents, the lane, and a real average for every bowler from the matching season’s roster. Reload after the latest sheet is available.").font(.caption).foregroundStyle(.secondary)
+                Text("Coaching needs four opponents, the lane, and a real average for every bowler from the matching season’s roster. Reload after the latest sheet is available.").font(.caption).foregroundStyle(BA4LTheme.secondary)
             }
             if let coachError { Text(coachError).foregroundStyle(.red) }
         }

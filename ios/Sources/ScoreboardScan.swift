@@ -117,7 +117,7 @@ struct ScanSheet: View {
                                 Text(row.name.isEmpty ? "Row \(row.id + 1)" : row.name).font(.headline)
                                 Text(row.rolls.isEmpty ? "No usable rolls" : row.rolls.map { $0 == 10 ? "X" : String($0) }.joined(separator: " ")).font(.body.monospaced())
                                     .fixedSize(horizontal: false, vertical: true)
-                                if !row.note.isEmpty { Text(row.note).font(.caption).foregroundStyle(.secondary) }
+                                if !row.note.isEmpty { Text(row.note).font(.caption).foregroundStyle(BA4LTheme.secondary) }
                                 Picker("Assign to", selection: Binding(get: { targets[row.id] ?? -1 }, set: { targets[row.id] = $0 < 0 ? nil : $0 })) {
                                     Text("Skip").tag(-1)
                                     ForEach(Night.names.indices, id: \.self) { Text(Night.names[$0]).tag($0) }

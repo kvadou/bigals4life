@@ -35,7 +35,7 @@ struct ScoreboardView: View {
                 List {
                     Section {
                         Text("Whose game are you scoring?").font(.title2.bold())
-                        Text("Choose a bowler. This choice stays with your account on this device.").foregroundStyle(.secondary)
+                        Text("Choose a bowler. This choice stays with your account on this device.").foregroundStyle(BA4LTheme.secondary)
                         ForEach(Night.names.indices, id: \.self) { index in
                             Button(Night.names[index]) { selectedBowler = index }.frame(minHeight: 44)
                         }
@@ -146,7 +146,7 @@ struct ScoreboardView: View {
             }
             Label(store.status, systemImage: store.pending || store.error != nil ? "exclamationmark.triangle" : "checkmark.circle")
                 .font(.subheadline)
-                .foregroundStyle(store.pending || store.error != nil ? Color.orange : Color.secondary)
+                .foregroundStyle(store.pending || store.error != nil ? Color.orange : BA4LTheme.secondary)
                 .accessibilityIdentifier("syncStatus")
             if store.role == .viewer { Label("View-only access", systemImage: "eye").font(.subheadline) }
             if let error = store.error {
@@ -176,7 +176,7 @@ struct ScoreboardView: View {
                     Text("Bowling as \(Night.names[selected])")
                         .font(.headline)
                     Text("Tonight’s team · \(Night.names.indices.reduce(0) { $0 + store.night.current.score($1) }) scored")
-                        .font(.subheadline).foregroundStyle(.secondary)
+                        .font(.subheadline).foregroundStyle(BA4LTheme.secondary)
                 }
                 .frame(minHeight: 44, alignment: .leading)
             }
@@ -198,17 +198,17 @@ struct ScoreboardView: View {
                     : AnyLayout(HStackLayout(spacing: 12))
                 rowLayout {
                     Image(systemName: selected == index ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(selected == index ? BA4LTheme.tint : Color.secondary)
+                        .foregroundStyle(selected == index ? BA4LTheme.tint : BA4LTheme.secondary)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(Night.names[index]).font(.headline).foregroundStyle(.primary)
                         Text(store.night.current.complete(index) ? "Game complete" : "Frame \(store.night.current.bowling(index).frameNumber)")
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.caption).foregroundStyle(BA4LTheme.secondary)
                     }
                     if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                     VStack(alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .trailing, spacing: 4) {
                         Text("\(store.night.current.score(index)) scored").font(.subheadline.monospacedDigit()).foregroundStyle(.primary)
                         Text("\(store.night.maximum(index)) \(store.night.current.complete(index) ? "final" : "possible")")
-                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                            .font(.caption.monospacedDigit()).foregroundStyle(BA4LTheme.secondary)
                     }
                 }
                 .frame(minHeight: 44)
@@ -389,7 +389,7 @@ struct ScoreboardView: View {
     private func frameRow(_ index: Int, stacked: Bool) -> some View {
         let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 12))
         return layout {
-            Text("\(index + 1)").foregroundStyle(.secondary).frame(minWidth: 28, alignment: .leading)
+            Text("\(index + 1)").foregroundStyle(BA4LTheme.secondary).frame(minWidth: 28, alignment: .leading)
             Text(index < game.frames.count ? game.symbols(for: game.frames[index]) : "·")
                 .font(.body.monospaced().bold())
             if !stacked { Spacer() }
@@ -474,7 +474,7 @@ struct HistoryView: View {
                         } label: {
                             VStack(alignment: .leading) {
                                 Text(Night.names[index])
-                                if !game.complete(index) { Text("Unfinished").font(.caption).foregroundStyle(.secondary) }
+                                if !game.complete(index) { Text("Unfinished").font(.caption).foregroundStyle(BA4LTheme.secondary) }
                             }
                         }
                     }
@@ -487,8 +487,9 @@ struct HistoryView: View {
     }
 }
 
-/// A forest tint in daylight, a readable sage tint in dark bowling alleys.
+/// Forest in daylight, muted gold in dark bowling alleys. Paired asset colors preserve contrast.
 enum BA4LTheme {
+    static let secondary = Color("SecondaryText")
     static let onTint = Color("OnBrandGreen")
     static let tint = Color("BrandGreen")
 }
