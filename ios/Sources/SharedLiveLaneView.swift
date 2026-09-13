@@ -103,6 +103,7 @@ struct SharedLiveLaneView: View {
     let intent: LiveLaneContext.Intent
     let send: SeasonTransport
     @StateObject private var session = SharedLaneSession()
+    @StateObject private var replay = LaneReplaySession()
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @State private var joinTask: Task<Void, Never>?
@@ -166,7 +167,12 @@ struct SharedLiveLaneView: View {
                             Text("Scores come from your shared scorebook, not video detection.").font(.caption).foregroundStyle(.secondary)
                         }.padding(.top, 8)
                     }
-                    Text("Automatic bowler recognition, ball tracking, replay clips and coaching are not connected yet. Keep this screen open while broadcasting.")
+                    stakesPanel
+                    TimelineView(.periodic(from: .now, by: 1)) { _ in
+                        let cameras = session.room.map { tracks(in: $0) } ?? []
+                        LaneReplayPanel(replay: replay, sources: cameras.map { (name: $0.name, track: $0.track) })
+                    }
+                    Text("Automatic bowler recognition, ball tracking and coaching are not connected yet. Keep this screen open while broadcasting.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }.padding().frame(maxWidth: 1200)
             }.background(Color("BrandIvory"))
@@ -176,13 +182,42 @@ struct SharedLiveLaneView: View {
             .task { join(publish: false) }
             .task {
                 while !Task.isCancelled {
+                    let previous = store.night
                     await store.refresh()
+                    replay.scoreRefreshed(previous: previous, current: store.night, verified: store.error == nil && session.room?.connectionState == .connected)
                     try? await Task.sleep(for: .seconds(5))
                 }
             }
-            .onChange(of: scenePhase) { _, phase in if phase == .background { leave() } }
+            .task {
+                while !Task.isCancelled {
+                    let cameras = session.room.map { tracks(in: $0) } ?? []
+                    replay.sourceIsAvailable(cameras.map(\.track), connected: session.room?.connectionState == .connected)
+                    do { try await Task.sleep(for: .seconds(1)) } catch { break }
+                }
+            }
+            .onChange(of: scenePhase) { _, phase in if phase == .background { replay.stop(); joinTask?.cancel(); joinTask = nil; session.leave() } }
             .onChange(of: store.teamID) { _, id in if id != bookID { leave(); dismiss() } }
             .onDisappear { leave() }
+    }
+    @ViewBuilder private var stakesPanel: some View {
+        let cards = LiveStakes.cards(for: store.night)
+        if !cards.isEmpty {
+            GroupBox {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("What’s on the line", systemImage: "trophy").font(.headline)
+                    Text("Game \(store.night.game) · Individual points").font(.subheadline)
+                    let active = cards.filter { $0.status != .waiting }
+                    if active.isEmpty { Text("Individual stakes appear when both lineups and scores are ready.").foregroundStyle(.secondary) }
+                    ForEach(active.indices, id: \.self) { index in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(active[index].title).font(.subheadline.bold())
+                            Text(active[index].detail).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    Text("Each game matchup is worth 1 point; a tie splits it.").font(.caption).foregroundStyle(.secondary)
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
     }
     // The room is bound to this loaded scorebook. Its competition metadata
     // takes precedence over a stale local context picker or today's weekday.
@@ -200,7 +235,7 @@ struct SharedLiveLaneView: View {
         joinTask?.cancel()
         joinTask = Task { await session.join(bookID: bookID, publish: publish, send: send) }
     }
-    private func leave() { joinTask?.cancel(); joinTask = nil; session.leave() }
+    private func leave() { replay.stop(clearMoment: true); joinTask?.cancel(); joinTask = nil; session.leave() }
     private var headline: String {
         guard let room = session.room else { return session.busy ? "Joining the team…" : "Live video stopped" }
         switch room.connectionState {

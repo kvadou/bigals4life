@@ -39,6 +39,9 @@ try {
   run("bun", ["ios/Tests/match-insights.ts"]);
   run("bun", ["ios/Tests/tonight-profile.ts"]);
   run("bun", ["ios/Tests/live-discovery.ts"]);
+  run("bun", ["ios/Tests/replay-moment.ts"]);
+  run("bun", ["ios/Tests/lane-replay-media.ts"]);
+  run("bun", ["ios/Tests/live-stakes.ts"]);
 } finally {
   rmSync(scratch, { recursive: true, force: true });
 }

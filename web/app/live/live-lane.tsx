@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Camera, Radio, Video, VideoOff } from "lucide-react";
 import { createLocalVideoTrack, Room, RoomEvent, Track, type LocalVideoTrack, type RemoteVideoTrack } from "livekit-client";
@@ -8,6 +8,9 @@ import { Topbar } from "../components/topbar";
 import { Crumbs } from "../components/crumbs";
 import { liveConnection } from "./connection";
 import LiveScores, { type LiveScoreContext } from "./live-scores";
+import ReplayPanel from "./replay-panel";
+import LiveStakesPanel from "./stakes";
+import { scoreMoment, type ScoreMoment } from "@/lib/league/score-moment";
 import LiveDiscovery from "./discovery";
 import { BOWLERS } from "@/lib/season";
 import "./live.css";
@@ -37,6 +40,9 @@ function CameraTile({ tile }: { tile: Tile }) {
 }
 
 export default function LiveLane({ scorebookId }: { scorebookId: string }) {
+  const [moment, setMoment] = useState<ScoreMoment | null>(null);
+  const previousScore = useRef<{context: LiveScoreContext; at: number} | null>(null);
+  const [replaySource, setReplaySource] = useState("");
   const [context, setContext] = useState<LiveScoreContext | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [mode, setMode] = useState<"watch" | "publish">("watch");
@@ -144,6 +150,18 @@ export default function LiveLane({ scorebookId }: { scorebookId: string }) {
     }
   };
 
+  useEffect(() => {
+    if (status !== "connected" || !context) { previousScore.current = null; setMoment(null); return; }
+    const now = Date.now(), previous = previousScore.current;
+    if (previous && now - previous.at <= 12000) {
+      const candidate = scoreMoment(previous.context.night, context.night, now);
+      if (candidate) setMoment(candidate);
+    }
+    previousScore.current = {context, at: now};
+  }, [context, status, scorebookId]);
+  const replayTile = status === "connected" ? (tiles.find(tile => tile.id === replaySource) ?? (tiles.length === 1 ? tiles[0] : null)) : null;
+  const replayTrack = replayTile?.track.mediaStreamTrack ?? null;
+  const replayStream = useMemo(() => replayTrack ? new MediaStream([replayTrack]) : null, [replayTrack]);
   const pre = context?.night.prebowl;
   const contextTitle = pre ? `${pre.bowlers.map(i => BOWLERS[i]).join(" & ")} · Pre-bowl week ${pre.week}` : context?.night.match ? `League week ${context.night.match.week}` : "Practice camera";
   return <main className={`live-page${status === "connected" || status === "reconnecting" ? " live-active" : ""}`}>
@@ -160,6 +178,9 @@ export default function LiveLane({ scorebookId }: { scorebookId: string }) {
       {error && <div className="live-error" role="alert"><p>{error}</p></div>}
       <div className="live-stage"><div className="live-views">{tiles.length > 0 ? <section className="live-grid" aria-label="Live cameras">{tiles.map(tile => <CameraTile key={tile.id} tile={tile}/>)}</section> : <section className="live-empty"><Video size={36} aria-hidden="true"/><h2>{status === "idle" ? "A shared view of tonight" : status === "joining" ? "Connecting to the team" : "Waiting for a camera"}</h2><p>{status === "idle" ? "Join to watch without turning on your camera. Start a camera to let your teammates watch from home." : "A teammate’s video appears here when they share their camera."}</p></section>}
       </div><LiveScores scorebookId={scorebookId} onContext={setContext}/></div>
+      {context && <LiveStakesPanel night={context.night}/>}
+      {status === "connected" && tiles.length > 1 && <label className="replay-source">Replay camera<select value={replaySource} onChange={event => setReplaySource(event.target.value)}><option value="">Choose a camera</option>{tiles.map((tile,index) => <option key={tile.id} value={tile.id}>{tile.name} · Camera {index+1}</option>)}</select></label>}
+      <ReplayPanel stream={replayStream} sourceKey={replayTile?.id ?? ""} scorebookId={scorebookId} moment={moment}/>
       <p className="live-note">Keep the publishing device awake and this page open. Leaving stops your camera and disconnects you.</p>
       <Link className="text-button live-back" href={scorebookLink}>Back to this scorebook ›</Link>
     </>}
