@@ -21,6 +21,7 @@ struct AppRootView: View {
 
 struct SignInView: View {
     @ObservedObject var session: AccountSession
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var email = ""
     @State private var password = ""
     @State private var code = ""
@@ -28,32 +29,65 @@ struct SignInView: View {
     @State private var recoveryMode = false
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    HStack(spacing: 12) { BA4LBrandMark(size: 54).background(Color("BrandForest"), in: RoundedRectangle(cornerRadius: 12)); Text("Big Al’s 4 Life").font(.title.bold()) }
-                    Text("Sign in with the same account you use on bigals4life.com. Your weeks, scores and team will appear here.")
-                }
-                Section("Your account") {
-                    TextField("Email", text: $email).textContentType(.emailAddress).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
-                    if usePassword {
-                        SecureField("Password", text: $password).textContentType(.password)
-                        Button("Sign in") { Task { _ = await session.signIn(email: email, password: password) } }.disabled(email.isEmpty || password.isEmpty)
-                        Button("Forgot password?") { code = ""; session.error = nil; recoveryMode = true; usePassword = false }.frame(minHeight: 44)
-                        Button("Use an emailed sign-in code instead") { code = ""; session.error = nil; recoveryMode = false; usePassword = false }.frame(minHeight: 44)
+            ScrollView {
+                Group {
+                    if horizontalSizeClass == .regular {
+                        HStack(alignment: .top, spacing: 24) { brandPanel; accountCard }
                     } else {
-                        Button(session.codeSent ? "Send another code" : "Email me a sign-in code") { Task { _ = await session.requestCode(email: email) } }.disabled(email.isEmpty)
-                        if session.codeSent {
-                            TextField("Email code", text: $code).textContentType(.oneTimeCode).keyboardType(.numberPad)
-                            Button(recoveryMode ? "Verify & reset password" : "Verify & sign in") { Task { _ = await session.verifyCode(email: email, code: code, recovery: recoveryMode) } }.disabled(code.isEmpty)
-                        }
-                        Button("Use my password instead") { session.error = nil; usePassword = true }.frame(minHeight: 44)
+                        VStack(alignment: .leading, spacing: 20) { brandPanel; accountCard }
                     }
-                }.disabled(session.busy)
-                if session.busy { ProgressView("Signing in…") }
-                if let error = session.error { Section { Text(error).foregroundStyle(.red) } }
-                Section { Text("Existing device scorecards remain backed up on this device. Signing in loads your shared team data.").font(.footnote) }
-            }.navigationTitle("Welcome to BA4L")
+                }
+                .frame(maxWidth: 980)
+                .padding(.horizontal, horizontalSizeClass == .regular ? 36 : 20)
+                .padding(.vertical, 24)
+                .frame(maxWidth: .infinity)
+            }
+            .background(Color(uiColor: .systemGroupedBackground))
+            .navigationTitle("Welcome to BA4L")
+            .navigationBarTitleDisplayMode(.inline)
         }
+    }
+
+    private var brandPanel: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) { BA4LBrandMark(size: 52).background(Color("BrandForest"), in: RoundedRectangle(cornerRadius: 14)); Text("Big Al’s 4 Life").font(.title2.bold()) }
+            Text("Your team scorebook, standings, and Thursday night in one place.").font(.body).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            if horizontalSizeClass == .regular { Spacer(minLength: 8); Label("Your weeks and scores stay synced across devices.", systemImage: "checkmark.icloud").font(.callout).foregroundStyle(.secondary) }
+        }
+        .padding(24)
+        .frame(maxWidth: horizontalSizeClass == .regular ? 360 : .infinity, alignment: .leading)
+        .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    private var accountCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(recoveryMode ? "Reset your password" : "Sign in").font(.title3.bold())
+            Text(recoveryMode ? "We’ll email a code so you can choose a new password." : (usePassword ? "Use your BA4L email and password." : "We’ll email you a six-digit code."))
+                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            TextField("Email", text: $email).textContentType(.emailAddress).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled().textFieldStyle(.roundedBorder)
+            if usePassword {
+                SecureField("Password", text: $password).textContentType(.password).textFieldStyle(.roundedBorder)
+                Button { Task { _ = await session.signIn(email: email, password: password) } } label: { Text("Sign in").frame(maxWidth: .infinity).padding(.vertical, 12) }
+                    .buttonStyle(.borderedProminent).tint(Color("BrandGreen")).foregroundStyle(Color("OnBrandGreen")).disabled(email.isEmpty || password.isEmpty)
+                Button("Forgot password?") { code = ""; session.error = nil; recoveryMode = true; usePassword = false }.frame(maxWidth: .infinity, minHeight: 44)
+                Button("Use an emailed sign-in code instead") { code = ""; session.error = nil; recoveryMode = false; usePassword = false }.frame(maxWidth: .infinity, minHeight: 44)
+            } else {
+                Button(session.codeSent ? "Send another code" : (recoveryMode ? "Email reset code" : "Email me a sign-in code")) { Task { _ = await session.requestCode(email: email) } }
+                    .frame(maxWidth: .infinity, minHeight: 44).buttonStyle(.borderedProminent).tint(Color("BrandGreen")).foregroundStyle(Color("OnBrandGreen")).disabled(email.isEmpty)
+                if session.codeSent {
+                    TextField("Email code", text: $code).textContentType(.oneTimeCode).keyboardType(.numberPad).textFieldStyle(.roundedBorder)
+                    Button(recoveryMode ? "Verify & reset password" : "Verify & sign in") { Task { _ = await session.verifyCode(email: email, code: code, recovery: recoveryMode) } }
+                        .frame(maxWidth: .infinity, minHeight: 44).buttonStyle(.borderedProminent).tint(Color("BrandGreen")).foregroundStyle(Color("OnBrandGreen")).disabled(code.isEmpty)
+                }
+                Button("Use my password instead") { session.error = nil; recoveryMode = false; usePassword = true }.frame(maxWidth: .infinity, minHeight: 44)
+            }
+            if session.busy { ProgressView("Signing in…").frame(maxWidth: .infinity) }
+            if let error = session.error { Text(error).foregroundStyle(.red).font(.callout).fixedSize(horizontal: false, vertical: true) }
+            Text("Existing device scorecards remain backed up on this device.").font(.footnote).foregroundStyle(.secondary)
+        }
+        .padding(24)
+        .frame(maxWidth: horizontalSizeClass == .regular ? 520 : .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
     }
 }
 
