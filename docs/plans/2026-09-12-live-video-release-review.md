@@ -1,6 +1,6 @@
 # Live Lane video release review
 
-Status: implemented locally, not deployed. Existing TestFlight remains 1.0 (7). Full Lane Coach recognition, ball trajectory, oil inference, replay persistence and coaching are not implemented.
+Status: released after Doug explicitly instructed “Just publish it.” Web is production-verified for discovery, authenticated watch and Leave. TestFlight 1.0 (8) is VALID and available in the internal group. See `2026-09-12-live-release.md` for exact release evidence. Full Lane Coach recognition, ball trajectory, oil inference, replay persistence and coaching are not implemented.
 
 ## Permission change requiring Doug's review
 
