@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { database } from "./scorebook-server";
 
-export type Identity = { user: { id: string; email: string }; viaCookie: boolean };
+export type Identity = { user: { id: string; email: string; displayName?: string }; viaCookie: boolean };
 export type Role = "owner" | "editor" | "viewer" | "legacy" | "none" | "missing";
 
 const url = () => process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
@@ -19,13 +19,23 @@ export async function identify(request: Request): Promise<Identity | null> {
     if (header?.startsWith("Bearer ")) {
       const token = header.slice(7).trim(); if (!token || token.length > 4096) return null;
       const { data } = await createClient(url(), anon(), { auth: { persistSession: false, autoRefreshToken: false } }).auth.getUser(token);
-      return confirmed(data.user) ? await adopt({ user: { id: data.user!.id, email: data.user!.email! }, viaCookie: false }) : null;
+      return confirmed(data.user) ? await adopt({ user: { id: data.user!.id, email: data.user!.email!, displayName: verifiedDisplayName(data.user!.user_metadata) }, viaCookie: false }) : null;
     }
     const store = await cookies();
     const client = createServerClient(url(), anon(), { cookies: { getAll: () => store.getAll(), setAll: () => { /* refreshed in proxy.ts */ } } });
     const { data } = await client.auth.getUser();
-    return confirmed(data.user) ? await adopt({ user: { id: data.user!.id, email: data.user!.email! }, viaCookie: true }) : null;
+    return confirmed(data.user) ? await adopt({ user: { id: data.user!.id, email: data.user!.email!, displayName: verifiedDisplayName(data.user!.user_metadata) }, viaCookie: true }) : null;
   } catch { return null; }
+}
+
+/** Display-only metadata from the verified auth response. Never use it for permissions. */
+export function verifiedDisplayName(metadata: Record<string, unknown> | undefined): string | undefined {
+  for (const value of [metadata?.display_name, metadata?.full_name]) {
+    if (typeof value !== "string") continue;
+    const text=value.trim().replace(/[\u0000-\u001f\u007f]/g," ").slice(0,40);
+    if (text && !text.includes("@")) return text;
+  }
+  return undefined;
 }
 
 /** Only an email the user has proven they control counts as identity. Invites are matched by email, so this is what stops takeover. */

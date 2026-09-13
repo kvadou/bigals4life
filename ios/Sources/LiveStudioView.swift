@@ -135,6 +135,7 @@ struct StudioBroadcastView: View {
                         }
                         LaneReplayPanel(replay: replay, sources: cameras.map { (name: $0.local ? "Your camera" : "Team camera", track: $0.track) })
                     }
+                    NativeGalleryView(sessionID: session.id, isHost: session.isOwner == true, connected: connection.room?.connectionState == .connected, send: send)
                     if let moment = replay.moment {
                         Button("Save kept replay to private library", systemImage: "square.and.arrow.down") {
                             Task { await library.importClip(from: moment.url) }

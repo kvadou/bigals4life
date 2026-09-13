@@ -9,7 +9,7 @@ const createSchema=z.object({activity:z.enum(["league","prebowl","practice","soc
 const counter=z.number().int().min(0).max(1_000_000_000);
 const metrics=z.object({frames:counter,bytes:counter}).strict();
 const healthSchema=z.object({connectionId:uuid,received:z.array(metrics.extend({trackSid:z.string().regex(/^TR_[A-Za-z0-9_-]{1,100}$/)})).max(16),outgoing:metrics.optional()}).strict();
-type Session={id:string;owner_id:string;activity:string;audience:string;scorebook_id:string|null;team_scope_id:string|null;title:string;expires_at:string;ended_at:string|null};
+type Session={id:string;owner_id:string;activity:string;audience:string;scorebook_id:string|null;team_scope_id:string|null;title:string;expires_at:string;ended_at:string|null;gallery_paused?:boolean};
 type Connection={id:string;session_id:string;user_id:string;participant_identity:string;mode:string;expires_at:string;reported_at:string|null;received:z.infer<typeof healthSchema>["received"];outgoing:z.infer<typeof metrics>|null};
 class Failure extends Error { constructor(readonly status:number,message:string){super(message);} }
 const fail=(status:number,message:string):never=>{throw new Failure(status,message);};
@@ -32,7 +32,7 @@ async function body<T>(r:Request,schema:z.ZodType<T>):Promise<T>{
 async function caller(r:Request,action:string){
  const who=await identify(r);if(!who)return fail(401,"Sign in to open this live session.");
  if(r.method!=="GET"&&who.viaCookie&&!sameOrigin(r))fail(403,"Open this session from BA4L.");
- const limit=action==="create"?6:action==="invites"?20:action==="token"?30:60;
+ const limit=action==="gallery-post"?12:action==="gallery-patch"?20:action==="create"?6:action==="invites"?20:action==="token"?30:60;
  if(!allow(`live-v2:${action}:${who.user.id}`,limit,60_000))fail(429,"Please wait a moment and try again.");
  return who;
 }
@@ -56,9 +56,9 @@ async function load(id:string,who:Identity){
  return {session,grants};
 }
 const view=(s:Session,canPublish:boolean,isOwner:boolean)=>({id:s.id,activity:s.activity,audience:s.audience,scorebookId:s.scorebook_id,teamScopeId:s.team_scope_id,title:s.title,expiresAt:s.expires_at,canPublish,isOwner});
-export async function liveV2(request:Request,action:"list"|"create"|"read"|"end"|"token"|"health"|"invites",id?:string){
+export async function liveV2(request:Request,action:"list"|"create"|"read"|"end"|"token"|"health"|"invites"|"gallery",id?:string){
  try{
-  const who=await caller(request,action);
+  const who=await caller(request,action==="gallery"?`gallery-${request.method.toLowerCase()}`:action);
   if(action==="create"){
    if(!await isTeammate(who))return fail(403,"Team membership is required to start a live session.");
    const data=await body(request,createSchema);
@@ -83,6 +83,38 @@ export async function liveV2(request:Request,action:"list"|"create"|"read"|"end"
   }
   const {session:s,grants}=await load(id??"",who);
   if(action==="read")return reply({session:view(s,grants.publish,s.owner_id===who.user.id)});
+  if(action==="gallery"){
+   type Event={id:string;user_id:string;kind:"reaction"|"comment"|"coach";text:string;author:string;created_at:string};
+   const eventView=(event:Event)=>({id:event.id,kind:event.kind,text:event.text,author:event.author,createdAt:event.created_at,isMine:event.user_id===who.user.id});
+   if(request.method==="GET"){
+    const events:Event[]=await database(`live_gallery_events?session_id=eq.${s.id}&select=id,user_id,kind,text,author,created_at&order=created_at.desc,id.desc&limit=50`);
+    return reply({events:events.reverse().map(eventView),paused:s.gallery_paused===true});
+   }
+   if(request.method==="PATCH"){
+    if(s.owner_id!==who.user.id)fail(403,"Only the host can moderate the gallery.");
+    const change=await body(request,z.union([z.object({paused:z.boolean()}).strict(),z.object({removeId:uuid}).strict()]));
+    if("paused" in change)await database(`live_sessions?id=eq.${s.id}`,{method:"PATCH",body:JSON.stringify({gallery_paused:change.paused})});
+    else await database(`live_gallery_events?id=eq.${change.removeId}&session_id=eq.${s.id}`,{method:"DELETE",headers:{Prefer:"return=minimal"}});
+    return reply({updated:true});
+   }
+   if(s.gallery_paused)fail(403,"The host has paused the gallery.");
+   const data=await body(request,z.object({kind:z.enum(["reaction","comment","coach"]),text:z.string().trim().min(1).max(280)}).strict());
+   if(data.kind==="reaction"&&!["🎳","🔥","👏","😂","💪","🦃"].includes(data.text))fail(400,"Choose one of the gallery reactions.");
+   // PostgREST may cap a response at 1000 rows, so read bounded pages.
+   const rows:{event_slot:number}[]=[];
+   for(let offset=0;offset<2000;offset+=500){
+    const page:{event_slot:number}[]=await database(`live_gallery_events?session_id=eq.${s.id}&select=event_slot&order=event_slot.asc&limit=500&offset=${offset}`);
+    rows.push(...page);if(page.length<500)break;
+   }
+   const used=new Set(rows.map(row=>row.event_slot));
+   const slot=Array.from({length:2000},(_,index)=>index).find(index=>!used.has(index));
+   if(rows.length>=2000||slot===undefined)fail(409,"This gallery is full. The host can remove older posts.");
+   const author=who.user.displayName?.trim().slice(0,40);
+   const event:Event={id:crypto.randomUUID(),user_id:who.user.id,kind:data.kind,text:data.text,author:author&&!author.includes("@")?author:"Teammate",created_at:new Date().toISOString()};
+   await database("live_gallery_events",{method:"POST",body:JSON.stringify({...event,session_id:s.id,event_slot:slot})});
+   return reply({event:eventView(event)},201);
+  }
+
   if(action==="end"){
    await body(request,z.object({ended:z.literal(true)}).strict());
    if(s.owner_id!==who.user.id)fail(403,"Only the session owner can end it.");

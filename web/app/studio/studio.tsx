@@ -11,6 +11,7 @@ import { Room, RoomEvent, Track, createLocalVideoTrack, type LocalVideoTrack, ty
 import { Topbar } from "../components/topbar";
 import Camera, { type CameraSource } from "./camera";
 import Clips from "./clips";
+import PeanutGallery from "./gallery";
 import { activityNames, audienceNames, api, terminalSessionError, validId, type Activity, type Audience, type Health, type Observation, type StudioSession } from "./types";
 import "./studio.css";
 type Session = StudioSession & { isOwner?: boolean };
@@ -160,6 +161,7 @@ export default function Studio({ initialSessionId }: { initialSessionId: string 
     <section className="studio-stage" aria-label="Live cameras"><div className="studio-stage-heading"><h2>{session ? "Shared cameras" : "Private preview"}</h2><span role="status" className="studio-tag">{status==="idle"?"Camera off":status==="joining"?"Starting…":status==="reconnecting"?"Reconnecting…":session?"Room connected":"Only on this device"}</span></div>
       {session && connected && <p className="studio-caption">{freshHealth ? `${freshHealth.cameraCount} published cameras · ${freshHealth.receivingCount} devices report receiving video` : "Waiting for device-reported video health."} These reports are from viewers’ devices, not server confirmation of image content.</p>}
       {sources.length ? <div className="studio-cameras">{sources.map(source=><Camera key={source.id} source={source} selected={selected===source.id} choose={()=>setSelected(source.id)} element={element} observe={observe}/>)}</div> : <div className="studio-empty-stage">{connected?<Radio size={36}/>:<VideoOff size={36}/>}<h3>{status==="joining"?"Getting the studio ready":connected?"Waiting for a camera":"Ready when you are"}</h3><p>{connected?"Video appears when real frames reach this browser. Joining a room does not start recording.":"Choose who can watch, then start your camera. Recording remains off until you enable it."}</p></div>}
+    {session && <PeanutGallery key={session.id} sessionId={session.id} connected={status==="connected"} isOwner={!!session.isOwner}/>}
     </section></div>
     <Clips source={selectedSource} video={selectedVideo} stopSignal={stopSignal}/>
     <section className="studio-discovery"><div className="studio-section-head"><div><h2>Join a shared studio</h2><p>Only sessions you are allowed to see appear here.</p></div><button onClick={()=>void refreshSessions()} disabled={listing}>{listing?"Loading…":"Find shared studios"}</button></div>

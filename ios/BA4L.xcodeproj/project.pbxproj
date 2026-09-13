@@ -25,6 +25,7 @@
 		77B212B28D4A9281800EE124 /* PrivatePracticeLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F5D0D61394BB6C2991D558C /* PrivatePracticeLibrary.swift */; };
 		79590E859127D3584B2D384F /* LiveStudioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33317230F0C8F32E83D33014 /* LiveStudioView.swift */; };
 		7BC92F989B23B3E2601FB735 /* PrivatePracticeRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1569AEC6609F530B13CED30E /* PrivatePracticeRecorder.swift */; };
+		83F6ABE6E6C2FF28314E3C58 /* NativeGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31E30E6E7B9072BA40CBFF1F /* NativeGalleryView.swift */; };
 		9701721564F6F85C28233F93 /* LiveLaneCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A394B777B30A778A4DF712C /* LiveLaneCamera.swift */; };
 		A062733459C68F876C45787D /* LaneReplayWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C225AC459DC2E3038EB3F36 /* LaneReplayWriter.swift */; };
 		A119658D0DF390EEE83AB434 /* LaneReplayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BEB9043241AD479309D34A9 /* LaneReplayView.swift */; };
@@ -56,6 +57,7 @@
 		21D9127AD2739D1BC5EBFE54 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2505DFFE18B4FF08A3BC432F /* BA4LBrandMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BA4LBrandMark.swift; sourceTree = "<group>"; };
 		2805C0AEAC8D2A46898B1467 /* DeviceArchiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceArchiveView.swift; sourceTree = "<group>"; };
+		31E30E6E7B9072BA40CBFF1F /* NativeGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeGalleryView.swift; sourceTree = "<group>"; };
 		3288926755D1F7D450F5D50C /* VoiceEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceEntryView.swift; sourceTree = "<group>"; };
 		33317230F0C8F32E83D33014 /* LiveStudioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveStudioView.swift; sourceTree = "<group>"; };
 		3C225AC459DC2E3038EB3F36 /* LaneReplayWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaneReplayWriter.swift; sourceTree = "<group>"; };
@@ -122,6 +124,7 @@
 				EE8FBC563B1D088E580EEC17 /* MatchInsightsView.swift */,
 				12B3AA69798C69544A9A071C /* MatchSetupView.swift */,
 				69E2A7AEB2D6266455A12E57 /* NativeFixtureSession.swift */,
+				31E30E6E7B9072BA40CBFF1F /* NativeGalleryView.swift */,
 				0F5D0D61394BB6C2991D558C /* PrivatePracticeLibrary.swift */,
 				1569AEC6609F530B13CED30E /* PrivatePracticeRecorder.swift */,
 				D0D1EC5A57D7329DF8F0046A /* PrivatePracticeView.swift */,
@@ -260,6 +263,7 @@
 				3641594612B63853B8F7C85D /* MatchInsightsView.swift in Sources */,
 				DF1192B136E1FFB2590D38AD /* MatchSetupView.swift in Sources */,
 				516B56B5FFCA45366CF6B06E /* NativeFixtureSession.swift in Sources */,
+				83F6ABE6E6C2FF28314E3C58 /* NativeGalleryView.swift in Sources */,
 				77B212B28D4A9281800EE124 /* PrivatePracticeLibrary.swift in Sources */,
 				7BC92F989B23B3E2601FB735 /* PrivatePracticeRecorder.swift in Sources */,
 				E9A7A709AEA735D2999E8938 /* PrivatePracticeView.swift in Sources */,

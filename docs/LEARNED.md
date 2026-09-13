@@ -144,3 +144,7 @@ A stale asynchronous camera-start continuation must return without enqueueing a 
 ## Live delivery needs receiver evidence and stable SDK rendering
 
 A successful token request and room connection do not establish video delivery. Report fresh interval frame/byte counters, expire old reports, and never label local capture as remote receipt. Web SDK video must use track.attach/detach so adaptive streaming observes the rendered element. Keep capture/health lifecycle on the enclosing native navigation container so opening saved clips does not terminate the room. Private recording must avoid room creation and microphone capture; league and pre-bowl must validate their real scorebook context. The V2 access tests and local media tests encode these boundaries.
+
+## Session commentary must remain separate from video and scoring
+
+Peanut Gallery posts inherit current session access but never grant video publishing or change scores. Display names come from verified auth responses and remain display-only. Clamp the feed and stored event slots; enforce host pause/end at insert time under a database row lock. Client polling must discard reads that overlap a successful mutation, otherwise a removed post or resumed state can reappear. Hide/disconnect stops gallery polling without touching the room.

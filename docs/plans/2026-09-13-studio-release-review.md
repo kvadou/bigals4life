@@ -35,3 +35,13 @@ Inviting adds access for an email address. It does not send email. The host expl
 4. Pair a physical iPhone/iPad sender with another receiving device. Check rear-camera picture, orientation, interruption/reconnect, recording and actual decoded remote frames.
 
 Do not claim the reported physical black-preview problem fixed until step 4 passes. Automatic bowler recognition, scoring, ball-path or oil-pattern estimation are outside this implementation. Browser comparison starts both clips together but is not frame-accurate synchronization. No production changes have been applied by this work.
+
+## Peanut Gallery addendum
+
+Added session commentary, coaching tips, six quick reactions and editable preset chirps on web and native. Viewer Hide is local; host Pause and Remove are session-wide, confirmed actions. Video permissions and microphone behavior remain unchanged. Feed fetches latest50 posts every3seconds while visible/connected. Only confirmed server responses add posts; labels are display-only profile names, never permission inputs or email fallbacks.
+
+Additional review files: `web/lib/auth-server.ts` (optional sanitized display-name metadata), `web/lib/live-v2.ts` gallery handlers, new gallery API route, and `202609130002_live_gallery.sql`. The migration creates a private RLS table, bounded2000slots and an insert trigger checking committed pause/end/expiry. Checked in disposable PostgreSQL with service-role inserts, client denial, cap/unique constraints, pause/end rejection and cascade cleanup. No production migration applied.
+
+This addendum is part of the same unpublished candidate. Text commentary is implemented; voice chat is not enabled.
+
+Gallery verification: full suite97tests/61,346assertions;17browserfixturechecks andpw-verify;11native model checks independently rerun; phone/iPad gallery fixture screenshots inspected; signedbuild14 archive rebuilt with gallery. Real multi-device production messages and native tap/lifecycle flows remain unverified.
