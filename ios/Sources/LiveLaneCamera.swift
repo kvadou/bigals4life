@@ -85,6 +85,9 @@ final class LiveLaneCapture: NSObject, AVCaptureVideoDataOutputSampleBufferDeleg
         }
     }
     func stop() { queue.async { if self.session.isRunning { self.session.stopRunning() } } }
+    func waitUntilStopped() async {
+        await withCheckedContinuation { continuation in queue.async { continuation.resume() } }
+    }
     private func configure() throws {
         guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
             throw NSError(domain: "LiveLane", code: 1, userInfo: [NSLocalizedDescriptionKey: "A rear camera is required. Use an iPhone or iPad to watch the lane."])

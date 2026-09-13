@@ -5,13 +5,19 @@ options:
 settings:
   base:
     MARKETING_VERSION: '1.0'
-    CURRENT_PROJECT_VERSION: '7'
+    CURRENT_PROJECT_VERSION: '8'
     SWIFT_VERSION: '5.0'
     DEVELOPMENT_TEAM: FM45AMFBNY
     CODE_SIGN_STYLE: Automatic
+packages:
+  LiveKit:
+    url: https://github.com/livekit/client-sdk-swift.git
+    from: 2.16.0
 targets:
   BA4L:
     type: application
+    dependencies:
+      - package: LiveKit
     configFiles:
       Debug: Config/Auth.xcconfig
       Release: Config/Auth.xcconfig
@@ -39,6 +45,7 @@ targets:
         CFBundleDisplayName: BA4L
         ITSAppUsesNonExemptEncryption: false
         NSCameraUsageDescription: BA4L uses the camera for live lane observation and scoreboard photos.
+        NSMicrophoneUsageDescription: BA4L would use microphone access for voice in a shared session. Video-only sessions do not use it.
         NSPhotoLibraryUsageDescription: BA4L reads a scoreboard photo you choose to fill in rolls.
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:

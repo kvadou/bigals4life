@@ -32,6 +32,9 @@ try {
   const voiceBinary = join(scratch, "voice-tests");
   run("swiftc", ["-parse-as-library", "ios/Sources/BowlingGame.swift", "ios/Sources/VoiceRoll.swift", "ios/Tests/voice-roll.swift", "-o", voiceBinary]);
   run(voiceBinary, []);
+  const liveContextBinary = join(scratch, "live-context-tests");
+  run("swiftc", ["ios/Sources/LiveLaneContext.swift", "ios/Tests/live-lane-context.swift", "-o", liveContextBinary]);
+  run(liveContextBinary, []);
   run("bun", ["ios/Tests/models.ts"]);
   run("bun", ["ios/Tests/match-insights.ts"]);
   run("bun", ["ios/Tests/tonight-profile.ts"]);

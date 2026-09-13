@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Check, CircleDot, History, RotateCcw, X } from "lucide-react";
@@ -52,6 +53,7 @@ export default function Home() {
     <Topbar right={<AccountBar me={me} nightId={id} role={role} onClaimed={()=>void reload()}/>}/>
     <Crumbs items={[{label:"Season",href:"/season"},...(shared&&id?[{label:"This week",href:`/season/${id}`}]:[]),{label:"Live scorebook"}]}/>
     <header className="score-title"><h1>Score</h1><span>Game {night.game}{night.prebowl ? ` · Pre-bowl week ${night.prebowl.week}` : ""}</span></header>
+    {shared && id && <Link href={`/live?night=${encodeURIComponent(id)}`} className="center-link">Open Live Lane video</Link>}
     {shareMessage&&<p className="photo-success" role="status">{shareMessage}</p>}
     {error&&<div className="sync-error" role="alert"><p>{error}</p>{needsSignIn&&<a className="secondary" href={`/login?next=${encodeURIComponent(typeof window==="undefined"?"/":window.location.pathname+window.location.search)}`}>Sign in to open this scorebook</a>}<button className="secondary" onClick={()=>void retry()}>Retry save / load</button>{shared&&<button className="secondary" onClick={()=>void reload()}>Discard unsaved edits & reload team</button>}</div>}
     <div className="score-layout">

@@ -104,7 +104,7 @@ struct TonightView: View {
                         .buttonStyle(.plain).accessibilityIdentifier("tonightSeason")
                 }
             }
-            .fullScreenCover(isPresented: $showLiveLane) { LiveLaneView(store: store) }
+            .fullScreenCover(isPresented: $showLiveLane) { LiveLaneView(store: store, send: send) }
             .refreshable { await refresh() }
             .task { await refresh() }
             .sheet(isPresented: $showSeason) {

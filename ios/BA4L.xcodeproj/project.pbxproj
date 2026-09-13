@@ -19,10 +19,12 @@
 		4C4BB6F6CA8D5B7C3FBCC547 /* VoiceEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3288926755D1F7D450F5D50C /* VoiceEntryView.swift */; };
 		4FE1835D1327378CE3C5A928 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 21D9127AD2739D1BC5EBFE54 /* PrivacyInfo.xcprivacy */; };
 		516B56B5FFCA45366CF6B06E /* NativeFixtureSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E2A7AEB2D6266455A12E57 /* NativeFixtureSession.swift */; };
+		5A36A4912B2B31CD8C5C0F5A /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6BE4FBC8F645FDBF83B0643A /* LiveKit */; };
 		9701721564F6F85C28233F93 /* LiveLaneCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A394B777B30A778A4DF712C /* LiveLaneCamera.swift */; };
 		AD0894893F885BF5FBC901CF /* BA4LBrandMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2505DFFE18B4FF08A3BC432F /* BA4LBrandMark.swift */; };
 		B445FC795CFC34EF8DB4B3D1 /* TonightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE683751CC347C2EC6E22B6 /* TonightView.swift */; };
 		BF0B72A4A238461A2E5CD90B /* WeekGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67D72ACB8DDDDBA61E155DFE /* WeekGameView.swift */; };
+		C07A6C8158D770C89D842D3C /* SharedLiveLaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F3DED4DE0B56F3FF6D8B86 /* SharedLiveLaneView.swift */; };
 		C141769DCF585FB5DCB83E35 /* ReviewDraftStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ED8500D4884814BFC5420E1 /* ReviewDraftStorage.swift */; };
 		CAE9C9F34EEF05DBAB294F8D /* AccountSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8791C06DCCCBE23B5207885F /* AccountSession.swift */; };
 		CD5925D8BDBCEB51A1AA2967 /* SeasonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0EF0F16C07849CD496B575 /* SeasonView.swift */; };
@@ -57,10 +59,22 @@
 		8CE683751CC347C2EC6E22B6 /* TonightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonightView.swift; sourceTree = "<group>"; };
 		989053A7A8B4FDC93729C522 /* BA4L.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BA4L.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9D59FD0C883D0D1A492D7B16 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D2F3DED4DE0B56F3FF6D8B86 /* SharedLiveLaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLiveLaneView.swift; sourceTree = "<group>"; };
 		EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingGame.swift; sourceTree = "<group>"; };
 		EE8FBC563B1D088E580EEC17 /* MatchInsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchInsightsView.swift; sourceTree = "<group>"; };
 		F6B33F7EF1FD008BC8E6191A /* StrikeCeilingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikeCeilingApp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B9032C6B51C230F48917B766 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5A36A4912B2B31CD8C5C0F5A /* LiveKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		2B19E23A300FFF6C53E605FA /* Resources */ = {
@@ -91,6 +105,7 @@
 				1C402694017885D21C956CF0 /* ReviewView.swift */,
 				4950602E37FA9B9887F22AD9 /* ScoreboardScan.swift */,
 				7D0EF0F16C07849CD496B575 /* SeasonView.swift */,
+				D2F3DED4DE0B56F3FF6D8B86 /* SharedLiveLaneView.swift */,
 				F6B33F7EF1FD008BC8E6191A /* StrikeCeilingApp.swift */,
 				885C48085CB9E77974D1662D /* TeamAccessView.swift */,
 				8CE683751CC347C2EC6E22B6 /* TonightView.swift */,
@@ -136,6 +151,7 @@
 			buildPhases = (
 				228033E82DDB0ABF04D3D689 /* Sources */,
 				76FAAD49165876CFE9643B63 /* Resources */,
+				B9032C6B51C230F48917B766 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -143,6 +159,7 @@
 			);
 			name = BA4L;
 			packageProductDependencies = (
+				6BE4FBC8F645FDBF83B0643A /* LiveKit */,
 			);
 			productName = BA4L;
 			productReference = 989053A7A8B4FDC93729C522 /* BA4L.app */;
@@ -172,6 +189,9 @@
 			);
 			mainGroup = E01CC4E5C6F96774AACB91D4;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				94D2DAE67472B2F242038AA4 /* XCRemoteSwiftPackageReference "client-sdk-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D9B6259F78F11346C8215D11 /* Products */;
 			projectDirPath = "";
@@ -215,6 +235,7 @@
 				19F795C6CDC26AAD73091C71 /* ReviewView.swift in Sources */,
 				F36065580D9D48C599D7A24E /* ScoreboardScan.swift in Sources */,
 				CD5925D8BDBCEB51A1AA2967 /* SeasonView.swift in Sources */,
+				C07A6C8158D770C89D842D3C /* SharedLiveLaneView.swift in Sources */,
 				30FC21369A61A02A2EC6A518 /* StrikeCeilingApp.swift in Sources */,
 				E4302FA1816B37ACF941E63B /* TeamAccessView.swift in Sources */,
 				B445FC795CFC34EF8DB4B3D1 /* TonightView.swift in Sources */,
@@ -262,7 +283,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = FM45AMFBNY;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -352,7 +373,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = FM45AMFBNY;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -422,6 +443,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		94D2DAE67472B2F242038AA4 /* XCRemoteSwiftPackageReference "client-sdk-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/livekit/client-sdk-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.16.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6BE4FBC8F645FDBF83B0643A /* LiveKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 94D2DAE67472B2F242038AA4 /* XCRemoteSwiftPackageReference "client-sdk-swift" */;
+			productName = LiveKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 9D49459091F58DAB51692FE2 /* Project object */;
 }

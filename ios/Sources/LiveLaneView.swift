@@ -2,6 +2,9 @@ import SwiftUI
 
 struct LiveLaneView: View {
     @ObservedObject var store: ScorebookStore
+    let send: SeasonTransport
+    @State private var showShared = false
+    @State private var handoffTask: Task<Void, Never>?
     @StateObject private var camera = LiveLaneCamera()
     @State private var intent: LiveLaneContext.Intent = .automatic
     @Environment(\.scenePhase) private var scenePhase
@@ -14,6 +17,7 @@ struct LiveLaneView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         context(at: timeline.date)
+                        sharedEntry
                         if sizeClass == .regular && !typeSize.isAccessibilitySize {
                             HStack(alignment: .top, spacing: 24) {
                                 cameraPanel(at: timeline.date).frame(maxWidth: .infinity)
@@ -26,11 +30,14 @@ struct LiveLaneView: View {
             .navigationTitle("Live Lane").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { camera.stop(); dismiss() }.frame(minHeight: 44)
+                    Button("Close") { handoffTask?.cancel(); camera.stop(); dismiss() }.frame(minHeight: 44)
                 }
             }
             .onChange(of: scenePhase) { _, phase in if phase == .background || (phase == .inactive && camera.state == .watching) { camera.pause() } }
-            .onDisappear { camera.stop() }
+            .onDisappear { handoffTask?.cancel(); camera.stop() }
+            .fullScreenCover(isPresented: $showShared) {
+                if let id = store.teamID { SharedLiveLaneView(store: store, bookID: id, intent: intent, send: send) }
+            }
         }.tint(BA4LTheme.tint)
     }
     private func context(at date: Date) -> some View {
@@ -71,7 +78,7 @@ struct LiveLaneView: View {
                     Button("Pause", systemImage: "pause.fill") { camera.pause() }.buttonStyle(.borderedProminent).frame(minHeight: 44)
                     Button("Stop", systemImage: "stop.fill") { camera.stop() }.buttonStyle(.bordered).frame(minHeight: 44)
                 } else {
-                    Button(camera.state == .paused ? "Resume camera" : "Start camera", systemImage: "video.fill") {
+                    Button(camera.state == .paused ? "Resume framing preview" : "Check camera framing", systemImage: "video.fill") {
                         Task { await camera.start() }
                     }.buttonStyle(.borderedProminent).controlSize(.large)
                         .disabled(camera.state == .starting).accessibilityIdentifier("liveLaneStart")
@@ -97,6 +104,27 @@ struct LiveLaneView: View {
             if camera.observationError != nil { return "Camera live · analysis unavailable" }
             return "Camera live · \(camera.peopleVisible) people visible"
         }
+    }
+    private var sharedEntry: some View {
+            GroupBox {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Together at the lanes", systemImage: "person.2").font(.headline)
+                    Text("Watch live lane cameras together on your team’s phones.")
+                    if store.teamID != nil {
+                        Button("Join team live video", systemImage: "video") {
+                            camera.stop()
+                            handoffTask?.cancel()
+                            handoffTask = Task {
+                                await camera.capture.waitUntilStopped()
+                                guard !Task.isCancelled else { return }
+                                showShared = true
+                            }
+                        }.buttonStyle(.borderedProminent).controlSize(.large).accessibilityIdentifier("joinTeamLive")
+                    } else { Text("Open a night from Season to join its shared live video.") }
+                    Text("Replays and coaching are not connected yet. Video does not automatically update scores.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }.frame(maxWidth: .infinity, alignment: .leading).fixedSize(horizontal: false, vertical: true)
+            }
     }
     private var details: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -124,14 +152,7 @@ struct LiveLaneView: View {
                     Text(store.status).font(.caption).foregroundStyle(.secondary)
                 }.frame(maxWidth: .infinity, alignment: .leading).fixedSize(horizontal: false, vertical: true)
             }
-            GroupBox {
-                VStack(alignment: .leading, spacing: 10) {
-                    Label("Together at the lanes", systemImage: "person.2").font(.headline)
-                    Text("Team video, replays and coaching are not connected yet.")
-                    Text("This preview does not start a shared session or automatically update scores.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }.frame(maxWidth: .infinity, alignment: .leading).fixedSize(horizontal: false, vertical: true)
-            }
+
         }
     }
 }

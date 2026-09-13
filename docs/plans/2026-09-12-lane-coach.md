@@ -102,3 +102,9 @@ No release was made. TestFlight remains 1.0 (7). LiveKit Cloud is signed out in 
 ### LiveKit project created
 
 After Doug signed in, created dedicated BA4L project `p_a6czbdarrl2` in LiveKit Cloud. Dashboard verified BA4L, United States region, and zero sessions/agents. Agent observability disabled at creation; PMV was not modified. API key page reports one existing key. No secrets were displayed or copied. `scripts/configure-livekit.ts` provides hidden terminal input into ignored `web/.env.local`, mode0600, atomic save and idempotent no-op if already configured. Presence check confirms all three LiveKit settings remain missing. User credential entry is required by add-secret skill. No streaming, tokens, deployment, or release verified.
+
+### Shared-video implementation contract
+
+Saved credentials validated using read-only LiveKit listRooms: success, zero rooms. Implement shared-video transport now, with native/web explicit Watch and Publish actions. POST /api/live/token requires verified BA4L identity, same-origin cookie requests, private scorebook membership and owner/editor publishing permission. Legacy public-link scorebooks excluded. Each device gets a unique user-bound identity and a120-second initial token scoped to one scorebook room; video-camera publication only, no microphone, data publication or metadata updates. Tokens never enter URLs/logs/storage. Scorebook remains authoritative; no client video message can update scores.
+
+Room lifespan currently follows connected participants. Token expiry controls joining, not termination of an already-connected session; immediate membership-revocation enforcement and explicit archived session records remain follow-up work before wider deployment. No automatic cloud recording or replay persistence in this transport slice. Auth/token changes require Doug's human review before push per repository policy.
