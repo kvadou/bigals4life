@@ -59,6 +59,10 @@ struct SignedInApp: View {
     @StateObject private var store: ScorebookStore
     private let accountID: String
     @State private var tab = 0
+    @State private var showSeason = false
+    @State private var homeIsRoot = true
+    @State private var seasonSelection: String?
+    @State private var scoreSeasonOrigin: String?
     @State private var selectedBowler: Int?
     @State private var profile: TonightProfile?
     private let preferences: UserDefaults
@@ -98,9 +102,9 @@ struct SignedInApp: View {
             }
         } else {
         TabView(selection: $tab) {
-            TonightView(store: store, selectedBowler: $selectedBowler, profile: profile, send: send, onScore: { tab = 1 }, onReview: { tab = 3 }, onOpenNight: openNight)
+            TonightView(store: store, selectedBowler: $selectedBowler, profile: profile, send: send, accountID: accountID, homeIsRoot: $homeIsRoot, showSeason: $showSeason, seasonSelection: $seasonSelection, onOpenNight: openNight)
                 .tabItem { Label("Tonight", systemImage: "house") }.tag(0)
-            ScoreboardView(store: store, selectedBowler: $selectedBowler).tabItem { Label("Score", systemImage: "figure.bowling") }.tag(1)
+            ScoreboardView(store: store, selectedBowler: $selectedBowler, onReturnToSeason: scoreSeasonOrigin == nil ? nil : returnToSeason).tabItem { Label("Score", systemImage: "figure.bowling") }.tag(1)
             LeagueView(send: send).tabItem { Label("League", systemImage: "trophy") }.tag(2)
             NavigationStack {
                 if let id = store.teamID {
@@ -135,9 +139,11 @@ struct SignedInApp: View {
                     Section { Link("BA4L on the web", destination: URL(string: ScorebookClient.origin)!) }
                 }.navigationTitle("Account")
             }.tabItem { Label("Account", systemImage: "person.crop.circle") }.tag(4)
-        }.tint(horizontalSizeClass == .regular && tab == 0 ? Color("BrandGold") : BA4LTheme.tint)
+        }.tint(horizontalSizeClass == .regular && tab == 0 && homeIsRoot && !showSeason ? Color("BrandGold") : BA4LTheme.tint)
             .modifier(NativeTabScrollBehavior(compact: horizontalSizeClass == .compact))
         }
+        }.onChange(of: tab) { old, new in
+            if old == 1 && new != 1 { scoreSeasonOrigin = nil }
         }.onChange(of: selectedBowler) { _, value in
             if let value { preferences.set(value, forKey: "selectedBowler") }
             else { preferences.removeObject(forKey: "selectedBowler") }
@@ -175,7 +181,13 @@ struct SignedInApp: View {
         guard session.userID == accountID else { throw ScorebookError.server("This account changed. Reopen this screen.") }
         return try await session.send(request)
     }
+    private func returnToSeason() {
+        seasonSelection = scoreSeasonOrigin
+        tab = 0
+        showSeason = true
+    }
     private func openNight(_ id: String) {
+        scoreSeasonOrigin = id
         Task {
             await store.start()
             if !store.canSwitchTeam { tab = 1; return }

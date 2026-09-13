@@ -13,6 +13,8 @@ struct ScoreboardView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ScaledMetric(relativeTo: .largeTitle) private var scoreSize = 64.0
     @Binding var selectedBowler: Int?
+    var embeddedInNavigation = false
+    var onReturnToSeason: (() -> Void)? = nil
     private var selected: Int { selectedBowler ?? 0 }
     @State private var teamExpanded = false
     @State private var showNewGame = false
@@ -29,7 +31,11 @@ struct ScoreboardView: View {
     private var complete: Bool { store.night.current.complete(selected) }
 
     var body: some View {
-        NavigationStack {
+        if embeddedInNavigation { scoreContent }
+        else { NavigationStack { scoreContent } }
+    }
+
+    private var scoreContent: some View {
             Group {
             if selectedBowler == nil {
                 List {
@@ -71,6 +77,12 @@ struct ScoreboardView: View {
             .navigationTitle("Score")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                if let onReturnToSeason {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(action: onReturnToSeason) { Label("Season", systemImage: "chevron.left") }
+                            .accessibilityIdentifier("backToSeason")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { sheetError = nil; showTeam = true } label: { Label("Team", systemImage: "person.2") }
                         .accessibilityIdentifier("teamButton")
@@ -111,7 +123,6 @@ struct ScoreboardView: View {
             .sheet(isPresented: $showMatch) { MatchSetupView(store: store) }
             .sheet(isPresented: $showScan) { ScanSheet(store: store, scanner: ScoreboardScanner(send: store.transport)) }
             .tint(BA4LTheme.tint)
-        }
     }
 
     @ViewBuilder

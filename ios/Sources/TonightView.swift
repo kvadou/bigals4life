@@ -21,15 +21,18 @@ struct TonightView: View {
     @Binding var selectedBowler: Int?
     let profile: TonightProfile?
     let send: SeasonTransport
-    let onScore: () -> Void
-    let onReview: () -> Void
+    let accountID: String
+    @Binding var homeIsRoot: Bool
+    @Binding var showSeason: Bool
+    @Binding var seasonSelection: String?
     let onOpenNight: (String) -> Void
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @StateObject private var liveDiscovery = LiveLaneDiscovery()
     @State private var watchingLive: LiveLaneListing?
     @Environment(\.scenePhase) private var scenePhase
-    @State private var showSeason = false
+    private enum Destination: Hashable { case score; case review(String) }
+    @State private var path: [Destination] = []
     @State private var showLiveLane = false
     @State private var availableWidth: CGFloat = 0
     @State private var season: SeasonResponse?
@@ -60,7 +63,7 @@ struct TonightView: View {
     private var teamSeries: Int { games.reduce(0) { total, game in total + participants.compactMap { game[$0] }.reduce(0, +) } }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if horizontalSizeClass == .regular && availableWidth >= 900 && !dynamicTypeSize.isAccessibilitySize {
                     HStack(alignment: .top, spacing: 24) {
@@ -88,7 +91,7 @@ struct TonightView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color("HomeBackground"), for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbarBackground(horizontalSizeClass == .regular ? Color("HomeBackground") : Color("BrandIvory"), for: .tabBar)
+            .toolbarBackground(Color("BrandIvory"), for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)
             .toolbar {
                 ToolbarItem(placement: .principal) {
@@ -107,6 +110,15 @@ struct TonightView: View {
                         .buttonStyle(.plain).accessibilityIdentifier("tonightSeason")
                 }
             }
+            .navigationDestination(for: Destination.self) { destination in
+                switch destination {
+                case .score:
+                    ScoreboardView(store: store, selectedBowler: $selectedBowler, embeddedInNavigation: true)
+                case .review(let id):
+                    ReviewView(nightID: id, accountID: accountID, send: send)
+                        .navigationBarTitleDisplayMode(.inline)
+                }
+            }
             .fullScreenCover(isPresented: $showLiveLane) { LiveLaneView(store: store, send: send) }
             .fullScreenCover(item: $watchingLive) { listing in
                 DiscoveredLiveLaneView(listing: listing, send: send)
@@ -123,12 +135,15 @@ struct TonightView: View {
             .onDisappear { liveDiscovery.stop() }
             .task { await refresh() }
             .sheet(isPresented: $showSeason) {
-                SeasonView(send: send, onOpenNight: { id in showSeason = false; onOpenNight(id) })
+                SeasonView(send: send, selection: $seasonSelection, onOpenNight: { id in showSeason = false; onOpenNight(id) })
                     .safeAreaInset(edge: .bottom) {
                         Button { showSeason = false } label: { Text("Done").frame(maxWidth: .infinity, minHeight: 44) }
                             .buttonStyle(.bordered).padding(.horizontal).background(.bar)
                     }
             }
+        }
+        .onChange(of: path.isEmpty && !showLiveLane && watchingLive == nil && !showSeason, initial: true) { _, isRoot in
+            homeIsRoot = isRoot
         }
     }
 
@@ -234,7 +249,7 @@ struct TonightView: View {
             }
             primaryAction
             if canReview {
-                Button("View scorecards") { onScore() }.frame(maxWidth: .infinity, minHeight: 44)
+                Button("View scorecards") { openScorecard() }.frame(maxWidth: .infinity, minHeight: 44)
             }
             Label(store.status, systemImage: store.pending ? "icloud.and.arrow.up" : store.error == nil ? "checkmark.icloud" : "exclamationmark.icloud")
                 .font(.caption).foregroundStyle(BA4LTheme.secondary)
@@ -295,7 +310,7 @@ struct TonightView: View {
         }
     }
     private var primaryAction: some View {
-        Button { canReview ? onReview() : onScore() } label: {
+        Button { canReview ? openReview() : openScorecard() } label: {
             HStack {
                 Text(canReview ? "Review the night" : scoreAction).fixedSize(horizontal: false, vertical: true)
                 if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 8); Image(systemName: "arrow.right") }
@@ -334,8 +349,8 @@ struct TonightView: View {
                 }
             } else { Text("Your choice stays with this account on this device.").font(.callout).foregroundStyle(BA4LTheme.secondary) }
             if !canReview {
-                Button { onReview() } label: { Label("Bowling Bro’ · review notes", systemImage: "text.bubble") }
-                    .disabled(store.teamID == nil).frame(minHeight: 44)
+                Button { openReview() } label: { Label("Bowling Bro’ · review notes", systemImage: "text.bubble") }
+                    .disabled(store.teamID == nil).frame(minHeight: 44).accessibilityIdentifier("tonightReviewNotes")
             }
         }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
             .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 16))
@@ -347,7 +362,7 @@ struct TonightView: View {
                 if index != 0 { Divider() }
                 let game = store.night.current
                 let score = completed ? games.compactMap { $0[index] }.reduce(0, +) : game.score(index)
-                Button { selectedBowler = index; onScore() } label: {
+                Button { selectedBowler = index; openScorecard() } label: {
                     LabeledContent {
                         Text(score.formatted()).font(.title3.bold().monospacedDigit()).foregroundStyle(.primary)
                     } label: {
@@ -372,7 +387,7 @@ struct TonightView: View {
                 if points.remaining > 0 { Text("\(formatted(points.remaining)) points await opponent scores.").font(.caption).foregroundStyle(BA4LTheme.secondary) }
             }
             if let score = result.teamSeries { LabeledContent("Team scratch series", value: score.formatted()) }
-            Button("Open \(result.title)") { onOpenNight(result.id) }.disabled(!store.canSwitchTeam).frame(minHeight: 44)
+            Button("Open \(result.title)") { openPreviousNight(result.id) }.disabled(!store.canSwitchTeam).frame(minHeight: 44)
         }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
             .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 16))
     }
@@ -384,6 +399,20 @@ struct TonightView: View {
         }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
             .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 16))
     }
+    private func openScorecard() { path.append(.score) }
+    private func openReview() {
+        guard let id = store.teamID else { return }
+        path.append(.review(id))
+    }
+    private func openPreviousNight(_ id: String) {
+        Task {
+            await store.start()
+            guard store.canSwitchTeam else { openScorecard(); return }
+            await store.openTeam(ScorebookClient.origin + "/season/" + id)
+            openScorecard()
+        }
+    }
+
     private func pointPair(_ values: [Double]) -> String { values[0] + values[1] == 0 ? "Open" : "\(formatted(values[0])) – \(formatted(values[1]))" }
 
     @MainActor private func refresh() async {

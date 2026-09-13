@@ -150,11 +150,12 @@ final class SeasonModel: ObservableObject {
 /// Collapses into a push-navigation list on iPhone; keeps weeks beside detail on iPad.
 struct SeasonView: View {
     @StateObject private var model: SeasonModel
-    @State private var selectedID: String?
+    @Binding private var selectedID: String?
     let onOpenNight: (String) -> Void
     private let send: SeasonTransport
-    init(send: @escaping SeasonTransport, onOpenNight: @escaping (String) -> Void) {
+    init(send: @escaping SeasonTransport, selection: Binding<String?>, onOpenNight: @escaping (String) -> Void) {
         _model = StateObject(wrappedValue: SeasonModel(send: send))
+        _selectedID = selection
         self.onOpenNight = onOpenNight
         self.send = send
     }
@@ -276,7 +277,7 @@ struct SeasonWeekDetail: View {
                     Text("Only participating bowlers count. Team totals wait for the whole team.").foregroundStyle(BA4LTheme.secondary)
                 }
                 Text(week.progressLabel).foregroundStyle(BA4LTheme.secondary)
-                Button { onOpenNight(week.id) } label: { Label("Open live scorebook", systemImage: "sportscourt") }
+                Button { onOpenNight(week.id) } label: { Label("Open live scorebook", systemImage: "sportscourt") }.accessibilityIdentifier("openSeasonScorebook")
             }
             Section("Frame-by-frame") {
                 ForEach(week.games) { game in
