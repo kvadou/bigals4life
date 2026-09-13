@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { OriginLink as Link } from "@/app/components/crumbs";
 import { Camera, Radio, Video, VideoOff } from "lucide-react";
 import { createLocalVideoTrack, Room, RoomEvent, Track, type LocalVideoTrack, type RemoteVideoTrack } from "livekit-client";
 import { Topbar } from "../components/topbar";

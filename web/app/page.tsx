@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Camera, ListPlus, Mic, Trophy } from "lucide-react";
-import Link from "next/link";
+import { OriginLink as Link } from "@/app/components/crumbs";
 import type { WeekSummary } from "@/lib/season";
 import { AccountBar, useMe } from "./account";
 import { Topbar } from "./components/topbar";
@@ -38,7 +38,7 @@ export default function Home() {
   const names = ["Doug", "Mustafa", "Kyle", "Pete"];
   return <main className="team-night">
     <Topbar right={<AccountBar me={me} nightId={week?.id ?? ""} role="" onClaimed={() => {}}/>}/>
-    <Crumbs items={[{ label: "Season", href: "/season" }, { label: week ? `Week ${week.week}` : "This week" }]}/>
+    <Crumbs items={[{ label: "Tonight" }]}/>
     <LiveDiscovery/>
     {error && <p className="photo-error" role="alert">{error}</p>}
     {weeks && !week && <section className="intro"><div><div className="eyebrow">NO GAMES YET</div><h1>First frame is <em>yours.</em></h1><p>Open the live scorebook and the week fills in here as games finish.</p></div><Link className="primary start-button" href="/night">Open the scorebook</Link></section>}

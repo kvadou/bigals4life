@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { withOrigin, safeOrigin } from "@/lib/navigation";
 import type { WeekSummary } from "@/lib/season";
 import { Topbar } from "../components/topbar";
 import { Crumbs } from "../components/crumbs";
@@ -14,7 +15,7 @@ export default function ReviewIndex() {
       const r = await fetch("/api/season", { cache: "no-store" }); const d = await r.json(); if (!r.ok) throw Error(d.error);
       const weeks = d.weeks as WeekSummary[];
       const latest = weeks[0];
-      if (latest) { window.location.replace(`/review/${latest.id}`); return; }
+      if (latest) { const origin = safeOrigin(new URLSearchParams(window.location.search).get("from")); window.location.replace(origin ? withOrigin(`/review/${latest.id}`, origin) : `/review/${latest.id}`); return; }
       setState("empty");
     } catch { setState("error"); }
   })(); }, []);

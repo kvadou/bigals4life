@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { OriginLink as Link } from "@/app/components/crumbs";
 import { BOWLERS, type PointsSummary, type WeekSummary } from "@/lib/season";
 
 export const fmt = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1).replace(".5", "½");

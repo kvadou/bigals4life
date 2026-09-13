@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { CalendarDays, ChevronRight, CircleDot } from "lucide-react";
 import { Topbar } from "../components/topbar";
 import { Crumbs } from "../components/crumbs";
-import Link from "next/link";
+import { OriginLink as Link } from "@/app/components/crumbs";
 import { fmt, title } from "../components/format";
 import { BOWLERS, type WeekSummary } from "@/lib/season";
 

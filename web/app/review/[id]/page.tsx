@@ -1,6 +1,6 @@
 "use client";
 import { use, useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { OriginLink as Link } from "@/app/components/crumbs";
 import { ArrowUpRight, ChevronDown, ChevronRight, Mic, X } from "lucide-react";
 import { Topbar } from "../../components/topbar";
 import { Crumbs } from "../../components/crumbs";

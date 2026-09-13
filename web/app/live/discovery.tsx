@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { OriginLink as Link } from "@/app/components/crumbs";
 import { Radio, ArrowUpRight } from "lucide-react";
 import { z } from "zod";
 import "./discovery.css";

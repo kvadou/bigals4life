@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import { OriginLink as Link } from "@/app/components/crumbs";
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Check, CircleDot, History, RotateCcw, X } from "lucide-react";
@@ -83,7 +83,7 @@ export default function Home() {
       <aside className="side-panel score-details">
       <section className="team-summary"><h3>Team game {night.game}</h3><strong className="team-total">{states.reduce((a,s)=>a+s.score,0)}</strong><p>Score so far · possible {teamMax.toLocaleString()}</p></section>
       <button className="secondary next-game" onClick={()=>setModal("new")} disabled={!ready}>Start next game <ArrowUpRight size={17}/></button>
-      {shared&&id?<a className="secondary history-button" href={`/season/${id}`}><History size={17}/> This week’s scorecards</a>:<button className="secondary history-button" onClick={()=>setModal("history")}><History size={17}/> Game history</button>}
+      {shared&&id?<Link className="secondary history-button" href={`/season/${id}`}><History size={17}/> This week’s scorecards</Link>:<button className="secondary history-button" onClick={()=>setModal("history")}><History size={17}/> Game history</button>}
       <details className="night-setup"><summary>Night setup & team sharing</summary>
     <div className="sharing-bar"><button className="secondary" disabled={!ready} onClick={()=>void share()}>{shared?"Share team link":"Save & share with team"}</button><span>{shared?"Phones with this link stay in sync.":"Saves it for the whole team."}</span>{shared&&<a className="text-button" href="/night?new=1"><CircleDot size={15}/> Start a new night</a>}</div>
       <PrebowlPanel night={night} setNight={setNight} disabled={!ready}/><MatchPanel night={night} setNight={setNight} disabled={!ready}/><TargetsPanel night={night}/>

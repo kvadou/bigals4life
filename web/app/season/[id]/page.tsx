@@ -1,7 +1,7 @@
 "use client";
 import { use, useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
-import Link from "next/link";
+import { OriginLink as Link } from "@/app/components/crumbs";
 import { nightSchema, type Night } from "@/lib/scorebook";
 import { BOWLERS, localDate, pointsSummary, summarizeWeek, type WeekSummary } from "@/lib/season";
 import { Topbar } from "../../components/topbar";
