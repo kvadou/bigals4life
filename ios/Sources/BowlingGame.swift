@@ -346,6 +346,7 @@ final class ScorebookStore: ObservableObject {
     private let client: ScorebookClient
     private let defaults: UserDefaults
     private let directory: URL
+    private let ephemeral: Bool
     private var generation = 0
     private var needsLoad = false
     private var damagedBackup = false
@@ -356,13 +357,14 @@ final class ScorebookStore: ObservableObject {
     var shareURL: URL? { teamID.flatMap { URL(string: ScorebookClient.origin + "/?night=" + $0) } }
     var canMigrate: Bool { canEdit && teamID == nil && night == Night() && !legacy.isEmpty }
 
-    init(client: ScorebookClient = ScorebookClient(), defaults: UserDefaults = .standard, directory: URL? = nil) {
-        self.client = client; self.defaults = defaults
+    init(client: ScorebookClient = ScorebookClient(), defaults: UserDefaults = .standard, directory: URL? = nil, ephemeral: Bool = false) {
+        self.client = client; self.defaults = defaults; self.ephemeral = ephemeral
         // AppRoot supplies an account-scoped directory and defaults suite for signed-in users.
         self.directory = directory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Scorebooks", isDirectory: true)
     }
     private func backupURL(_ id: String?) -> URL { directory.appendingPathComponent((id ?? "local") + ".json") }
     private func persist(_ value: Night, id: String?, revision: Int, pending: Bool, cachedRole: ScorebookRole?, offlineQueue: Bool = false, attemptedNight: Night? = nil) throws {
+        guard !ephemeral else { return }
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let backup = ScorebookBackup(night: try value.validated(), id: id, revision: revision, pending: pending, cachedRole: cachedRole, offlineQueue: offlineQueue, attemptedNight: attemptedNight)
@@ -468,7 +470,7 @@ final class ScorebookStore: ObservableObject {
                 try validateBackup(saved, id: id)
                 if saved.pending {
                     teamID = id; restore(saved)
-                    defaults.set(id, forKey: "strike-ceiling.shared-team.v2")
+                    if !ephemeral { defaults.set(id, forKey: "strike-ceiling.shared-team.v2") }
                     status = offlineQueue ? "Offline scores recovered. Keep scoring or retry sync." : "Unsaved edit recovered"
                     error = offlineQueue ? nil : "This team’s backed-up edit needs review or retry."
                     return
@@ -478,7 +480,7 @@ final class ScorebookStore: ObservableObject {
             try persist(result.state, id: id, revision: result.revision, pending: false, cachedRole: result.role)
             role = result.role; teamID = id; night = result.state; revision = result.revision
             pending = false; needsLoad = false; offlineQueue = false; attemptedNight = nil
-            defaults.set(id, forKey: "strike-ceiling.shared-team.v2")
+            if !ephemeral { defaults.set(id, forKey: "strike-ceiling.shared-team.v2") }
             error = nil; status = "Saved to team"
         } catch { self.error = error.localizedDescription }
     }
@@ -492,7 +494,7 @@ final class ScorebookStore: ObservableObject {
             let id = result.id!.lowercased()
             role = result.role
             teamID = id; revision = result.revision; night = result.state
-            defaults.set(id, forKey: "strike-ceiling.shared-team.v2")
+            if !ephemeral { defaults.set(id, forKey: "strike-ceiling.shared-team.v2") }
             try persist(night, id: id, revision: revision, pending: false, cachedRole: role)
             error = nil; status = "Saved to team"
         } catch {

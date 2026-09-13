@@ -7,7 +7,9 @@ import { createLocalVideoTrack, Room, RoomEvent, Track, type LocalVideoTrack, ty
 import { Topbar } from "../components/topbar";
 import { Crumbs } from "../components/crumbs";
 import { liveConnection } from "./connection";
-import LiveScores from "./live-scores";
+import LiveScores, { type LiveScoreContext } from "./live-scores";
+import LiveDiscovery from "./discovery";
+import { BOWLERS } from "@/lib/season";
 import "./live.css";
 
 type Tile = { id: string; name: string; track: LocalVideoTrack | RemoteVideoTrack; local: boolean };
@@ -35,6 +37,7 @@ function CameraTile({ tile }: { tile: Tile }) {
 }
 
 export default function LiveLane({ scorebookId }: { scorebookId: string }) {
+  const [context, setContext] = useState<LiveScoreContext | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [mode, setMode] = useState<"watch" | "publish">("watch");
   const [tiles, setTiles] = useState<Tile[]>([]);
@@ -56,7 +59,7 @@ export default function LiveLane({ scorebookId }: { scorebookId: string }) {
   };
   useEffect(() => {
     active.current = true;
-    setStatus("idle"); setTiles([]); setError(""); setMode("watch");
+    setStatus("idle"); setTiles([]); setError(""); setMode("watch"); setContext(null);
     const hide = () => { release(); setStatus("idle"); setTiles([]); };
     window.addEventListener("pagehide", hide);
     return () => { active.current = false; window.removeEventListener("pagehide", hide); release(); };
@@ -141,18 +144,22 @@ export default function LiveLane({ scorebookId }: { scorebookId: string }) {
     }
   };
 
+  const pre = context?.night.prebowl;
+  const contextTitle = pre ? `${pre.bowlers.map(i => BOWLERS[i]).join(" & ")} · Pre-bowl week ${pre.week}` : context?.night.match ? `League week ${context.night.match.week}` : "Practice camera";
   return <main className={`live-page${status === "connected" || status === "reconnecting" ? " live-active" : ""}`}>
     <Topbar/>
     <Crumbs items={[{ label: "Scorebook", href: valid ? scorebookLink : "/night" }, { label: "Live Lane" }]}/>
     <section className="intro"><div><div className="eyebrow"><Radio size={14} aria-hidden="true"/> LIVE LANE</div><h1>The team, <em>at the lane.</em></h1><p>Watch a teammate’s camera or share the view from your lane.</p></div></section>
+    {status === "idle" && <LiveDiscovery excludeId={scorebookId}/>}
     {!valid ? <section className="live-empty"><VideoOff size={32} aria-hidden="true"/><h2>Open a scorebook first</h2><p>Live Lane needs a shared scorebook so the right teammates can join.</p><Link className="primary" href="/night">Open scorebook</Link></section> : <>
+      {context ? <section className="live-context" aria-label="Session context"><h2>{contextTitle}</h2><p>{pre ? "These scores belong to this pre-bowl’s league week. Watching does not change the scorebook." : context.night.match ? "Watch this league scorebook with the team." : "This scorebook has no league week attached. If you’re pre-bowling, set the week before sharing your camera."}</p>{!pre && !context.night.match && <Link href={scorebookLink}>Set up a pre-bowl in the scorebook ›</Link>}</section> : <p className="live-context-loading" role="status">Camera sharing is available once the scorebook and your edit access are verified.</p>}
       <section className="live-controls" aria-label="Live connection">
         <div role="status" aria-live="polite"><strong>{status === "joining" ? "Joining…" : status === "reconnecting" ? "Reconnecting…" : status === "connected" ? mode === "publish" ? "Your camera is shared" : "Watching live" : "Ready when you are"}</strong><p>{status === "reconnecting" ? "Keep this page open while the connection recovers." : "Video only. Your microphone stays off."}</p></div>
-        <div className="live-actions">{status === "idle" ? <><button className="primary" onClick={() => void join("watch")}><Video size={18} aria-hidden="true"/> Join to watch</button><button className="secondary" onClick={() => void join("publish")}><Camera size={18} aria-hidden="true"/> Share my camera</button></> : <button className="secondary" onClick={leave}>{status === "joining" ? "Cancel" : "Leave Live Lane"}</button>}</div>
+        <div className="live-actions">{status === "idle" ? <><button className="primary" onClick={() => void join("watch")}><Video size={18} aria-hidden="true"/> Join to watch</button><button className="secondary" disabled={!context?.canPublish} onClick={() => void join("publish")}><Camera size={18} aria-hidden="true"/> {pre ? "Start live pre-bowl" : context?.night.match ? "Share league camera" : "Share practice camera"}</button></> : <button className="secondary" onClick={leave}>{status === "joining" ? "Cancel" : "Leave Live Lane"}</button>}</div>
       </section>
       {error && <div className="live-error" role="alert"><p>{error}</p></div>}
-      <div className="live-stage"><div className="live-views">{tiles.length > 0 ? <section className="live-grid" aria-label="Live cameras">{tiles.map(tile => <CameraTile key={tile.id} tile={tile}/>)}</section> : <section className="live-empty"><Video size={36} aria-hidden="true"/><h2>{status === "idle" ? "A shared view of tonight" : status === "joining" ? "Connecting to the team" : "Waiting for a camera"}</h2><p>{status === "idle" ? "Join to watch without turning on your camera. To broadcast, choose Share my camera and allow camera access." : "A teammate’s video appears here when they share their camera."}</p></section>}
-      </div><LiveScores scorebookId={scorebookId}/></div>
+      <div className="live-stage"><div className="live-views">{tiles.length > 0 ? <section className="live-grid" aria-label="Live cameras">{tiles.map(tile => <CameraTile key={tile.id} tile={tile}/>)}</section> : <section className="live-empty"><Video size={36} aria-hidden="true"/><h2>{status === "idle" ? "A shared view of tonight" : status === "joining" ? "Connecting to the team" : "Waiting for a camera"}</h2><p>{status === "idle" ? "Join to watch without turning on your camera. Start a camera to let your teammates watch from home." : "A teammate’s video appears here when they share their camera."}</p></section>}
+      </div><LiveScores scorebookId={scorebookId} onContext={setContext}/></div>
       <p className="live-note">Keep the publishing device awake and this page open. Leaving stops your camera and disconnects you.</p>
       <Link className="text-button live-back" href={scorebookLink}>Back to this scorebook ›</Link>
     </>}

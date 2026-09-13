@@ -7,11 +7,12 @@ import { BOWLERS } from "@/lib/season";
 
 class ScoreLoadError extends Error {}
 
-type Snapshot = { id: string; night: Night; at: number };
+export type LiveScoreContext = { night: Night; canPublish: boolean };
+type Snapshot = { id: string; night: Night; at: number; canPublish: boolean };
 type Failure = { id: string; message: string };
 
 /** Read-only authorized scorebook polling. Never writes scores or uses a stale night's data. */
-export default function LiveScores({ scorebookId }: { scorebookId: string }) {
+export default function LiveScores({ scorebookId, onContext }: { scorebookId: string; onContext?: (context: LiveScoreContext | null) => void }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [retry, setRetry] = useState(0);
@@ -31,7 +32,7 @@ export default function LiveScores({ scorebookId }: { scorebookId: string }) {
         const data = await response.json();
         const parsed = nightSchema.safeParse(data.state);
         if (!parsed.success) throw new ScoreLoadError("The latest scores could not be read. Try refreshing.");
-        if (!abort.signal.aborted) { setSnapshot({ id: scorebookId, night: parsed.data, at: Date.now() }); setFailure(null); }
+        if (!abort.signal.aborted) { setSnapshot({ id: scorebookId, night: parsed.data, at: Date.now(), canPublish: data.role === "owner" || data.role === "editor" }); setFailure(null); }
       } catch (cause) {
         if (!abort.signal.aborted) setFailure({ id: scorebookId, message: cause instanceof ScoreLoadError ? cause.message : "Scores could not refresh. Check your connection." });
       } finally {
@@ -44,6 +45,9 @@ export default function LiveScores({ scorebookId }: { scorebookId: string }) {
 
   const current = snapshot?.id === scorebookId ? snapshot : null;
   const error = failure?.id === scorebookId ? failure.message : null;
+  useEffect(() => {
+    onContext?.(current && !error ? { night: current.night, canPublish: current.canPublish } : null);
+  }, [current, error, onContext]);
   const rows = current?.night.rolls.map((rolls, index) => {
     const state = analyze(rolls), final = current.night.finals?.[index];
     const playing = !current.night.prebowl || current.night.prebowl.bowlers.includes(index);

@@ -26,6 +26,9 @@ struct TonightView: View {
     let onOpenNight: (String) -> Void
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @StateObject private var liveDiscovery = LiveLaneDiscovery()
+    @State private var watchingLive: LiveLaneListing?
+    @Environment(\.scenePhase) private var scenePhase
     @State private var showSeason = false
     @State private var showLiveLane = false
     @State private var availableWidth: CGFloat = 0
@@ -105,7 +108,19 @@ struct TonightView: View {
                 }
             }
             .fullScreenCover(isPresented: $showLiveLane) { LiveLaneView(store: store, send: send) }
-            .refreshable { await refresh() }
+            .fullScreenCover(item: $watchingLive) { listing in
+                DiscoveredLiveLaneView(listing: listing, send: send)
+            }
+            .refreshable { await refresh(); await liveDiscovery.refresh(send: send) }
+            .task(id: scenePhase == .active && watchingLive?.id == nil && !showLiveLane && !showSeason) {
+                liveDiscovery.stop()
+                guard scenePhase == .active, watchingLive == nil, !showLiveLane, !showSeason else { return }
+                while !Task.isCancelled {
+                    await liveDiscovery.refresh(send: send)
+                    do { try await Task.sleep(for: .seconds(15)) } catch { break }
+                }
+            }
+            .onDisappear { liveDiscovery.stop() }
             .task { await refresh() }
             .sheet(isPresented: $showSeason) {
                 SeasonView(send: send, onOpenNight: { id in showSeason = false; onOpenNight(id) })
@@ -126,12 +141,31 @@ struct TonightView: View {
                 Text(profile?.greeting ?? "Your team. Your scorebook.")
                     .font(.subheadline).foregroundStyle(Color("BrandGold"))
             }
+            ForEach(liveDiscovery.sessions) { live in
+                Button { watchingLive = live } label: {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label(live.title, systemImage: "video.fill").font(.headline)
+                        Text(live.bowlers.joined(separator: ", ")).font(.subheadline)
+                        HStack {
+                            Text("\(live.cameraCount) live camera\(live.cameraCount == 1 ? "" : "s")").font(.caption)
+                            Spacer()
+                            Label("Watch live", systemImage: "arrow.up.right").font(.headline)
+                        }
+                    }.frame(maxWidth: .infinity, alignment: .leading).padding(18)
+                        .foregroundStyle(Color("BrandForest"))
+                        .background(Color("BrandGoldSurface"), in: RoundedRectangle(cornerRadius: 18))
+                }.buttonStyle(.plain).accessibilityIdentifier("watchLive-" + live.scorebookId)
+            }
+            if let message = liveDiscovery.message {
+                Label(message, systemImage: "video.slash").font(.caption).foregroundStyle(Color("OnForest"))
+                    .accessibilityIdentifier("liveDiscoveryMessage")
+            }
             Button { showLiveLane = true } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "video.fill")
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Live Lane").font(.headline)
-                        Text("Camera preview · early access").font(.caption)
+                        Text("Share a lane camera or watch the team").font(.caption)
                     }
                     Spacer(minLength: 8)
                     Image(systemName: "arrow.up.right")

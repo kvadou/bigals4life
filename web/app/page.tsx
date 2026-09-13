@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { WeekSummary } from "@/lib/season";
 import { AccountBar, useMe } from "./account";
 import { Topbar } from "./components/topbar";
+import LiveDiscovery from "./live/discovery";
 import { Crumbs } from "./components/crumbs";
 import { GameRows, MatchHero, fmt, isWeekFinished } from "./components/match-hero";
 
@@ -38,6 +39,7 @@ export default function Home() {
   return <main className="team-night">
     <Topbar right={<AccountBar me={me} nightId={week?.id ?? ""} role="" onClaimed={() => {}}/>}/>
     <Crumbs items={[{ label: "Season", href: "/season" }, { label: week ? `Week ${week.week}` : "This week" }]}/>
+    <LiveDiscovery/>
     {error && <p className="photo-error" role="alert">{error}</p>}
     {weeks && !week && <section className="intro"><div><div className="eyebrow">NO GAMES YET</div><h1>First frame is <em>yours.</em></h1><p>Open the live scorebook and the week fills in here as games finish.</p></div><Link className="primary start-button" href="/night">Open the scorebook</Link></section>}
     {!weeks && !error && <p className="score-note" role="status">Loading the latest night…</p>}

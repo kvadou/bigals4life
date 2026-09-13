@@ -42,7 +42,7 @@ test("Live Lane verifies membership, camera grants and origin without exposing k
  delete process.env.LIVEKIT_API_SECRET;assert((await POST(req())).status,503,"Missing configuration");
  console.log("Live token permission checks passed");
  `;
- const child=Bun.spawn(["bun","-e",script],{cwd:process.cwd(),stdout:"pipe",stderr:"pipe"});
+ const child=Bun.spawn(["bun","-e",script],{cwd:new URL("..", import.meta.url).pathname,stdout:"pipe",stderr:"pipe"});
  const [out,err,code]=await Promise.all([new Response(child.stdout).text(),new Response(child.stderr).text(),child.exited]);
  expect(code,err).toBe(0);expect(out).toContain("Live token permission checks passed");
 });

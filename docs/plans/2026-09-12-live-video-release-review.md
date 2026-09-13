@@ -12,14 +12,22 @@ Token expiry does not terminate an already-connected participant. The supplied c
 
 The previously pending proxy change `5c53ec5` also remains in the unpushed history: only `/ba4l-icon.svg`, `/ba4l-mark.svg`, and `/apple-touch-icon.png` may load before sign-in. Other routes remain gated.
 
+## Pre-bowl discovery addition
+
+`web/app/api/live/sessions/route.ts` and `web/lib/live-discovery.ts` add read-only private discovery. Identity is required even when video is unconfigured. Each candidate scorebook requires owner/editor/viewer access before participant or scorebook lookup. Only unmuted camera tracks produce a live listing. Names and week derive from validated scorebook pre-bowl metadata, never participant-provided names or a claim of visual identification. No participant identity, token, or provider metadata is returned. Requests are limited per account and room lookups bounded.
+
+The home screen Watch live link opens the listed scorebook. Native viewing uses an isolated scorebook so it does not replace the scoring tab. Practice has no league week unless the book is explicitly configured. Discovery failure removes old LIVE badges. This addition has the same tier1 review requirement as the token route.
+
 ## Evidence
 
 - LiveKit project p_a6czbdarrl2 credentials validated by read-only room listing. No secrets printed.
 - A disposable cloud room transmitted synthetic solid-color video from one participant to another. Receiver obtained a frame. Viewer publish and actual synthetic microphone-track publish were both rejected. The disposable room was deleted afterward. No camera/audio from users was recorded or transmitted in tests.
 - Focused token tests and independent code review cover anonymous access, public-link rejection, membership, roles, origin, invalid IDs/modes, room override, rate limit, missing configuration and grants.
-- Web unit/lifecycle suite: 72 tests, 59,613 assertions. Final production build passed.
+- Web unit/lifecycle suite: 73 tests, 59,615 assertions after pre-bowl discovery. Final production build passed.
 - Responsive browser tests: 21 checks at 320/390/768/1440 and landscape. Actual cloud video decoded alongside scores. No automatic camera requests; access failure, cancellation, stale scores, roster ordering, zero totals and Leave cleanup checked. Screenshots inspected. [runtime-tested]
 - Native simulator build passed with LiveKit 2.16.0 and locked dependencies. Native test runner passed, including 201 context assertions. iPhone and iPad UI failure/retry/leave checks passed. Signed build 8 archive completed; not uploaded. Native hardware broadcasting still requires field verification.
+
+Pre-bowl extension: 28 additional browser checks passed, plus iPhone/iPad discovery and correct-book navigation checks. The full native suite includes in-memory viewer persistence and cancellation tests. Signed build 8 was re-archived with these final sources, not uploaded. See `2026-09-12-live-prebowl.md`.
 
 ## Release steps after review
 

@@ -156,3 +156,108 @@ struct LiveLaneView: View {
         }
     }
 }
+
+struct LiveLaneListing: Decodable, Identifiable {
+    let scorebookId: String
+    let kind: String
+    let week: Int?
+    let bowlers: [String]
+    let cameraCount: Int
+    var id: String { scorebookId }
+    var title: String {
+        let label = kind == "prebowl" ? "Live pre-bowl" : kind == "league" ? "Live league night" : "Live practice"
+        return week.map { "\(label) · Week \($0)" } ?? label
+    }
+}
+
+@MainActor final class LiveLaneDiscovery: ObservableObject {
+    struct Response: Decodable { let sessions: [LiveLaneListing]; let configured: Bool }
+    @Published private(set) var sessions: [LiveLaneListing] = []
+    @Published private(set) var message: String?
+    @Published private(set) var checking = false
+    private var generation = 0
+    func stop() { generation += 1; checking = false; sessions = []; message = nil }
+    func refresh(send: SeasonTransport) async {
+        generation += 1
+        let attempt = generation
+        checking = true
+        do {
+            let request = URLRequest(url: URL(string: ScorebookClient.origin + "/api/live/sessions")!, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 12)
+            let (data, response) = try await send(request)
+            guard attempt == generation, !Task.isCancelled else { return }
+            guard (200..<300).contains(response.statusCode) else { throw ScorebookError.invalidData }
+            let result = try JSONDecoder().decode(Response.self, from: data)
+            // Never retain old LIVE badges after a failed or disabled discovery check.
+            sessions = result.configured ? result.sessions.filter { UUID(uuidString: $0.scorebookId) != nil && $0.cameraCount > 0 } : []
+            message = result.configured ? (sessions.isEmpty ? "No team cameras are live right now." : nil) : "Team live video is being set up."
+        } catch {
+            guard attempt == generation, !Task.isCancelled else { return }
+            sessions = []
+            message = "Couldn’t check live cameras. Pull to refresh or try again shortly."
+        }
+        if attempt == generation { checking = false }
+    }
+}
+
+/// Owns one in-memory scorebook for the lifetime of this viewer. Neither scores
+/// nor selected-night preferences are persisted, including late async results.
+@MainActor final class DiscoveredLaneModel: ObservableObject {
+    let store: ScorebookStore
+    @Published private(set) var ready = false
+    @Published private(set) var loading = false
+    @Published private(set) var error: String?
+    private var closed = false
+    private let bookID: String
+    init(bookID: String, send: @escaping SeasonTransport) {
+        self.bookID = bookID
+        let name = "com.dougkvamme.BA4L.live-view.\(UUID().uuidString)"
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(name, isDirectory: true)
+        store = ScorebookStore(client: ScorebookClient(send: { request in
+            guard (request.httpMethod ?? "GET") == "GET" else { throw ScorebookError.server("This is a viewing scorebook.") }
+            return try await send(request)
+        }), defaults: UserDefaults(suiteName: name)!, directory: directory, ephemeral: true)
+    }
+    func close() { closed = true }
+    func load() async {
+        guard !loading, !closed else { return }
+        loading = true; error = nil
+        await store.start()
+        await store.openTeam(ScorebookClient.origin + "/?night=" + bookID)
+        guard !Task.isCancelled, !closed else { loading = false; return }
+        ready = store.teamID == bookID && store.error == nil
+        if !ready { error = "This live scorebook could not be opened. Check your connection and team access, then try again." }
+        loading = false
+    }
+}
+
+/// Watching never switches the scoring tab or overwrites its in-progress edits.
+struct DiscoveredLiveLaneView: View {
+    let listing: LiveLaneListing
+    let send: SeasonTransport
+    @StateObject private var model: DiscoveredLaneModel
+    @Environment(\.dismiss) private var dismiss
+    init(listing: LiveLaneListing, send: @escaping SeasonTransport) {
+        self.listing = listing; self.send = send
+        _model = StateObject(wrappedValue: DiscoveredLaneModel(bookID: listing.scorebookId, send: send))
+    }
+    var body: some View {
+        Group {
+            if model.ready && model.store.teamID == listing.scorebookId {
+                SharedLiveLaneView(store: model.store, bookID: listing.scorebookId, intent: .automatic, send: send)
+            } else {
+                NavigationStack {
+                    VStack(spacing: 20) {
+                        Text(listing.title).font(.title2.bold())
+                        if model.loading { ProgressView("Opening this scorebook…") }
+                        if let error = model.error {
+                            Text(error).multilineTextAlignment(.center).foregroundStyle(.secondary)
+                            Button("Try again") { Task { await model.load() } }.buttonStyle(.borderedProminent).controlSize(.large)
+                        }
+                    }.padding().frame(maxWidth: .infinity, maxHeight: .infinity).background(Color("BrandIvory"))
+                        .navigationTitle("Watch the team").navigationBarTitleDisplayMode(.inline)
+                        .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { model.close(); dismiss() }.frame(minHeight: 44) } }
+                }
+            }
+        }.task { await model.load() }.onDisappear { model.close() }
+    }
+}

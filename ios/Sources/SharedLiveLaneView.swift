@@ -118,9 +118,9 @@ struct SharedLiveLaneView: View {
                     Text("Only members of this scorebook can join. Shared video uses no microphone.")
                         .foregroundStyle(.secondary)
                     TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                        let context = LiveLaneContext.resolve(at: timeline.date, intent: intent)
-                        Text(context.title).font(.headline)
-                        Text(context.explanation).font(.caption).foregroundStyle(.secondary)
+                        let context = LiveLaneContext.resolve(at: timeline.date, intent: sessionIntent)
+                        Text(context.title + ((store.night.prebowl?.week ?? store.night.match?.week).map { " · Week \($0)" } ?? "")).font(.headline)
+                        Text(store.night.prebowl != nil ? "Bowling ahead of league night. Scores stay attached to this pre-bowl’s week." : "Watch with the team. Scores update from this shared scorebook.").font(.caption).foregroundStyle(.secondary)
                         if let room = session.room {
                             Text(connectionLabel(room.connectionState)).font(.subheadline).foregroundStyle(.secondary)
                             let cameras = tracks(in: room)
@@ -149,8 +149,8 @@ struct SharedLiveLaneView: View {
                             Button("Join live video", systemImage: "arrow.clockwise") { join(publish: false) }
                                 .buttonStyle(.borderedProminent).controlSize(.large)
                         }
-                        if store.role?.allowsWrite == true && !session.publishing {
-                            Button("Publish this camera", systemImage: "video.badge.plus") { join(publish: true) }
+                        if store.canEdit && store.error == nil && (store.role == .owner || store.role == .editor) && !session.publishing {
+                            Button(publishTitle, systemImage: "video.badge.plus") { join(publish: true) }
                                 .buttonStyle(.bordered).controlSize(.large).accessibilityIdentifier("publishLaneCamera")
                         }
                         if session.publishing {
@@ -161,7 +161,7 @@ struct SharedLiveLaneView: View {
                     GroupBox("Shared scorebook · Game \(store.night.game)") {
                         VStack(spacing: 10) {
                             ForEach(Night.names.indices, id: \.self) { index in
-                                HStack { Text(Night.names[index]); Spacer(); Text("\(store.night.finals?[index] ?? store.night.current.bowling(index).settledScore)").monospacedDigit() }
+                                HStack { Text(Night.names[index]); Spacer(); Text(scoreLabel(index)).monospacedDigit() }
                             }
                             Text("Scores come from your shared scorebook, not video detection.").font(.caption).foregroundStyle(.secondary)
                         }.padding(.top, 8)
@@ -183,6 +183,18 @@ struct SharedLiveLaneView: View {
             .onChange(of: scenePhase) { _, phase in if phase == .background { leave() } }
             .onChange(of: store.teamID) { _, id in if id != bookID { leave(); dismiss() } }
             .onDisappear { leave() }
+    }
+    // The room is bound to this loaded scorebook. Its competition metadata
+    // takes precedence over a stale local context picker or today's weekday.
+    private var sessionIntent: LiveLaneContext.Intent {
+        store.night.prebowl != nil ? .prebowl : store.night.match != nil ? .league : .practice
+    }
+    private var publishTitle: String {
+        sessionIntent == .prebowl ? "Start live pre-bowl" : sessionIntent == .league ? "Start live league night" : "Start live practice"
+    }
+    private func scoreLabel(_ index: Int) -> String {
+        if let prebowl = store.night.prebowl, !prebowl.bowlers.contains(index) { return "Sitting out" }
+        return "\(store.night.finals?[index] ?? store.night.current.bowling(index).settledScore)"
     }
     private func join(publish: Bool) {
         joinTask?.cancel()
