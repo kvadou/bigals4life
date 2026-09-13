@@ -3,12 +3,13 @@
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useId, useRef, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { BrandMark } from "./brand-mark";
-import { BroGlyph } from "./bro-mark";
 
 /** A single set of section and account controls, disclosed when space is tight. */
 export function Topbar({ right }: { right?: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
   const navigationId = useId();
   const toggle = useRef<HTMLButtonElement>(null);
   return <header className="topbar" onKeyDown={event => {
@@ -21,17 +22,19 @@ export function Topbar({ right }: { right?: ReactNode }) {
     <button ref={toggle} type="button" className="nav-toggle" aria-expanded={open} aria-controls={navigationId} onClick={() => setOpen(value => !value)}>
       {open ? <X size={19} aria-hidden="true"/> : <Menu size={19} aria-hidden="true"/>}{open ? "Close" : "Menu"}
     </button>
-    <nav id={navigationId} className="topbar-right" data-open={open} aria-label="Sections" onClick={event => {
+    <nav id={navigationId} className="topbar-right command-shell" data-open={open} aria-label="Sections" onClick={event => {
       // Account actions can open a modal on desktop before the viewport narrows.
       const target = event.target as HTMLElement;
       if (target.closest("button") && !target.closest("dialog")) setOpen(true);
     }}>
-      <Link className="league-tag" href="/studio" onClick={() => setOpen(false)}><span/> LIVE & PRACTICE</Link>
-      <Link className="league-tag" href="/season" onClick={() => setOpen(false)}><span/> SEASON</Link>
-      <Link className="league-tag" href="/league" onClick={() => setOpen(false)}><span/> STANDINGS</Link>
-      <Link className="league-tag" href="/records" onClick={() => setOpen(false)}><span/> RECORDS</Link>
-      <Link className="league-tag bro" href="/review" onClick={() => setOpen(false)}><span/><BroGlyph size={13} color="#2d5139"/> BRO’</Link>
-      {right}
+      <div className="command-links">
+        <Link className={pathname === "/" ? "active" : ""} href="/" onClick={() => setOpen(false)}>Tonight</Link>
+        <Link className={pathname.startsWith("/night") ? "active" : ""} href="/night" onClick={() => setOpen(false)}>Score</Link>
+        <Link className={pathname.startsWith("/league") || pathname.startsWith("/records") ? "active" : ""} href="/league" onClick={() => setOpen(false)}>League</Link>
+        <Link className={pathname.startsWith("/review") ? "active" : ""} href="/review" onClick={() => setOpen(false)}>Review</Link>
+      </div>
+      <Link className={`command-live ${pathname.startsWith("/studio") ? "active" : ""}`} href="/studio" onClick={() => setOpen(false)}><span/> Live Lane</Link>
+      <div className="command-account">{right}</div>
     </nav>
   </header>;
 }
