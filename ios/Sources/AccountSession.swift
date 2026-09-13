@@ -48,7 +48,6 @@ final class AccountSession: ObservableObject {
                 kSecClass as String: kSecClassGenericPassword,
                 kSecAttrService as String: "com.dougkvamme.StrikeCeiling.account.v1",
                 kSecAttrAccount as String: account,
-                kSecAttrSynchronizable as String: false
             ]
             return TokenStorage(read: {
                 var search = query
@@ -60,7 +59,7 @@ final class AccountSession: ObservableObject {
                 guard status == errSecSuccess, let data = item as? Data else { throw Failure.storage }
                 return data
             }, write: { data in
-                let attributes: [String: Any] = [kSecValueData as String: data, kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly]
+                let attributes: [String: Any] = [kSecValueData as String: data, kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly, kSecAttrSynchronizable as String: false]
                 let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
                 if status == errSecItemNotFound {
                     var new = query
@@ -143,7 +142,9 @@ final class AccountSession: ObservableObject {
                 publish(saved)
             }
         } catch {
-            self.error = "Could not restore your secure sign-in. Please sign in again."
+            // A missing or stale Keychain record should leave a clean sign-in screen.
+            // The next successful sign-in replaces it; no account data is published.
+            self.error = nil
             try? self.storage.remove()
         }
     }

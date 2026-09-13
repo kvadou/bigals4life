@@ -23,7 +23,7 @@ struct SignInView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var code = ""
-    @State private var usePassword = false
+    @State private var usePassword = true
     var body: some View {
         NavigationStack {
             Form {
@@ -33,16 +33,17 @@ struct SignInView: View {
                 }
                 Section("Your account") {
                     TextField("Email", text: $email).textContentType(.emailAddress).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
-                    Toggle("Use my password", isOn: $usePassword)
                     if usePassword {
                         SecureField("Password", text: $password).textContentType(.password)
                         Button("Sign in") { Task { _ = await session.signIn(email: email, password: password) } }.disabled(email.isEmpty || password.isEmpty)
+                        Button("Use an emailed sign-in code instead") { code = ""; session.error = nil; usePassword = false }.frame(minHeight: 44)
                     } else {
                         Button(session.codeSent ? "Send another code" : "Email me a sign-in code") { Task { _ = await session.requestCode(email: email) } }.disabled(email.isEmpty)
                         if session.codeSent {
                             TextField("Email code", text: $code).textContentType(.oneTimeCode).keyboardType(.numberPad)
                             Button("Verify & sign in") { Task { _ = await session.verifyCode(email: email, code: code) } }.disabled(code.isEmpty)
                         }
+                        Button("Use my password instead") { session.error = nil; usePassword = true }.frame(minHeight: 44)
                     }
                 }.disabled(session.busy)
                 if session.busy { ProgressView("Signing in…") }

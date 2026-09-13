@@ -17,8 +17,8 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
-  // Devices that have used a password land on it; first-timers see the code flow they know.
-  const [mode, setMode] = useState<"code" | "password">(() => { try { return localStorage.getItem("ba4l-login") === "password" ? "password" : "code"; } catch { return "code"; } });
+  // Password is the fast returning-user path. The emailed code remains the recovery and first-time path.
+  const [mode, setMode] = useState<"code" | "password">("password");
   const remember = () => { try { localStorage.setItem("ba4l-login", "password"); } catch { /* fine */ } };
   const [stage, setStage] = useState<"email" | "code" | "setPassword" | "done">("email");
   const [busy, setBusy] = useState(false);
@@ -64,15 +64,15 @@ function LoginForm() {
   return <main>
     <header className="topbar"><Link className="brand" href="/" aria-label="Big Al's 4 Life home"><span className="brand-icon"><BrandMark size={36}/></span>BA4L</Link><span className="league-tag"><span/> SIGN IN</span></header>
     <section className="login-card">
-      <div className="eyebrow">{stage === "email" && mode === "password" ? <><KeyRound size={15}/> MEMBERS ONLY</> : <><Mail size={15}/> EMAIL CODE</>}</div>
+      <div className="eyebrow">{stage === "email" && mode === "password" ? <><KeyRound size={15}/> SECURE SIGN IN</> : <><Mail size={15}/> EMAIL CODE</>}</div>
       {stage === "email" && <>
         <h1>Big Al&rsquo;s 4 Life.</h1>
-        <p>The team scorebook, standings, and Thursday night. {mode === "password" ? "Use the address Doug invited and the password you set." : "We’ll email you a six-digit code; use the address Doug invited."}</p>
+        <p>The team scorebook, standings, and Thursday night. {mode === "password" ? "Use your BA4L email and password." : "We’ll email you a six-digit code."}</p>
         <form onSubmit={e => { e.preventDefault(); void (mode === "password" ? signInWithPassword() : send()); }}>
           <label className="field">Email<input type="email" autoComplete="username" inputMode="email" autoFocus value={email} onChange={e => setEmail(e.target.value)} disabled={busy}/></label>
           {mode === "password" && <label className="field">Password<input type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} disabled={busy}/></label>}
           <button className="primary" type="submit" disabled={busy}>{busy ? (mode === "password" ? "Signing in…" : "Sending…") : (mode === "password" ? "Sign in" : "Email me a code")}</button>
-          <button className="text-button" type="button" disabled={busy} onClick={() => { setError(""); setMode(m => m === "password" ? "code" : "password"); }}>{mode === "password" ? "No password yet? Email me a code" : "Sign in with a password instead"}</button>
+          <button className="text-button" type="button" disabled={busy} onClick={() => { setError(""); setMode(m => m === "password" ? "code" : "password"); }}>{mode === "password" ? "Use an emailed sign-in code instead" : "Use my password instead"}</button>
         </form>
       </>}
       {stage === "setPassword" && <>
