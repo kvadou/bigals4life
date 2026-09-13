@@ -82,7 +82,14 @@ export async function liveV2(request:Request,action:"list"|"create"|"read"|"end"
    const sessions=[];for(const s of rows){const p=await permissions(s,who);if(p.read)sessions.push(view(s,p.publish,s.owner_id===who.user.id));}
    return reply({sessions,configured:!!configuration()});
   }
-  const {session:s,grants}=await load(id??"",who);
+  let s: Session, grants: {read:boolean;publish:boolean};
+  if (action === "end") {
+   if (!uuid.safeParse(id ?? "").success) fail(404,"Live session not available.");
+   const rows: Session[] = await database(`live_sessions?id=eq.${id}&select=*&limit=1`);
+   s = rows[0]; if (!s) fail(404,"Live session not available.");
+   if (s.owner_id !== who.user.id) { const viewerGrants = await permissions(s,who); if (!viewerGrants.read) fail(404,"Live session not available."); fail(403,"Only the session owner can end it."); }
+   grants = {read:true,publish:true};
+  } else ({session:s,grants}=await load(id??"",who));
   if(action==="soundboard")return soundboard(request,s,who);
   if(action==="read")return reply({session:view(s,grants.publish,s.owner_id===who.user.id)});
   if(action==="gallery"){
@@ -123,7 +130,7 @@ export async function liveV2(request:Request,action:"list"|"create"|"read"|"end"
    await database(`live_sessions?id=eq.${s.id}`,{method:"PATCH",body:JSON.stringify({ended_at:new Date().toISOString()})});
    // Ending access is durable even if the media service is temporarily unreachable.
    let disconnected=false;try{const c=configuration();if(c){await c.client.deleteRoom(room(s.id));disconnected=true;}}catch{}
-   return reply({ended:true,disconnected});
+   return reply({ended:true,disconnected}, disconnected || !configuration() ? 200 : 503);
   }
   if(action==="invites"){
    if(s.owner_id!==who.user.id||s.audience!=="invited")fail(403,"Only the owner of an invited session can invite people.");
@@ -139,13 +146,17 @@ export async function liveV2(request:Request,action:"list"|"create"|"read"|"end"
    const c=configuration();if(!c)return fail(503,"Shared video is not configured.");
    // Issued connections are bounded across all participants for this session.
    // Clients recheck access with GET session, never by minting replacement tokens.
-   const issued=await database(`live_session_connections?session_id=eq.${s.id}&select=id,connection_slot&limit=201`);
-   if(issued.length>=200)fail(409,"This session has reached its connection limit. Start a new session.");
-   const slots=new Set(issued.map((row:{connection_slot:number})=>row.connection_slot));
-   const connectionSlot=Array.from({length:200},(_,slot)=>slot).find(slot=>!slots.has(slot));
-   if(connectionSlot===undefined)fail(409,"This session has reached its connection limit. Start a new session.");
    const connectionId=crypto.randomUUID(),identity=`live:${crypto.randomUUID()}`;
-   await database("live_session_connections",{method:"POST",body:JSON.stringify({id:connectionId,connection_slot:connectionSlot,session_id:s.id,user_id:who.user.id,participant_identity:identity,mode,expires_at:s.expires_at})});
+   let allocated = false;
+   for(let attempt=0;attempt<3&&!allocated;attempt++){
+    const issued=await database(`live_session_connections?session_id=eq.${s.id}&select=id,connection_slot&limit=201`);
+    if(issued.length>=200)fail(409,"This session has reached its connection limit. Start a new session.");
+    const slots=new Set(issued.map((row:{connection_slot:number})=>row.connection_slot));
+    const connectionSlot=Array.from({length:200},(_,slot)=>slot).find(slot=>!slots.has(slot));
+    if(connectionSlot===undefined)fail(409,"This session has reached its connection limit. Start a new session.");
+    try { await database("live_session_connections",{method:"POST",body:JSON.stringify({id:connectionId,connection_slot:connectionSlot,session_id:s.id,user_id:who.user.id,participant_identity:identity,mode,expires_at:s.expires_at})}); allocated=true; }
+    catch(error){ if(attempt===2) throw error; }
+   }
    const token=new AccessToken(c.key,c.secret,{identity,ttl:Math.max(1,Math.min(120,Math.floor((Date.parse(s.expires_at)-Date.now())/1000))),name:mode==="publish"?"Lane camera":"Guest"});
    token.addGrant({roomJoin:true,room:room(s.id),canSubscribe:true,canPublish:mode==="publish",canPublishSources:mode==="publish"?[TrackSource.CAMERA]:[],canPublishData:false,canUpdateOwnMetadata:false});
    return reply({serverUrl:c.url,participantToken:await token.toJwt(),connectionId});

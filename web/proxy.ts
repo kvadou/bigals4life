@@ -11,7 +11,7 @@ export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
   const path = request.nextUrl.pathname;
   // Public brand assets must load on the sign-in page and browser/Home Screen chrome.
-  if (["/ba4l-icon.svg", "/ba4l-mark.svg", "/apple-touch-icon.png"].includes(path)) return response;
+  if (["/ba4l-icon.svg", "/ba4l-mark.svg", "/apple-touch-icon.png", "/sounds/pickle.wav", "/sounds/turkey.wav", "/sounds/violin.wav", "/sounds/heating.wav"].includes(path)) return response;
   const open = path === "/login" || path === "/waiting";
   if (!url || !key) return open ? response : NextResponse.redirect(new URL("/login", request.url));
   const supabase = createServerClient(url, key, { cookies: {

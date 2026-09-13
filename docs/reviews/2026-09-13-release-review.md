@@ -50,3 +50,16 @@ Required fix: invalidate pending audio on refresh failures, clear sensitive stat
 Reviewed API permissions, migrations, client recording/audio lifecycle, studio navigation and release artifacts. Separate backend review was cross-checked against source; guest routing and pending-audio issues were independently reproduced by the primary reviewer. Original 101-test suite and signed build 14 evidence remain valid as build checks, but do not establish release correctness.
 
 Physical camera/microphone/speaker behavior and actual remote video delivery remain unverified. The original dark-preview report is still unresolved. Existing TestFlight 13 and deployed web remain unchanged. No additional confirmed high-severity defect was found in the soundboard's database row-lock, WAV validation or private clip-access paths.
+
+## Luna Reserve follow-up
+
+The follow-up implementation pass corrected four related release defects:
+
+- Bundled sound paths are now public static assets for confirmed invited studio guests; league data and custom clips remain protected.
+- Live connection allocation retries after a concurrent unique-slot collision.
+- Pending web audio is invalidated on refresh failure and checks cue age again immediately before playback.
+- Owners can retry provider room cleanup after a failed End request, and failed provider cleanup is reported as an error instead of a false success.
+- Studio setup now receives accessible scorebooks before games are finished, so league and pre-bowl sessions can start during warm-up.
+- Admin season discovery now follows the admin access policy instead of hiding claimed books without an explicit membership row.
+
+Verification after the pass: 101 web tests, focused live/gallery/soundboard tests, production build, native test suite, and 18 synthetic-camera studio checks passed. The release remains held until the server-side participant revocation path is proven against a real LiveKit room and the physical sender/receiver camera and audio behavior is verified on iPhone and iPad.

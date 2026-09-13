@@ -55,7 +55,7 @@ export default function Studio({ initialSessionId }: { initialSessionId: string 
   useEffect(() => {
     if (audience === "only-me") return;
     const controller = new AbortController();
-    void fetch("/api/season",{cache:"no-store",signal:controller.signal}).then(async response => { if (!response.ok) return; const data=await response.json(); setWeeks(Array.isArray(data.weeks) ? data.weeks : []); }).catch(() => {});
+    void fetch("/api/season",{cache:"no-store",signal:controller.signal}).then(async response => { if (!response.ok) return; const data=await response.json(); setWeeks(Array.isArray(data.setupWeeks) ? data.setupWeeks : (Array.isArray(data.weeks) ? data.weeks : [])); }).catch(() => {});
     return () => controller.abort();
   }, [audience]);
   const refreshSessions = async () => {
