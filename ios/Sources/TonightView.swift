@@ -168,8 +168,8 @@ struct TonightView: View {
                             Label("Watch live", systemImage: "arrow.up.right").font(.headline)
                         }
                     }.frame(maxWidth: .infinity, alignment: .leading).padding(18)
-                        .foregroundStyle(Color("OnGoldSurface"))
-                        .background(Color("BrandGoldSurface"), in: RoundedRectangle(cornerRadius: 16))
+                        .foregroundStyle(.primary)
+                        .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 16))
                 }.buttonStyle(.plain).accessibilityIdentifier("watchLive-" + live.scorebookId)
             }
             Button { showLiveLane = true } label: {
@@ -182,8 +182,8 @@ struct TonightView: View {
                     Spacer(minLength: 8)
                     Image(systemName: "arrow.up.right")
                 }.frame(minHeight: 52).padding(14)
-                    .foregroundStyle(Color("OnGoldSurface"))
-                    .background(Color("BrandGoldSurface"), in: RoundedRectangle(cornerRadius: 14))
+                    .foregroundStyle(.primary)
+                    .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 14))
             }.buttonStyle(.plain).accessibilityIdentifier("openLiveLane")
             if let message = liveDiscovery.message {
                 Text(message).font(.caption).foregroundStyle(Color("OnForest"))
@@ -232,7 +232,7 @@ struct TonightView: View {
                     Spacer(minLength: 8)
                     Text(pointPair(seriesPoints)).font(.title3.bold().monospacedDigit())
                 }.padding(12)
-                    .background(Color("BrandGoldSurface"), in: RoundedRectangle(cornerRadius: 10))
+                    .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 10))
                 if points.remaining > 0 {
                     Text("\(formatted(points.remaining)) of 36 points still available. Open games are not counted yet.")
                         .font(.caption).foregroundStyle(BA4LTheme.secondary)
