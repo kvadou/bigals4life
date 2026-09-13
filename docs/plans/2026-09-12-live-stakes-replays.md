@@ -37,3 +37,9 @@ Release follows the current authorization and applicable gate. Earlier Just publ
 - Browser: 19 recording-engine checks and 14 integrated LiveKit route checks passed; downloaded replay decoded 89 video frames and no audio. Phone/iPad screenshots inspected, pw-verify passed. [runtime-tested]
 - iPhone and iPad simulator UI checks passed. Physical alley camera timing remains field validation.
 - Scope review: no auth/schema changes or automatic cloud media persistence. Replays require opt-in, are local and unsynchronized score-triggered candidates, and must be explicitly downloaded/shared before leaving.
+
+## Release evidence
+
+Source commit afc724e pushed to main. Vercel deployment dpl_8gMjdTkbV9Cc2kmJayv82u57iSV3 is Ready at https://bigals4life.com and www. Authenticated production Live Lane showed Week 1 Game 3 matchup results and new replay controls; Watch connected and Leave disconnected. No scores or personal camera changed. [prod-verified] for production rendering and watcher lifecycle; replay media path remains [runtime-tested] with synthetic video.
+
+BA4L 1.0 (9), Apple build 8571452f-4fff-4aa9-ad52-38098b7c5872, processing VALID and membership verified in existing internal group f00174f2-8263-4343-8663-4dd20f24dfdb. Apple reported missing vendor dSYMs for LiveKitWebRTC and RustLiveKitUniFFI; upload succeeded, but symbolication of crashes inside those frameworks is limited.
