@@ -119,7 +119,7 @@ struct TonightView: View {
                         .navigationBarTitleDisplayMode(.inline)
                 }
             }
-            .fullScreenCover(isPresented: $showLiveLane) { LiveLaneView(store: store, send: send) }
+            .fullScreenCover(isPresented: $showLiveLane) { LiveStudioView(accountID: accountID, send: send) }
             .fullScreenCover(item: $watchingLive) { listing in
                 DiscoveredLiveLaneView(listing: listing, send: send)
             }
@@ -176,8 +176,8 @@ struct TonightView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "video.fill")
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Live Lane").font(.headline)
-                        Text(liveDiscovery.sessions.isEmpty ? "Start a camera for your teammates" : "Share a lane camera or watch the team").font(.subheadline)
+                        Text("Live & practice").font(.headline)
+                        Text("Share with the team or record for yourself").font(.subheadline)
                     }
                     Spacer(minLength: 8)
                     Image(systemName: "arrow.up.right")

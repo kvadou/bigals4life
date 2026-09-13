@@ -60,6 +60,7 @@ struct SignedInApp: View {
     private let accountID: String
     @State private var tab = 0
     @State private var showSeason = false
+    @State private var showGuestStudio = false
     @State private var homeIsRoot = true
     @State private var seasonSelection: String?
     @State private var scoreSeasonOrigin: String?
@@ -95,6 +96,7 @@ struct SignedInApp: View {
                         Text(session.email ?? "").font(.callout)
                     }
                     Section {
+                        Button("Invited live sessions & private practice") { showGuestStudio = true }
                         Button("Check team access") { Task { await checkMembership() } }.disabled(checkingAccess)
                         Button("Sign out", role: .destructive) { Task { await session.signOut() } }
                     }
@@ -142,7 +144,8 @@ struct SignedInApp: View {
         }.tint(horizontalSizeClass == .regular && tab == 0 && homeIsRoot && !showSeason ? Color("BrandGold") : BA4LTheme.tint)
             .modifier(NativeTabScrollBehavior(compact: horizontalSizeClass == .compact))
         }
-        }.onChange(of: tab) { old, new in
+        }.fullScreenCover(isPresented: $showGuestStudio) { LiveStudioView(accountID: accountID, send: send) }
+        .onChange(of: tab) { old, new in
             if old == 1 && new != 1 { scoreSeasonOrigin = nil }
         }.onChange(of: selectedBowler) { _, value in
             if let value { preferences.set(value, forKey: "selectedBowler") }

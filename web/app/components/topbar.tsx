@@ -26,6 +26,7 @@ export function Topbar({ right }: { right?: ReactNode }) {
       const target = event.target as HTMLElement;
       if (target.closest("button") && !target.closest("dialog")) setOpen(true);
     }}>
+      <Link className="league-tag" href="/studio" onClick={() => setOpen(false)}><span/> LIVE & PRACTICE</Link>
       <Link className="league-tag" href="/season" onClick={() => setOpen(false)}><span/> SEASON</Link>
       <Link className="league-tag" href="/league" onClick={() => setOpen(false)}><span/> STANDINGS</Link>
       <Link className="league-tag" href="/records" onClick={() => setOpen(false)}><span/> RECORDS</Link>

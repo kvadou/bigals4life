@@ -1,0 +1,68 @@
+import {expect,test} from "bun:test";
+
+test("V2 sessions enforce private access, connection-bound health, expiry and camera-only grants",async()=>{
+ const script=String.raw`
+ import {mock} from 'bun:test';
+ import {AccessToken,TrackSource} from 'livekit-server-sdk';
+ let who={user:{id:'11111111-1111-4111-8111-111111111111',email:'owner@example.test'},viaCookie:false},teammate=true,role='editor',limited=false;
+ const tables={live_sessions:[],live_session_invites:[],live_session_connections:[]};
+ let participants=[],bookState={match:{week:1}};
+ mock.module('./lib/auth-server',()=>({identify:async()=>who,isTeammate:async()=>teammate,access:async()=>role}));
+ mock.module('./lib/rate-limit',()=>({allow:()=>!limited}));
+ mock.module('livekit-server-sdk',()=>({AccessToken,TrackSource,RoomServiceClient:class{async listParticipants(){return participants}async deleteRoom(){participants=[]}}}));
+ mock.module('./lib/scorebook-server',()=>({sameOrigin:r=>r.headers.get('origin')===new URL(r.url).origin,database:async(path,init={})=>{
+  const [name,query='']=path.split('?'),params=new URLSearchParams(query),rows=tables[name];
+  if(name==='scorebooks')return [{state:bookState}];
+  if(!rows)throw Error('unexpected table '+name);
+  const matches=row=>[...params].every(([k,v])=>['select','limit','order','on_conflict'].includes(k)||v.startsWith('eq.')?(['select','limit','order','on_conflict'].includes(k)||String(row[k]).toLowerCase()===v.slice(3).toLowerCase()):v==='is.null'?row[k]==null:v.startsWith('gt.')?Date.parse(row[k])>Date.parse(v.slice(3)):v.startsWith('gte.')?Date.parse(row[k])>=Date.parse(v.slice(4)):false);
+  if(init.method==='POST'){const row=JSON.parse(init.body);if(name==='live_session_connections')Object.assign(row,{reported_at:null,received:[],outgoing:null});rows.push(row);return [row]}
+  const found=rows.filter(matches);if(init.method==='PATCH'){found.forEach(r=>Object.assign(r,JSON.parse(init.body)));return found}return found.slice(0,Number(params.get('limit')||1000));
+ }}));
+ process.env.LIVEKIT_URL='wss://fixture.livekit.cloud';process.env.LIVEKIT_API_KEY='fixture-key';process.env.LIVEKIT_API_SECRET='fixture-only-secret';
+ const {liveV2}=await import('./lib/live-v2');
+ const book='22222222-2222-4222-8222-222222222222';
+ const req=(action,body,id,method=action==='list'||action==='read'?'GET':'POST')=>liveV2(new Request('https://ba4l.example/api/live/v2/sessions',{method,headers:{origin:'https://ba4l.example'},...(method==='GET'?{}:{body:JSON.stringify(body)})}),action,id);
+ let checks=0;const eq=(a,b,label)=>{checks++;if(a!==b)throw Error(label+': '+JSON.stringify(a)+' != '+JSON.stringify(b))};
+ const owner=who;who=null;eq((await req('list')).status,401,'signed out');who=owner;
+ who.viaCookie=true;eq((await liveV2(new Request('https://ba4l.example',{method:'POST',body:'{}'}),'create')).status,403,'csrf');who.viaCookie=false;
+ const base={activity:'practice',audience:'team',title:'Friday practice',teamScopeId:book};
+ teammate=false;eq((await req('create',base)).status,403,'non teammate cannot create');teammate=true;
+ for(const body of [{...base,scorebookId:book},{...base,activity:'league'},{...base,teamScopeId:null},{...base,durationMinutes:481},{...base,durationMinutes:-1},{...base,admin:true}])eq((await req('create',body)).status,400,'invalid activity/scope/bounds');
+ role='none';eq((await req('create',base)).status,403,'scope membership');role='viewer';eq((await req('create',{...base,activity:'league',scorebookId:book})).status,403,'competitive requires edit');role='editor';
+ const created=await req('create',base);eq(created.status,201,'practice created');const s=(await created.json()).session;eq(s.scorebookId,null,'no practice scorebook');eq(s.isOwner,true,'owner flag');eq(s.canPublish,true,'owner publishes');
+ role='none';eq((await req('read',null,s.id)).status,404,'owner scope removed');eq((await req('token',{mode:'publish'},s.id)).status,404,'owner scope removed publishing denied');role='editor';
+ const viewer={user:{id:'33333333-3333-4333-8333-333333333333',email:'guest@example.test'},viaCookie:false};who=viewer;
+ eq((await req('read',null,s.id)).status,200,'team viewer');eq((await req('token',{mode:'publish'},s.id)).status,403,'viewer publish denied');eq((await req('end',{ended:true},s.id,'PATCH')).status,403,'viewer cannot end');role='none';eq((await req('read',null,s.id)).status,404,'nonmember hidden');role='editor';
+ let response=await req('token',{mode:'watch'},s.id);eq(response.status,200,'watch token');const watching=await response.json();
+ const claims=JSON.parse(Buffer.from(watching.participantToken.split('.')[1],'base64url'));eq(claims.video.room,'ba4l-v2-'+s.id,'room bound');eq(claims.video.canPublish,false,'watch no publish');eq(claims.video.canPublishData,false,'no data');eq(claims.video.canUpdateOwnMetadata,false,'no metadata');eq(claims.exp-claims.nbf<=120,true,'short ttl');
+ const receiver=tables.live_session_connections.find(c=>c.id===watching.connectionId);
+ who=owner;const pub=await (await req('token',{mode:'publish'},s.id)).json();const pubclaims=JSON.parse(Buffer.from(pub.participantToken.split('.')[1],'base64url'));eq(JSON.stringify(pubclaims.video.canPublishSources),'["camera"]','no microphone');
+ const sender=tables.live_session_connections.find(c=>c.id===pub.connectionId);
+ participants=[{identity:receiver.participant_identity,tracks:[]},{identity:sender.participant_identity,tracks:[{sid:'TR_camera',source:TrackSource.CAMERA,muted:false}]}];
+ who=viewer;let report={connectionId:watching.connectionId,received:[{trackSid:'TR_camera',frames:20,bytes:12000}]};
+ eq((await req('health',report,s.id)).status,200,'receiver report');
+ const getHealth=()=>req('health',null,s.id,'GET');let health=await (await getHealth()).json();eq(health.receivingCount,1,'fresh receiver evidence');eq(health.connectedCount,2,'connected count');eq(health.cameraCount,1,'camera count');
+ receiver.reported_at=new Date(Date.now()-16000).toISOString();eq((await (await getHealth()).json()).receivingCount,0,'stale receiver excluded');
+ eq((await req('health',{...report,connectionId:pub.connectionId},s.id)).status,404,'other user connection denied');
+ eq((await req('health',{...report,outgoing:{frames:1,bytes:1}},s.id)).status,403,'watch outgoing denied');
+ for(const received of [[{trackSid:'TR_unknown',frames:1,bytes:1}],[{trackSid:'TR_camera',frames:-1,bytes:1}],[...report.received,...report.received]])eq((await req('health',{...report,received},s.id)).status,400,'invalid track/counter/duplicate');
+ participants=participants.filter(p=>p.identity!==receiver.participant_identity);eq((await req('health',report,s.id)).status,409,'not connected cannot report');
+ who=owner;const invited=(await (await req('create',{activity:'social',audience:'invited',title:'Friends'})).json()).session;
+ who=viewer;eq((await req('read',null,invited.id)).status,404,'unguessed invited room private');who=owner;eq((await req('invites',{email:'GUEST@example.test'},invited.id)).status,200,'owner invitation');who=viewer;role='none';eq((await req('read',null,invited.id)).status,200,'confirmed email invitation');eq((await req('invites',{email:'other@example.test'},invited.id)).status,403,'guest cannot invite');
+ eq((await req('health',report,invited.id)).status,404,'cross session connection');
+ who=owner;role='editor';bookState={prebowl:{week:2}};eq((await req('create',{...base,activity:'league',scorebookId:book})).status,400,'league cannot attach pre-bowl');bookState={match:{week:1}};eq((await req('create',{...base,activity:'prebowl',scorebookId:book})).status,400,'pre-bowl cannot attach league');const league=(await (await req('create',{...base,activity:'league',scorebookId:book})).json()).session;role='none';eq((await req('read',null,league.id)).status,404,'owner loses competitive membership');role='editor';
+ const leagueToken=await (await req('token',{mode:'publish'},league.id)).json();const leagueConnection=tables.live_session_connections.find(c=>c.id===leagueToken.connectionId);participants=[{identity:leagueConnection.participant_identity,tracks:[{sid:'TR_league',source:TrackSource.CAMERA,muted:false}]}];role='viewer';eq((await req('health',{connectionId:leagueToken.connectionId,received:[]},league.id)).status,403,'downgraded publisher cannot heartbeat without outgoing');eq((await req('health',{connectionId:leagueToken.connectionId,received:[],outgoing:{frames:1,bytes:1}},league.id)).status,403,'downgraded publisher cannot heartbeat with outgoing');role='editor';
+ const row=tables.live_sessions.find(r=>r.id===s.id);row.expires_at=new Date(Date.now()-1).toISOString();eq((await req('read',null,s.id)).status,404,'expired');eq((await req('token',{mode:'publish'},s.id)).status,404,'expired token denied');
+ eq((await req('end',{ended:true},invited.id,'PATCH')).status,200,'owner ends');eq((await req('read',null,invited.id)).status,404,'ended hidden');
+ limited=true;eq((await req('list')).status,429,'rate bounded');limited=false;
+ eq((await req('read',null,'bad&id=other')).status,404,'malformed ID');
+ for(let n=0;n<200;n++)tables.live_session_connections.push({id:crypto.randomUUID(),session_id:league.id});eq((await req('token',{mode:'watch'},league.id)).status,409,'connection issuance bounded');tables.live_session_connections=tables.live_session_connections.filter(c=>c.session_id!==league.id);
+ delete process.env.LIVEKIT_API_SECRET;eq((await req('token',{mode:'publish'},league.id)).status,503,'configuration missing');
+ const serialized=JSON.stringify(await (await req('read',null,league.id)).json());eq(serialized.includes('owner@example.test'),false,'no email');eq(serialized.includes('owner_id'),false,'no owner identifier');
+ eq((await req('create',{...base,title:'x'.repeat(9000)})).status,413,'oversized body');
+ console.log('V2 checks passed: '+checks);
+ `;
+ const child=Bun.spawn(["bun","-e",script],{cwd:new URL("..",import.meta.url).pathname,stdout:"pipe",stderr:"pipe"});
+ const [out,err,code]=await Promise.all([new Response(child.stdout).text(),new Response(child.stderr).text(),child.exited]);
+ expect(code,err).toBe(0);expect(out).toContain("V2 checks passed");
+});

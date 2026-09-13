@@ -7,22 +7,23 @@ import LiveKit
     @Published private(set) var busy = false
     @Published private(set) var publishing = false
     @Published private(set) var error: String?
+    @Published private(set) var connectionID: String?
     private var localFrameProbe: LaneFrameProbe?
     private var localVideoTrack: VideoTrack?
     var cameraFramesArriving: Bool { localFrameProbe?.hasRecentFrames == true }
     private var generation = 0
     private var accessCheck: Task<Void, Never>?
     private var idleTimerWasDisabled: Bool?
-    private struct Credentials: Decodable { let serverUrl: String; let participantToken: String }
+    private struct Credentials: Decodable { let serverUrl: String; let participantToken: String; let connectionId: String? }
     private struct Failure: Decodable { let error: String }
 
-    func join(bookID: String, publish: Bool, send: @escaping SeasonTransport) async {
+    func join(bookID: String, publish: Bool, liveSessionID: String? = nil, send: @escaping SeasonTransport) async {
         guard !busy, !Task.isCancelled else { return }
         accessCheck?.cancel(); accessCheck = nil
         generation += 1
         let attempt = generation
         stopFrameProbe()
-        busy = true; error = nil; publishing = false
+        busy = true; error = nil; publishing = false; connectionID = nil
         let previous = room
         room = nil
         await previous?.disconnect()
@@ -30,10 +31,13 @@ import LiveKit
         let next = Room()
         room = next
         do {
-            var request = URLRequest(url: URL(string: ScorebookClient.origin + "/api/live/token")!, timeoutInterval: 30)
+            let tokenPath = liveSessionID.map { "/api/live/v2/sessions/" + $0 + "/token" } ?? "/api/live/token"
+            var request = URLRequest(url: URL(string: ScorebookClient.origin + tokenPath)!, timeoutInterval: 30)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try JSONSerialization.data(withJSONObject: ["scorebookId": bookID, "mode": publish ? "publish" : "watch"])
+            var payload = ["mode": publish ? "publish" : "watch"]
+            if liveSessionID == nil { payload["scorebookId"] = bookID }
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload)
             let (data, response) = try await send(request)
             guard attempt == generation, !Task.isCancelled else { await next.disconnect(); return }
             guard (200..<300).contains(response.statusCode) else {
@@ -43,6 +47,7 @@ import LiveKit
             let credentials = try JSONDecoder().decode(Credentials.self, from: data)
             try await next.connect(url: credentials.serverUrl, token: credentials.participantToken)
             guard attempt == generation, !Task.isCancelled else { await next.disconnect(); return }
+            connectionID = credentials.connectionId
             if publish {
                 // Camera only. Never request or enable microphone capture.
                 try await next.localParticipant.setCamera(enabled: true, captureOptions: CameraCaptureOptions(position: .back))
@@ -63,11 +68,17 @@ import LiveKit
                     do { try await Task.sleep(for: .seconds(30)) } catch { return }
                     guard let self, self.generation == attempt else { return }
                     var check = request
+                    if let liveSessionID {
+                        check.url = URL(string: ScorebookClient.origin + "/api/live/v2/sessions/" + liveSessionID)
+                        check.httpMethod = "GET"; check.httpBody = nil
+                    }
                     check.timeoutInterval = 20
                     do {
-                        let (_, response) = try await send(check)
+                        let (checkData, response) = try await send(check)
                         guard !Task.isCancelled, self.generation == attempt else { return }
-                        guard (200..<300).contains(response.statusCode) else {
+                        let publishAllowed = liveSessionID == nil || !publish ||
+                            ((try? JSONSerialization.jsonObject(with: checkData) as? [String: Any])?["session"] as? [String: Any])?["canPublish"] as? Bool == true
+                        guard (200..<300).contains(response.statusCode), publishAllowed else {
                             self.leave()
                             self.error = "Team access could not be verified. Live video has stopped. Join again to retry."
                             return
@@ -98,7 +109,7 @@ import LiveKit
         accessCheck?.cancel(); accessCheck = nil
         generation += 1
         let previous = room
-        room = nil; busy = false; publishing = false
+        room = nil; busy = false; publishing = false; connectionID = nil
         restoreIdleTimer()
         Task { await previous?.disconnect() }
     }

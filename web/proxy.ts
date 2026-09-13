@@ -32,6 +32,9 @@ export async function proxy(request: NextRequest) {
     if ((path !== "/" || request.nextUrl.search) && /^\/(?![\/\\])/.test(next)) login.searchParams.set("next", next);
     return NextResponse.redirect(login);
   }
+  // Authenticated studio shell is available to invited guests. Every session API
+  // verifies the exact invitation or team membership; no league pages are opened.
+  if (path === "/studio") return response;
   if (open) return NextResponse.redirect(new URL("/", request.url));
   const admins = (process.env.BAFL_ADMIN_EMAILS ?? "").toLowerCase().split(",").map(s => s.trim()).filter(Boolean);
   if (admins.includes(user!.email!.toLowerCase())) return response;

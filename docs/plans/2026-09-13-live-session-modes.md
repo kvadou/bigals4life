@@ -1,6 +1,6 @@
 # Live session modes and delivery visibility
 
-Status: proposed, not implemented. User requested log inspection and distinct social, pre-bowl, practice and personal-recording experiences.
+Status: approved and implemented locally on September 13. Production release is held for the required authorization/schema review. See 2026-09-13-studio-release-review.md for verification and remaining limits.
 
 ## Verified observations
 
@@ -42,4 +42,4 @@ Mount mode should offer a large framing preview, orientation guidance, screen-aw
 2. Separate noncompetitive sessions from league books, implement private practice recording and explicit activity selection. Review schema/auth scope before publishing.
 3. Add invited social sharing and saved replay library with explicit audience controls.
 
-No new modes or telemetry shipped by this log-inspection task. Physical delivery remains unverified until a live paired test is available.
+The implementation adds four explicit activities, independent audience selection, local recording, replay comparison, and bounded client frame reports. Physical delivery remains unverified until a live paired test is available. Automatic bowler recognition, oil-pattern estimation, automatic score tracking and automatic shot detection are not implemented by this phase.

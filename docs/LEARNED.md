@@ -140,3 +140,7 @@ Tonight uses the native scroll view directly, contentMargins for trailing conten
 ## Camera lifecycle generations must not stop newer work
 
 A stale asynchronous camera-start continuation must return without enqueueing a stop that could run after a newer start. Pause already queues the stop serially. A system permission prompt can temporarily make the app inactive; distinguish that from backgrounding so accepting first-use permission does not cancel startup. Still stop actual capture on inactivity and invalidate startup on backgrounding. Verify hardware interruption behavior separately from simulator no-camera tests.
+
+## Live delivery needs receiver evidence and stable SDK rendering
+
+A successful token request and room connection do not establish video delivery. Report fresh interval frame/byte counters, expire old reports, and never label local capture as remote receipt. Web SDK video must use track.attach/detach so adaptive streaming observes the rendered element. Keep capture/health lifecycle on the enclosing native navigation container so opening saved clips does not terminate the room. Private recording must avoid room creation and microphone capture; league and pre-bowl must validate their real scorebook context. The V2 access tests and local media tests encode these boundaries.
