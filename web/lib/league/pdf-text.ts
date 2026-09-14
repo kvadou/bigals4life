@@ -1,4 +1,7 @@
-import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import { join } from "node:path";
+import { getDocument, GlobalWorkerOptions } from "pdfjs-dist/legacy/build/pdf.mjs";
+
+GlobalWorkerOptions.workerSrc = join(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs");
 
 /** Extract text from the text-based BLS PDF without relying on a server binary. */
 export async function extractPdfText(data: ArrayBuffer): Promise<string> {
