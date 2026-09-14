@@ -67,7 +67,7 @@ function LoginForm() {
     <section className="login-card">
       <div className="eyebrow">{stage === "email" && mode === "password" ? <><KeyRound size={15}/> SECURE SIGN IN</> : <><Mail size={15}/> EMAIL CODE</>}</div>
       {stage === "email" && <>
-        <h1>Big Al&rsquo;s 4 Life.</h1>
+        <h1>BA4L.</h1>
         <p>The team scorebook, standings, and Thursday night. {mode === "password" ? "Use your BA4L email and password." : recovery ? "We’ll email a code so you can choose a new password." : "We’ll email you a six-digit code."}</p>
         <form onSubmit={e => { e.preventDefault(); void (mode === "password" ? signInWithPassword() : send()); }}>
           <label className="field">Email<input type="email" autoComplete="username" inputMode="email" autoFocus value={email} onChange={e => setEmail(e.target.value)} disabled={busy}/></label>

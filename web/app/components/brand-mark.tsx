@@ -1,8 +1,14 @@
 export function BrandMark({ size = 36 }: { size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 1024 1024" aria-hidden="true" focusable="false">
-    <path fill="currentColor" fillRule="evenodd" d="M575 150H735L700 505H805L790 630H686L666 758H521L543 630H298L315 508ZM562 334L424 505H564Z"/>
-    <path fill="currentColor" d="M246 725C259 809 406 834 517 758L599 827C437 972 185 907 150 770Z"/>
-    <circle cx="213" cy="704" r="65" fill="currentColor"/>
-    <g fill="var(--brand-mark-background, #203B2F)"><circle cx="188" cy="680" r="10"/><circle cx="221" cy="672" r="10"/><circle cx="213" cy="710" r="12"/></g>
+    <g fill="currentColor" fillRule="evenodd">
+      <g transform="translate(90 20) scale(.82)">
+        <path d="M170 150h250c105 0 164 49 164 132 0 48-23 86-65 107 52 18 82 59 82 113 0 96-69 148-183 148H170V150Zm112 92v109h112c49 0 75-19 75-55s-26-54-75-54H282Zm0 201v115h126c52 0 79-21 79-58s-27-57-79-57H282Z"/>
+        <path d="m535 470 90-320h112l93 320H716l-16-55H626l-15 55H535Zm117-138h32l-16-91-16 91Z"/>
+      </g>
+      <g transform="translate(80 130) scale(.82)">
+        <path d="M184 560h112v175h80v-175h112v175h73v94h-73v41H376v-41H184v-94Zm112 175h80v-129l-80 129Z"/>
+        <path d="M574 560h112v216h176v94H574V560Z"/>
+      </g>
+    </g>
   </svg>;
 }

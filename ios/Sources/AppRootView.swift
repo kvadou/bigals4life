@@ -50,7 +50,7 @@ struct SignInView: View {
 
     private var brandPanel: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) { BA4LBrandMark(size: 52).background(Color("BrandForest"), in: RoundedRectangle(cornerRadius: 14)); Text("Big Al’s 4 Life").font(.title2.bold()) }
+            HStack(spacing: 12) { BA4LBrandMark(size: 52).background(Color("BrandForest"), in: RoundedRectangle(cornerRadius: 14)); Text("BA4L").font(.title2.bold()) }
             Text("Your team scorebook, standings, and Thursday night in one place.").font(.body).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if horizontalSizeClass == .regular { Spacer(minLength: 8); Label("Your weeks and scores stay synced across devices.", systemImage: "checkmark.icloud").font(.callout).foregroundStyle(.secondary) }
         }
