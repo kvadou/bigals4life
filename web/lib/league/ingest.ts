@@ -12,6 +12,41 @@ const upsert = (table: string, rows: unknown, onConflict: string) => database(`$
   body: JSON.stringify(rows),
 });
 
+function officialRosterMatch(name: string, rows: { name: string; handicap: number }[]) {
+  const needle = name.trim().toUpperCase();
+  return rows.find(row => {
+    const official = row.name.replace(/\s+[A-Z]\.\s+/g, " ").toUpperCase();
+    return official === needle || official.startsWith(`${needle} `);
+  });
+}
+
+/** Apply official handicaps to a saved match so its points recalculate from handicap totals. */
+function syncMatchHandicaps(state: unknown, sheet: ReturnType<typeof parseStandings>, ourTeamNumber: number) {
+  const parsed = nightSchema.safeParse(state);
+  if (!parsed.success || !parsed.data.match) return null;
+  const next = structuredClone(parsed.data);
+  const match = next.match!;
+  const oldOpponentNumber = match.opponent.number;
+  const ours = sheet.rosters.find(r => r.number === ourTeamNumber)?.bowlers ?? [];
+  const theirsNumber = sheet.results.find(r => r.number === ourTeamNumber)?.opponentNumber ?? match.opponent.number;
+  const theirs = sheet.rosters.find(r => r.number === theirsNumber)?.bowlers ?? [];
+  let changed = false;
+  match.ours = match.ours.map(b => {
+    const row = officialRosterMatch(b.name, ours);
+    if (!row || row.handicap === b.handicap) return b;
+    changed = true;
+    return { ...b, handicap: row.handicap };
+  });
+  match.opponent = { ...match.opponent, number: theirsNumber || match.opponent.number, bowlers: match.opponent.bowlers.map(b => {
+    const row = officialRosterMatch(b.name, theirs);
+    if (!row || row.handicap === b.handicap) return b;
+    changed = true;
+    return { ...b, handicap: row.handicap };
+  }) };
+  if (theirsNumber && oldOpponentNumber !== theirsNumber) changed = true;
+  return changed ? next : null;
+}
+
 export type IngestSummary = {
   season: string;
   week: number;
@@ -59,8 +94,17 @@ export async function ingestStandingsText(text: string, sourceFile: string, opti
   const ourNumber = week.rosters.find(r => r.bowlers.some(b => /^DOUG KVAMME$/i.test(b.name)))?.number;
   let reconciled = 0;
   if (ourNumber) {
-    const nights: { id: string; state: unknown }[] = await database(`scorebooks?select=id,state&state->match->>season=eq.${encodeURIComponent(week.season)}&state->match->>week=eq.${week.week}`);
-    const results = nights.flatMap(n => { const parsed = nightSchema.safeParse(n.state); if (!parsed.success) return []; const result = reconcileNight(n.id, parsed.data, week, ourNumber); return result ? [result] : []; });
+    const nights: { id: string; state: unknown; revision: number }[] = await database(`scorebooks?select=id,state,revision&state->match->>season=eq.${encodeURIComponent(week.season)}&state->match->>week=eq.${week.week}`);
+    const reconciliationRows = nights.map(n => {
+      const parsed = nightSchema.safeParse(n.state); if (!parsed.success) return [];
+      const synced = syncMatchHandicaps(parsed.data, week, ourNumber);
+      const effectiveState = synced ?? parsed.data;
+      const result = reconcileNight(n.id, effectiveState, week, ourNumber); if (!result) return [];
+      if (synced) return [{ result, update: database(`scorebooks?id=eq.${n.id}&revision=eq.${n.revision}`, { method: "PATCH", body: JSON.stringify({ state: synced, revision: n.revision + 1, updated_at: new Date().toISOString() }) }) }];
+      return [{ result, update: Promise.resolve() }];
+    });
+    await Promise.all(reconciliationRows.flat().map(x => x.update));
+    const results = reconciliationRows.flatMap(rows => rows.map(x => x.result));
     reconciled = results.length;
     if (results.length) await database(`league_team_weeks?week_id=eq.${row.id}&team_id=eq.${teamId(ourNumber)}`, { method: "PATCH", body: JSON.stringify({ discrepancies: results }) });
   }
