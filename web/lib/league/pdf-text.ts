@@ -1,13 +1,4 @@
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
-import { WorkerMessageHandler } from "pdfjs-dist/legacy/build/pdf.worker.mjs";
-
-// PDF.js disables real workers in Node, then looks for this handler before it
-// tries to dynamically import `pdf.worker.mjs`. Registering the statically
-// bundled handler keeps the Vercel server function self-contained.
-const pdfjsGlobal = globalThis as typeof globalThis & {
-  pdfjsWorker?: { WorkerMessageHandler: typeof WorkerMessageHandler };
-};
-pdfjsGlobal.pdfjsWorker = { WorkerMessageHandler };
 
 /** Extract text from the text-based BLS PDF without relying on a server binary. */
 export async function extractPdfText(data: ArrayBuffer): Promise<string> {
