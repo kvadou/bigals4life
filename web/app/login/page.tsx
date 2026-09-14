@@ -63,12 +63,20 @@ function LoginForm() {
     remember(); finish();
   };
   return <main>
-    <header className="topbar"><Link className="brand" href="/" aria-label="Big Al's 4 Life home"><span className="brand-icon"><BrandMark size={36}/></span>BA4L</Link><span className="league-tag"><span/> SIGN IN</span></header>
+    <header className="topbar"><Link className="brand" href="/" aria-label="Big Al's 4 Life home"><span className="brand-icon"><BrandMark size={44}/></span>BA4L</Link><span className="league-tag"><span/> SIGN IN</span></header>
+    <div className="login-layout">
+    <aside className="login-brand-panel" aria-label="BA4L overview">
+      <span className="login-panel-mark"><BrandMark size={72}/></span>
+      <p className="login-panel-kicker">BIG AL&rsquo;S 4 LIFE</p>
+      <h2>Thursday night, together.</h2>
+      <p className="login-panel-copy">Scores, standings, and your team scorebook in one place.</p>
+      <div className="login-panel-footer"><span /> Team scorebook</div>
+    </aside>
     <section className="login-card">
       <div className="eyebrow">{stage === "email" && mode === "password" ? <><KeyRound size={15}/> SECURE SIGN IN</> : <><Mail size={15}/> EMAIL CODE</>}</div>
       {stage === "email" && <>
-        <h1>BA4L.</h1>
-        <p>The team scorebook, standings, and Thursday night. {mode === "password" ? "Use your BA4L email and password." : recovery ? "We’ll email a code so you can choose a new password." : "We’ll email you a six-digit code."}</p>
+        <h1>Welcome back.</h1>
+        <p>Sign in to see your team, scores, and weeks. {mode === "password" ? "Use your BA4L email and password." : recovery ? "We’ll email a code so you can choose a new password." : "We’ll email you a six-digit code."}</p>
         <form onSubmit={e => { e.preventDefault(); void (mode === "password" ? signInWithPassword() : send()); }}>
           <label className="field">Email<input type="email" autoComplete="username" inputMode="email" autoFocus value={email} onChange={e => setEmail(e.target.value)} disabled={busy}/></label>
           {mode === "password" && <label className="field">Password<input type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} disabled={busy}/></label>}
@@ -98,6 +106,7 @@ function LoginForm() {
       {stage === "done" && <><h1>You&rsquo;re in.</h1><p>Taking you back to the scorebook…</p></>}
       {error && <p className="photo-error" role="alert">{error}</p>}
     </section>
+    </div>
     <footer><span>BA4L</span><span>Big Al&rsquo;s 4 Life.</span></footer>
   </main>;
 }
