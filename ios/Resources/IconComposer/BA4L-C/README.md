@@ -1,5 +1,7 @@
 # BA4L Icon Composer source
 
+The repeatable assembly and verification steps live in [`docs/plans/2026-09-14-ba4l-icon-composer-build-plan.md`](../../../../docs/plans/2026-09-14-ba4l-icon-composer-build-plan.md).
+
 This is the approved C direction: a spacious stacked `BA` over `4L` lockup. Each SVG is a separate 1024 by 1024 layer, numbered in back to front order.
 
 1. Open Xcode, then choose **Open Developer Tool > Icon Composer**.
