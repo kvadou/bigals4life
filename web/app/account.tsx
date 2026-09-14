@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { KeyRound, LogIn, LogOut, Users, X } from "lucide-react";
+import { ChevronDown, KeyRound, LogIn, LogOut, Users, X } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
 export type Me = { user: { id: string; email: string }; admin: boolean; profile: { displayName: string; bowlerName: string | null }; scorebooks: { id: string; role: string; updatedAt: string | null }[]; legacy: { id: string; updatedAt: string; games: number }[] };
@@ -15,17 +15,35 @@ export function useMe() {
 
 export function AccountBar({ me, nightId, role, onClaimed }: { me: Me | null | false; nightId: string; role: string; onClaimed: () => void }) {
   const [open, setOpen] = useState<false | "team" | "password">(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => { if (open) dialog.current?.showModal(); else dialog.current?.close(); }, [open]);
+  useEffect(() => {
+    if (!profileOpen) return;
+    const close = (event: MouseEvent) => { if (!(event.target as HTMLElement).closest(".profile-menu")) setProfileOpen(false); };
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") setProfileOpen(false); };
+    document.addEventListener("click", close); document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("click", close); document.removeEventListener("keydown", escape); };
+  }, [profileOpen]);
   const next = typeof window === "undefined" ? "/" : window.location.pathname + window.location.search;
   if (me === null) return null;
   if (me === false) return <a className="secondary account-link" href={`/login?next=${encodeURIComponent(next)}`}><LogIn size={15}/> Sign in</a>;
   const canManage = nightId && (role === "owner" || (role === "legacy" && me.admin));
+  const displayName = me.profile.displayName || me.profile.bowlerName || me.user.email.split("@")[0];
+  const initial = displayName.trim().charAt(0).toUpperCase() || "D";
+  const signOut = async () => { await supabaseBrowser().auth.signOut(); window.location.reload(); };
   return <>
-    <span className="account-email">{me.user.email}</span>
-    {canManage && <button className="secondary" onClick={() => setOpen("team")}><Users size={15}/> Teammates</button>}
-    <button className="text-button" onClick={() => setOpen("password")}><KeyRound size={15}/> Password</button>
-    <button className="text-button" onClick={async () => { await supabaseBrowser().auth.signOut(); window.location.reload(); }}><LogOut size={15}/> Sign out</button>
+    <div className="profile-menu">
+      <button className="profile-trigger" type="button" aria-haspopup="menu" aria-expanded={profileOpen} onClick={() => setProfileOpen(value => !value)}>
+        <span className="profile-avatar" aria-hidden="true">{initial}</span><span className="profile-name">{displayName}</span><ChevronDown size={15} aria-hidden="true" />
+      </button>
+      {profileOpen && <div className="profile-popover" role="menu">
+        <div className="profile-identity"><strong>{displayName}</strong><span>{me.user.email}</span></div>
+        {canManage && <button type="button" role="menuitem" onClick={() => { setProfileOpen(false); setOpen("team"); }}><Users size={15}/> Teammates</button>}
+        <button type="button" role="menuitem" onClick={() => { setProfileOpen(false); setOpen("password"); }}><KeyRound size={15}/> Password</button>
+        <button type="button" role="menuitem" className="profile-danger" onClick={() => void signOut()}><LogOut size={15}/> Sign out</button>
+      </div>}
+    </div>
     <dialog ref={dialog} onCancel={() => setOpen(false)} onClick={e => { if (e.target === e.currentTarget) setOpen(false); }}><div className="dialog-inner">
       <button className="close-button" aria-label="Close dialog" onClick={() => setOpen(false)}><X size={20}/></button>
       {open === "team" && <Teammates nightId={nightId} role={role} admin={me.admin} onClaimed={() => { onClaimed(); }}/>}
