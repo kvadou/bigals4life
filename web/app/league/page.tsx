@@ -5,6 +5,7 @@ import Link from "next/link";
 import { fmt, title } from "../components/format";
 import { loadStandings } from "@/lib/league/standings-server";
 import Recap from "./recap";
+import LeagueUpload from "./upload";
 
 export const dynamic = "force-dynamic";
 const ordinal = (n: number) => `${n}${["st", "nd", "rd"][n - 1] ?? "th"}`;
@@ -24,6 +25,7 @@ export default async function LeaguePage({ searchParams }: { searchParams: Promi
           {n.discrepancies.length > 0 && <ul className="reconcile-list">{n.discrepancies.map((d, i) => <li key={i}><strong>{title(d.who)}</strong> {d.field}: we had <em>{d.ours}</em>, sheet says <em>{d.gary}</em></li>)}</ul>}
           <p className="score-note"><Link href={`/?night=${n.nightId}`}>Open that night</Link>. Gary&rsquo;s sheet is the official record; fix the night if our entry was the typo.</p></div>)}
       </section>)}
+      <LeagueUpload/>
       <Recap season={s.season.name} week={s.week.number} initial={s.week.recap}/>
       <section className="league-section" aria-label="Team standings">
         <div className="eyebrow"><Trophy size={16}/> TEAM STANDINGS</div>

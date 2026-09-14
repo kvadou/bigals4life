@@ -16,6 +16,7 @@
     "livekit-server-sdk": "^2.19.0",
     "lucide-react": "latest",
     "next": "latest",
+    "pdfjs-dist": "^6.3.289",
     "react": "latest",
     "react-dom": "latest",
     "zod": "^4.6.2"
