@@ -19,6 +19,7 @@
 		4A058540C83DA00358EA083D /* DeviceArchiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2805C0AEAC8D2A46898B1467 /* DeviceArchiveView.swift */; };
 		4BED72B1BF9A43A311308097 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CF060769FA1850A56AA9E5E /* AppRootView.swift */; };
 		4C4BB6F6CA8D5B7C3FBCC547 /* VoiceEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3288926755D1F7D450F5D50C /* VoiceEntryView.swift */; };
+		4E6DCACBEF70E7CFA9A5CD16 /* 02-panel.svg in Resources */ = {isa = PBXBuildFile; fileRef = 8077C0345D58D4430D900044 /* 02-panel.svg */; };
 		4FE1835D1327378CE3C5A928 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 21D9127AD2739D1BC5EBFE54 /* PrivacyInfo.xcprivacy */; };
 		516B56B5FFCA45366CF6B06E /* NativeFixtureSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E2A7AEB2D6266455A12E57 /* NativeFixtureSession.swift */; };
 		517AD530BABDDDF1484C8BE5 /* violin.wav in Resources */ = {isa = PBXBuildFile; fileRef = CC9884CD94A4E8890FCD9C88 /* violin.wav */; };
@@ -30,6 +31,7 @@
 		80CEC813F8B547991F96C951 /* turkey.wav in Resources */ = {isa = PBXBuildFile; fileRef = 089154510F411F133D7605A4 /* turkey.wav */; };
 		8384AFF9C04FA4F3F4D27A7C /* pickle.wav in Resources */ = {isa = PBXBuildFile; fileRef = B49E72F9C5B129C2E0F1B9BD /* pickle.wav */; };
 		83F6ABE6E6C2FF28314E3C58 /* NativeGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31E30E6E7B9072BA40CBFF1F /* NativeGalleryView.swift */; };
+		886FCD550D82E290831842A1 /* 03-BA.svg in Resources */ = {isa = PBXBuildFile; fileRef = FD76CC1106A2125FB48A57E1 /* 03-BA.svg */; };
 		937608170B1588FC13720CA3 /* NativeSoundboardModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D41AE8775E99035749CDBD5 /* NativeSoundboardModel.swift */; };
 		9701721564F6F85C28233F93 /* LiveLaneCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A394B777B30A778A4DF712C /* LiveLaneCamera.swift */; };
 		A062733459C68F876C45787D /* LaneReplayWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C225AC459DC2E3038EB3F36 /* LaneReplayWriter.swift */; };
@@ -43,12 +45,15 @@
 		CAE9C9F34EEF05DBAB294F8D /* AccountSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8791C06DCCCBE23B5207885F /* AccountSession.swift */; };
 		CD5925D8BDBCEB51A1AA2967 /* SeasonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0EF0F16C07849CD496B575 /* SeasonView.swift */; };
 		DA78F69EEDE031D4C83B9DED /* NativeSoundboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1FA8B756F3046F16D15A3B0 /* NativeSoundboardView.swift */; };
+		DC80A4B776E87E1792E60972 /* 04-4L.svg in Resources */ = {isa = PBXBuildFile; fileRef = D194659DB283D94FB854ED45 /* 04-4L.svg */; };
 		DF1192B136E1FFB2590D38AD /* MatchSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12B3AA69798C69544A9A071C /* MatchSetupView.swift */; };
 		E05A71BFAFBD9C5E02442ECB /* LiveLaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40786667734A398A8A4388D6 /* LiveLaneView.swift */; };
+		E1C67D20100FDD9699CCF951 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = DB060EE5A589A4B8854B4EA7 /* README.md */; };
 		E4302FA1816B37ACF941E63B /* TeamAccessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 885C48085CB9E77974D1662D /* TeamAccessView.swift */; };
 		E9A7A709AEA735D2999E8938 /* PrivatePracticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0D1EC5A57D7329DF8F0046A /* PrivatePracticeView.swift */; };
 		F1E0B1ABBB90B10890BCD0C5 /* VoiceRoll.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11EC059B3D0B54FD92BD7320 /* VoiceRoll.swift */; };
 		F36065580D9D48C599D7A24E /* ScoreboardScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4950602E37FA9B9887F22AD9 /* ScoreboardScan.swift */; };
+		F66D5C8C1D74F367839A3E9C /* 01-background.svg in Resources */ = {isa = PBXBuildFile; fileRef = 7DE250D60BB3E7E08C515901 /* 01-background.svg */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -79,7 +84,9 @@
 		69E2A7AEB2D6266455A12E57 /* NativeFixtureSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeFixtureSession.swift; sourceTree = "<group>"; };
 		6A394B777B30A778A4DF712C /* LiveLaneCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveLaneCamera.swift; sourceTree = "<group>"; };
 		7D0EF0F16C07849CD496B575 /* SeasonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonView.swift; sourceTree = "<group>"; };
+		7DE250D60BB3E7E08C515901 /* 01-background.svg */ = {isa = PBXFileReference; path = "01-background.svg"; sourceTree = "<group>"; };
 		7ED8500D4884814BFC5420E1 /* ReviewDraftStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewDraftStorage.swift; sourceTree = "<group>"; };
+		8077C0345D58D4430D900044 /* 02-panel.svg */ = {isa = PBXFileReference; path = "02-panel.svg"; sourceTree = "<group>"; };
 		8791C06DCCCBE23B5207885F /* AccountSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSession.swift; sourceTree = "<group>"; };
 		885C48085CB9E77974D1662D /* TeamAccessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamAccessView.swift; sourceTree = "<group>"; };
 		8CE683751CC347C2EC6E22B6 /* TonightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonightView.swift; sourceTree = "<group>"; };
@@ -90,11 +97,14 @@
 		B49E72F9C5B129C2E0F1B9BD /* pickle.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = pickle.wav; sourceTree = "<group>"; };
 		CC9884CD94A4E8890FCD9C88 /* violin.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = violin.wav; sourceTree = "<group>"; };
 		D0D1EC5A57D7329DF8F0046A /* PrivatePracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivatePracticeView.swift; sourceTree = "<group>"; };
+		D194659DB283D94FB854ED45 /* 04-4L.svg */ = {isa = PBXFileReference; path = "04-4L.svg"; sourceTree = "<group>"; };
 		D2F3DED4DE0B56F3FF6D8B86 /* SharedLiveLaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLiveLaneView.swift; sourceTree = "<group>"; };
+		DB060EE5A589A4B8854B4EA7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingGame.swift; sourceTree = "<group>"; };
 		EE8FBC563B1D088E580EEC17 /* MatchInsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchInsightsView.swift; sourceTree = "<group>"; };
 		F1D19B84C44FC3CFDEA6B33C /* NativeSoundboardAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSoundboardAudio.swift; sourceTree = "<group>"; };
 		F6B33F7EF1FD008BC8E6191A /* StrikeCeilingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikeCeilingApp.swift; sourceTree = "<group>"; };
+		FD76CC1106A2125FB48A57E1 /* 03-BA.svg */ = {isa = PBXFileReference; path = "03-BA.svg"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,6 +124,7 @@
 			children = (
 				9D59FD0C883D0D1A492D7B16 /* Assets.xcassets */,
 				21D9127AD2739D1BC5EBFE54 /* PrivacyInfo.xcprivacy */,
+				AE6A3D26651A2C47AF7DDEAC /* IconComposer */,
 				4770B739CDE3E8067BC39E80 /* Sounds */,
 			);
 			path = Resources;
@@ -128,6 +139,18 @@
 				CC9884CD94A4E8890FCD9C88 /* violin.wav */,
 			);
 			path = Sounds;
+			sourceTree = "<group>";
+		};
+		6A94F1D6A79D8AA63173610E /* BA4L-C */ = {
+			isa = PBXGroup;
+			children = (
+				7DE250D60BB3E7E08C515901 /* 01-background.svg */,
+				8077C0345D58D4430D900044 /* 02-panel.svg */,
+				FD76CC1106A2125FB48A57E1 /* 03-BA.svg */,
+				D194659DB283D94FB854ED45 /* 04-4L.svg */,
+				DB060EE5A589A4B8854B4EA7 /* README.md */,
+			);
+			path = "BA4L-C";
 			sourceTree = "<group>";
 		};
 		9419FF954E7237E913D9ED87 /* Sources */ = {
@@ -170,6 +193,14 @@
 				67D72ACB8DDDDBA61E155DFE /* WeekGameView.swift */,
 			);
 			path = Sources;
+			sourceTree = "<group>";
+		};
+		AE6A3D26651A2C47AF7DDEAC /* IconComposer */ = {
+			isa = PBXGroup;
+			children = (
+				6A94F1D6A79D8AA63173610E /* BA4L-C */,
+			);
+			path = IconComposer;
 			sourceTree = "<group>";
 		};
 		CAFCB90B5421336DDA9E43E8 /* Config */ = {
@@ -263,8 +294,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F66D5C8C1D74F367839A3E9C /* 01-background.svg in Resources */,
+				4E6DCACBEF70E7CFA9A5CD16 /* 02-panel.svg in Resources */,
+				886FCD550D82E290831842A1 /* 03-BA.svg in Resources */,
+				DC80A4B776E87E1792E60972 /* 04-4L.svg in Resources */,
 				48B9113A6D80EC7ACA9DC506 /* Assets.xcassets in Resources */,
 				4FE1835D1327378CE3C5A928 /* PrivacyInfo.xcprivacy in Resources */,
+				E1C67D20100FDD9699CCF951 /* README.md in Resources */,
 				A17A8BD218DDCAB22BCA221A /* heating.wav in Resources */,
 				8384AFF9C04FA4F3F4D27A7C /* pickle.wav in Resources */,
 				80CEC813F8B547991F96C951 /* turkey.wav in Resources */,
@@ -355,7 +391,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 16;
+				CURRENT_PROJECT_VERSION = 17;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = FM45AMFBNY;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -445,7 +481,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 16;
+				CURRENT_PROJECT_VERSION = 17;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = FM45AMFBNY;
 				ENABLE_NS_ASSERTIONS = NO;
