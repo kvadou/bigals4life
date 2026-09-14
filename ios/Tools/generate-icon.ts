@@ -6,13 +6,13 @@ const sharp = require("sharp");
 const catalog = resolve(import.meta.dir, "../Resources/Assets.xcassets");
 const directory = resolve(catalog, "AppIcon.appiconset");
 mkdirSync(directory, { recursive: true });
-const mark = readFileSync(resolve(import.meta.dir, "../../web/public/ba4l-mark.svg"), "utf8");
-const svg = mark.replace('<g fill=', '<rect width="1024" height="1024" fill="#203B2F"/><g fill=');
+const mark = readFileSync(resolve(import.meta.dir, "../../web/public/ba4l-icon.svg"), "utf8");
+const svg = mark;
 writeFileSync(resolve(import.meta.dir, "../Resources/AppIcon.svg"), svg);
 await sharp(Buffer.from(svg)).resize(1024, 1024).removeAlpha().png().toFile(resolve(directory, "AppIcon.png"));
 writeFileSync(resolve(directory, "Contents.json"), JSON.stringify({ images:[{filename:"AppIcon.png",idiom:"universal",platform:"ios",size:"1024x1024"}],info:{author:"xcode",version:1} },null,2)+"\n");
 writeFileSync(resolve(catalog, "Contents.json"), JSON.stringify({info:{author:"xcode",version:1}},null,2)+"\n");
-console.log("Generated BA4L app icon (1024 x 1024, opaque).");
+console.log("Generated BA4L app icon and in-app mark from the web lockup (1024 x 1024, opaque).");
 
 const markDirectory = resolve(catalog, "BA4LMark.imageset");
 mkdirSync(markDirectory, {recursive:true});
