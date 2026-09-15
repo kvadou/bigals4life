@@ -107,6 +107,13 @@ export function parseStandings(text: string): StandingsWeek {
   return { season: h[6].trim(), date, week: Number(h[4]), weeksTotal: Number(h[5]), house, teams, results, rosters, matchPoints, warnings };
 }
 
+/** The handicap a bowler actually bowled with that week. The sheet's Hdcp column is already recalculated from the new average (next week's), so derive it from the totals. */
+export function usedHandicap(b: { handicap: number; scratchGames: unknown[] | null; scratchTotal: number | null; hdcpTotal: number | null }) {
+  if (!b.scratchGames?.length || b.scratchTotal == null || b.hdcpTotal == null) return b.handicap;
+  const h = (b.hdcpTotal - b.scratchTotal) / b.scratchGames.length;
+  return Number.isInteger(h) && h >= 0 ? h : b.handicap;
+}
+
 /** "GARY D. DORUMSGAARD" -> "GARY DORUMSGAARD"; used to join match-point rows (which may be truncated) to roster names. */
 export const displayName = (rosterName: string) => rosterName.replace(/\s+[A-Z]\.\s+/g, " ").replace(/\s+/g, " ").trim();
 export function matchRosterName(short: string, rosterNames: string[]): string | null {

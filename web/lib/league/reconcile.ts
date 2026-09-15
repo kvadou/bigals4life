@@ -1,7 +1,7 @@
 import type { Night } from "@/lib/scorebook";
 import { ourGames } from "./night-points";
 import { nightMatchPoints } from "./night-points";
-import { displayName } from "./bls-parse";
+import { displayName, usedHandicap } from "./bls-parse";
 import type { StandingsWeek } from "./types";
 
 export type Discrepancy = { who: string; field: string; ours: string; gary: string };
@@ -19,7 +19,8 @@ export function reconcileNight(nightId: string, night: Night, sheet: StandingsWe
     if (!row) return;
     if (!row.scratchGames) { if (games.some(g => g[i] != null)) out.push({ who: b.name, field: "games", ours: games.map(g => g[i] ?? "–").join(" · "), gary: row.absent ? "absent" : "no games" }); return; }
     row.scratchGames.forEach((g, k) => { checked++; const ours = games[k]?.[i]; if (ours != null && ours !== g) out.push({ who: b.name, field: `game ${k + 1}`, ours: String(ours), gary: String(g) }); });
-    if (row.handicap !== b.handicap) out.push({ who: b.name, field: "handicap", ours: String(b.handicap), gary: String(row.handicap) });
+    const used = usedHandicap(row);
+    if (used !== b.handicap) out.push({ who: b.name, field: "handicap", ours: String(b.handicap), gary: String(used) });
   });
   const result = sheet.results.find(r => r.number === ourTeamNumber);
   const points = nightMatchPoints(night);

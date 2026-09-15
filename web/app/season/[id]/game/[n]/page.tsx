@@ -4,7 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import { OriginLink as Link } from "@/app/components/crumbs";
 import { analyze, symbol } from "@/lib/bowling";
 import { nightSchema, type Night } from "@/lib/scorebook";
-import { BOWLERS, pointsSummary, summarizeGames } from "@/lib/season";
+import { BOWLERS, pointsSummary, summarizeGames, type WeekSummary } from "@/lib/season";
 import { Topbar } from "../../../../components/topbar";
 import { Crumbs } from "../../../../components/crumbs";
 import { fmt, title } from "../../../../components/match-hero";
@@ -15,18 +15,19 @@ export default function GamePage({ params }: { params: Promise<{ id: string; n: 
   const game = Math.max(1, Number(n) || 1);
   const [night, setNight] = useState<Night | null>(null);
   const [weekNumber, setWeekNumber] = useState<number | null>(null);
+  const [listed, setListed] = useState<WeekSummary | null>(null);
   const [error, setError] = useState("");
   useEffect(() => { void (async () => {
     try {
       const [r, s] = await Promise.all([fetch(`/api/nights/${id}`, { cache: "no-store" }), fetch("/api/season", { cache: "no-store" })]);
       const d = await r.json(); if (!r.ok) throw Error(d.error); setNight(nightSchema.parse(d.state));
-      if (s.ok) setWeekNumber(((await s.json()).weeks as { id: string; week: number }[]).find(w => w.id === id)?.week ?? null);
+      if (s.ok) { const w = ((await s.json()).weeks as WeekSummary[]).find(w => w.id === id) ?? null; setListed(w); setWeekNumber(w?.week ?? null); }
     } catch (e) { setError(e instanceof Error ? e.message : "Could not load this game."); }
   })(); }, [id]);
   const entries = night ? [...night.history.map(h => ({ game: h.game, rolls: h.rolls, finals: h.finals })), { game: night.game, rolls: night.rolls, finals: night.finals }] : [];
   const entry = entries.find(e => e.game === game);
   const summary = night ? summarizeGames(night).find(g => g.game === game) : null;
-  const points = night ? pointsSummary(night) : null;
+  const points = listed?.points ?? (night ? pointsSummary(night) : null);
   const gp = points?.games.find(g => g.game === game);
   const hth = points ? points.bowlers.reduce((s, b) => [s[0] + (b.games[game - 1]?.[0] ?? 0), s[1] + (b.games[game - 1]?.[1] ?? 0)], [0, 0]) : null;
   const total = gp && hth ? [gp.split[0] + hth[0], gp.split[1] + hth[1]] : null;

@@ -2,6 +2,7 @@ import { identify, isAdmin, isTeammate, unauthorized } from "@/lib/auth-server";
 import { database } from "@/lib/scorebook-server";
 import { nightSchema } from "@/lib/scorebook";
 import { pointsSummary, summarizeWeek, type WeekSummary } from "@/lib/season";
+import { loadOfficialWeek } from "@/lib/league/official-server";
 
 type Row = Record<string, any>;
 /** Every night this member can see, newest first, numbered as weeks of the current season. Books with no finished team game are hidden unless they are a marked pre-bowl. */
@@ -29,6 +30,10 @@ export async function GET(request: Request) {
       bowledOn: updatedAt.slice(0, 10),
       prebowl: night.prebowl ?? null,
     }));
+    // Gary's sheet is the source of truth for any week he has published.
+    const sheetKeys = [...new Set(nights.flatMap(({ night }) => !night.prebowl && night.match?.season && night.match.week ? [`${night.match.week}|${night.match.season}`] : []))];
+    const sheets = new Map(await Promise.all(sheetKeys.map(async k => { const [week, season] = [Number(k.split("|")[0]), k.slice(k.indexOf("|") + 1)]; return [k, await loadOfficialWeek(season, week).catch(() => null)] as const; })));
+    const sheetFor = (night: (typeof nights)[number]["night"]) => night.match ? sheets.get(`${night.match.week}|${night.match.season}`) ?? null : null;
     const weeks: WeekSummary[] = [];
     let n = 0;
     for (const { id, updatedAt, night } of nights.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt))) {
@@ -37,7 +42,9 @@ export async function GET(request: Request) {
       if (w.prebowl) { if (w.recordedGames) { w.points = pointsSummary(night); weeks.push(w); } continue; }
       if (!w.finishedGames) continue;
       n += 1; if (w.week == null) w.week = n;
-      w.points = pointsSummary(night);
+      const sheet = sheetFor(night);
+      w.points = pointsSummary(night, sheet);
+      if (sheet && w.points) w.ourHandicaps = w.points.bowlers.map((b, i) => sheet.ours.find(r => r.name.toUpperCase().startsWith(`${b.name.toUpperCase()} `))?.handicap ?? w.ourHandicaps?.[i] ?? 0);
       weeks.push(w);
     }
     return Response.json({ season: "2026-27", weeks: weeks.reverse(), setupWeeks }, { headers: { "Cache-Control": "private, no-store" } });

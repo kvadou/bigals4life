@@ -1,6 +1,7 @@
 import { basename } from "node:path";
 import { database } from "../scorebook-server";
-import { matchRosterName, parseStandings } from "./bls-parse";
+import { matchRosterName, parseStandings, usedHandicap } from "./bls-parse";
+import type { RosterBowler } from "./types";
 import { reconcileNight } from "./reconcile";
 import { nightSchema } from "../scorebook";
 
@@ -12,12 +13,14 @@ const upsert = (table: string, rows: unknown, onConflict: string) => database(`$
   body: JSON.stringify(rows),
 });
 
-function officialRosterMatch(name: string, rows: { name: string; handicap: number }[]) {
+/** The handicap Gary used for this lineup name that week, or null when the name is not on the roster. */
+function officialHandicap(name: string, rows: RosterBowler[]) {
   const needle = name.trim().toUpperCase();
-  return rows.find(row => {
+  const row = rows.find(row => {
     const official = row.name.replace(/\s+[A-Z]\.\s+/g, " ").toUpperCase();
     return official === needle || official.startsWith(`${needle} `);
   });
+  return row ? usedHandicap(row) : null;
 }
 
 /** Apply official handicaps to a saved match so its points recalculate from handicap totals. */
@@ -32,16 +35,16 @@ function syncMatchHandicaps(state: unknown, sheet: ReturnType<typeof parseStandi
   const theirs = sheet.rosters.find(r => r.number === theirsNumber)?.bowlers ?? [];
   let changed = false;
   match.ours = match.ours.map(b => {
-    const row = officialRosterMatch(b.name, ours);
-    if (!row || row.handicap === b.handicap) return b;
+    const handicap = officialHandicap(b.name, ours);
+    if (handicap == null || handicap === b.handicap) return b;
     changed = true;
-    return { ...b, handicap: row.handicap };
+    return { ...b, handicap };
   });
   match.opponent = { ...match.opponent, number: theirsNumber || match.opponent.number, bowlers: match.opponent.bowlers.map(b => {
-    const row = officialRosterMatch(b.name, theirs);
-    if (!row || row.handicap === b.handicap) return b;
+    const handicap = officialHandicap(b.name, theirs);
+    if (handicap == null || handicap === b.handicap) return b;
     changed = true;
-    return { ...b, handicap: row.handicap };
+    return { ...b, handicap };
   }) };
   if (theirsNumber && oldOpponentNumber !== theirsNumber) changed = true;
   return changed ? next : null;

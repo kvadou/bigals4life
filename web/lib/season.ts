@@ -5,7 +5,7 @@ export const BOWLERS = ["Doug", "Mustafa", "Kyle", "Pete"];
 
 export type GameSummary = { game: number; scores: (number | null)[]; complete: boolean[]; team: number | null; hasRolls: boolean };
 export type Split = [number, number];
-export type PointsSummary = { ours: number; theirs: number; remaining: number; team: Split; individual: Split; games: { game: number; split: Split; ours: number | null; theirs: number | null }[]; series: { split: Split; ours: number | null; theirs: number | null }; bowlers: { name: string; opponent: string; games: Split[]; series: Split; total: Split }[] };
+export type PointsSummary = { /** From Gary's sheet rather than our live scoring. */ official: boolean; ours: number; theirs: number; remaining: number; team: Split; individual: Split; games: { game: number; split: Split; ours: number | null; theirs: number | null }[]; series: { split: Split; ours: number | null; theirs: number | null }; bowlers: { name: string; opponent: string; games: Split[]; series: Split; total: Split }[] };
 export type WeekSummary = {
   id: string; bowledOn: string; week: number | null; opponent: string | null; opponentGames: (number | null)[][];
   ourHandicaps: number[] | null;
@@ -45,10 +45,11 @@ export function summarizeWeek(id: string, night: Night, updatedAt: string, week:
 }
 
 import { nightMatchPoints } from "./league/night-points";
-/** Match points for a night, shaped for pages. Null when no match is set up. */
-export function pointsSummary(night: Night): PointsSummary | null {
-  const p = nightMatchPoints(night); if (!p) return null;
-  return { ours: p.total[0], theirs: p.total[1], remaining: p.remaining, team: p.team, individual: p.individual,
+import { officialMatchPoints, type OfficialWeek } from "./league/official";
+/** Match points for a night, shaped for pages. Gary's sheet wins once it exists; before that, the live scoring. Null when no match is set up. */
+export function pointsSummary(night: Night, sheet?: OfficialWeek | null): PointsSummary | null {
+  const p = sheet ? officialMatchPoints(night, sheet) : nightMatchPoints(night); if (!p) return null;
+  return { official: !!sheet, ours: p.total[0], theirs: p.total[1], remaining: p.remaining, team: p.team, individual: p.individual,
     games: p.games.map(g => ({ game: g.game, split: g.split, ours: g.ours, theirs: g.theirs })), series: { split: p.series.split, ours: p.series.ours, theirs: p.series.theirs },
     bowlers: p.bowlers.map(b => ({ name: b.name, opponent: b.opponent, games: b.games, series: b.series, total: b.total })) };
 }

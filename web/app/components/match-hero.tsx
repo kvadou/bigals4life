@@ -23,7 +23,7 @@ export function MatchHero({ week, setupHref }: { week: WeekSummary; setupHref?: 
       <div className="match-body">
       <div className="match-score">
         <div><span className="who">Big Al&rsquo;s 4 Life</span><strong className="ours">{fmt(p.ours)}</strong></div>
-        <div className="mid"><span className="eyebrow light">MATCH POINTS</span><span className="open">{p.remaining ? `${fmt(p.remaining)} open` : "settled"}</span></div>
+        <div className="mid"><span className="eyebrow light">MATCH POINTS</span><span className="open">{p.official ? "official · Gary’s sheet" : p.remaining ? `${fmt(p.remaining)} open` : "settled"}</span></div>
         <div className="them"><span className="who">{title(week.opponent ?? "Opponent")}</span><strong>{fmt(p.theirs)}</strong></div>
       </div>
       <div className="split-chips">

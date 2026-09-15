@@ -8,7 +8,7 @@ export const handicapFor = (average: number) => Math.max(0, Math.floor(HANDICAP_
 export type LineupBowler = { name: string; handicap: number; games: (number | null)[] };
 export type TeamNight = { name: string; bowlers: LineupBowler[] };
 type Split = [number, number];
-const contest = (a: number | null, b: number | null, value: number): Split => a == null || b == null ? [0, 0] : a > b ? [value, 0] : a < b ? [0, value] : [value / 2, value / 2];
+export const contest = (a: number | null, b: number | null, value: number): Split => a == null || b == null ? [0, 0] : a > b ? [value, 0] : a < b ? [0, value] : [value / 2, value / 2];
 const add = (x: Split, y: Split): Split => [x[0] + y[0], x[1] + y[1]];
 const sum = (v: (number | null)[]) => v.reduce<number>((s, x) => s + (x ?? 0), 0);
 const played = (v: (number | null)[]) => v.every(x => x != null);
