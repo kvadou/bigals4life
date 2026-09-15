@@ -44,6 +44,7 @@ export async function GET(request: Request) {
       n += 1; if (w.week == null) w.week = n;
       const sheet = sheetFor(night);
       w.points = pointsSummary(night, sheet);
+      if (sheet?.opponentName) w.opponent = sheet.opponentName;
       if (sheet && w.points) w.ourHandicaps = w.points.bowlers.map((b, i) => sheet.ours.find(r => r.name.toUpperCase().startsWith(`${b.name.toUpperCase()} `))?.handicap ?? w.ourHandicaps?.[i] ?? 0);
       weeks.push(w);
     }

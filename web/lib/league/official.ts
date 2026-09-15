@@ -6,7 +6,7 @@ import { contest, matchPoints, TEAM_GAME, TEAM_SERIES, WEEK_TOTAL, type MatchPoi
 /** One bowler's line from Gary's sheet: the handicap bowled with that week and the scratch games. */
 export type OfficialBowler = { name: string; handicap: number; games: number[] | null };
 /** Our side of one week on Gary's sheet. */
-export type OfficialWeek = { pointsWon: number; ourHdcpGames: number[]; theirHdcpGames: number[]; ours: OfficialBowler[]; theirs: OfficialBowler[] };
+export type OfficialWeek = { opponentName: string; pointsWon: number; ourHdcpGames: number[]; theirHdcpGames: number[]; ours: OfficialBowler[]; theirs: OfficialBowler[] };
 
 const find = (name: string, rows: OfficialBowler[]) => {
   const needle = name.trim().toUpperCase();

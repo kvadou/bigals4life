@@ -16,7 +16,7 @@ const night = nightSchema.parse({
 
 // Gary's sheet for the same week.
 const sheet: OfficialWeek = {
-  pointsWon: 12, ourHdcpGames: [752, 887, 810], theirHdcpGames: [749, 889, 814],
+  opponentName: "NORDEAST", pointsWon: 12, ourHdcpGames: [752, 887, 810], theirHdcpGames: [749, 889, 814],
   ours: [
     { name: "DOUG KVAMME", handicap: 26, games: [168, 191, 184] }, { name: "MUSTAFA M. SAKHI", handicap: 92, games: [90, 124, 107] },
     { name: "KYLE A. DICKHAUS", handicap: 53, games: [138, 176, 139] }, { name: "PETE ANDERSON", handicap: 29, games: [156, 196, 180] },

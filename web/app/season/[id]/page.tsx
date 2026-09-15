@@ -22,7 +22,7 @@ export default function WeekPage({ params }: { params: Promise<{ id: string }> }
       const w = summarizeWeek(id, night, listed?.bowledOn ? listed.bowledOn + "T12:00:00" : new Date().toISOString(), listed?.week ?? null);
       w.bowledOn = listed?.bowledOn ?? localDate(new Date().toISOString());
       // The season feed carries Gary's numbers once his sheet is in; only fall back to live scoring without it.
-      w.points = listed?.points ?? pointsSummary(night); if (listed?.ourHandicaps) w.ourHandicaps = listed.ourHandicaps;
+      w.points = listed?.points ?? pointsSummary(night); if (listed?.ourHandicaps) w.ourHandicaps = listed.ourHandicaps; if (listed?.opponent) w.opponent = listed.opponent;
       setWeek(w);
     } catch (e) { setError(e instanceof Error ? e.message : "Could not load this week."); }
   })(); }, [id]);
