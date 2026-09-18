@@ -29,7 +29,7 @@ export function Topbar({ right }: { right?: ReactNode }) {
     }}>
       <div className="command-links">
         <Link className={pathname === "/" ? "active" : ""} href="/" onClick={() => setOpen(false)}>Tonight</Link>
-        <Link className={pathname.startsWith("/night") ? "active" : ""} href="/night" onClick={() => setOpen(false)}>Score</Link>
+        <Link className={pathname.startsWith("/night") ? "active" : ""} href="/night?latest=1" onClick={() => setOpen(false)}>Score</Link>
         <Link className={pathname.startsWith("/league") || pathname.startsWith("/records") ? "active" : ""} href="/league" onClick={() => setOpen(false)}>League</Link>
         <Link className={pathname.startsWith("/review") ? "active" : ""} href="/review" onClick={() => setOpen(false)}>Review</Link>
       </div>

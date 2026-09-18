@@ -27,6 +27,7 @@ export default function Home() {
     if (!ready || shared || !me) return;
     const params = new URLSearchParams(window.location.search);
     if (params.has("night") || params.has("new")) return;
+    params.delete("latest");
     const target = me.scorebooks[0]?.id ?? me.legacy?.[0]?.id;
     if (target) { params.set("night", target); window.location.replace(`/night?${params}`); }
   }, [ready, shared, me]);

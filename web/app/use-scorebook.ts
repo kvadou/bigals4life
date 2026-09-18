@@ -29,8 +29,9 @@ export function useScorebook(fresh:()=>Night,key:string){
   };
   useEffect(()=>{
     let remembered:string|null=null;
-    try{remembered=localStorage.getItem(`${key}:last-team`)}catch{}
     const params=new URLSearchParams(window.location.search);
+    // ?latest (the Score tab): the newest night you belong to, chosen once /api/me answers, not the one this phone last had open.
+    if(!params.has("latest")){try{remembered=localStorage.getItem(`${key}:last-team`)}catch{}}
     // ?new: a fresh night (a pre-bowl, next week) instead of the one this phone last had open.
     if(params.has("new")){try{localStorage.removeItem(key)}catch{}show(fresh());setReady(true);setStatus("Not saved yet");return}
     let candidate:string|null;
