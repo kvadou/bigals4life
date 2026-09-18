@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     const sheetFor = (night: (typeof nights)[number]["night"]) => night.match ? sheets.get(`${night.match.week}|${night.match.season}`) ?? null : null;
     const weeks: WeekSummary[] = [];
     // A pre-bowl is folded into its week once the whole team has bowled that week.
-    const playedWeeks = new Set(nights.flatMap(({ night }) => !night.prebowl && night.match?.week && summarizeWeek("", night, "", null).finishedGames ? [night.match.week] : []));
+    const playedWeeks = new Set(nights.flatMap(({ id, updatedAt, night }) => !night.prebowl && night.match?.week && summarizeWeek(id, night, updatedAt, null).finishedGames ? [night.match.week] : []));
     let n = 0;
     for (const { id, updatedAt, night } of nights.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt))) {
       const w = summarizeWeek(id, night, updatedAt, null);
