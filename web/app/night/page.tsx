@@ -7,6 +7,7 @@ import { analyze, maximum, symbol } from "@/lib/bowling";
 import PhotoImport from "../photo-import";
 import { useScorebook } from "../use-scorebook";
 import type { Night } from "@/lib/scorebook";
+import { localDate } from "@/lib/season";
 import VoiceEntry from "../voice-entry";
 import MatchPanel from "../match-panel";
 import TargetsPanel from "../targets-panel";
@@ -54,7 +55,7 @@ export default function Home() {
   // Between weeks: the Score tab landed on a finished night from an earlier day. Offer Thursday instead of a dead scorecard.
   const lastEdited = me && me.scorebooks.find(s => s.id === id)?.updatedAt;
   const nightDone = night.game >= 3 && states.every(s => s.complete);
-  const betweenWeeks = viaLatest && shared && ready && nightDone && !!lastEdited && Date.now() - new Date(lastEdited).getTime() > 20 * 3600_000;
+  const betweenWeeks = viaLatest && shared && ready && nightDone && !!lastEdited && localDate(lastEdited) !== localDate(new Date().toISOString());
   const seriesSoFar = [...night.history, {game: night.game, rolls: night.rolls, finals: night.finals}].reduce((t, h) => t + h.rolls.reduce((s, rolls, i) => s + (h.finals?.[i] ?? analyze(rolls).score), 0), 0);
   if (betweenWeeks) return <main className="score-first">
     <Topbar right={<AccountBar me={me} nightId={id} role={role} onClaimed={()=>void reload()}/>}/>
