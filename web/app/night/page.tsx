@@ -1,7 +1,7 @@
 "use client";
 import { OriginLink as Link } from "@/app/components/crumbs";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowUpRight, Check, CircleDot, History, RotateCcw, X } from "lucide-react";
 import { analyze, maximum, symbol } from "@/lib/bowling";
 import PhotoImport from "../photo-import";
@@ -31,6 +31,9 @@ export default function Home() {
     const target = me.scorebooks[0]?.id ?? me.legacy?.[0]?.id;
     if (target) { params.set("night", target); window.location.replace(`/night?${params}`); }
   }, [ready, shared, me]);
+  // Arrived from the Score tab (before the hook rewrote the URL). Read in a layout effect so it runs first.
+  const [viaLatest, setViaLatest] = useState(false);
+  useLayoutEffect(() => { setViaLatest(new URLSearchParams(window.location.search).has("latest")); }, []);
   const [selected, setSelected] = useState(0);
   const [entryMode, setEntryMode] = useState<string | null>(null);
   useEffect(() => { setEntryMode(new URLSearchParams(window.location.search).get("mode")); }, []);
@@ -49,6 +52,21 @@ export default function Home() {
   };
   const undo = () => setNight(n => n.finals?.[selected]!=null ? {...n,finals:n.finals.map((v,i)=>i===selected?null:v)} : ({ ...n, rolls: n.rolls.map((r,i)=>i === selected ? r.slice(0,-1) : r) }));
   const teamMax = ceilings.reduce((a,b)=>a+b,0);
+  // Between weeks: the Score tab landed on a finished night from an earlier day. Offer Thursday instead of a dead scorecard.
+  const lastEdited = me && me.scorebooks.find(s => s.id === id)?.updatedAt;
+  const nightDone = night.game >= 3 && states.every(s => s.complete);
+  const betweenWeeks = viaLatest && shared && ready && nightDone && !!lastEdited && Date.now() - new Date(lastEdited).getTime() > 20 * 3600_000;
+  const seriesSoFar = [...night.history, {game: night.game, rolls: night.rolls, finals: night.finals}].reduce((t, h) => t + h.rolls.reduce((s, rolls, i) => s + (h.finals?.[i] ?? analyze(rolls).score), 0), 0);
+  if (betweenWeeks) return <main className="score-first">
+    <Topbar right={<AccountBar me={me} nightId={id} role={role} onClaimed={()=>void reload()}/>}/>
+    <Crumbs items={[{label:"Season",href:"/season"},{label:"Score"}]}/>
+    <section className="intro"><div><div className="eyebrow">BETWEEN WEEKS</div><h1>Ready for <em>Thursday.</em></h1><p>{night.prebowl ? `The week ${night.prebowl.week} pre-bowl is in.` : `Last night is in the books: team series ${seriesSoFar}.`} Start the new night when you get to the lanes, or look back at the scorecards.</p></div></section>
+    <div className="between-actions">
+      <Link className="primary start-button" href="/night?new=1"><CircleDot size={16}/> Start Thursday&rsquo;s night</Link>
+      <Link className="secondary" href={`/season/${id}`}><History size={16}/> Last week&rsquo;s scorecards</Link>
+      <button className="text-button" onClick={()=>setViaLatest(false)}>Reopen the live scorebook</button>
+    </div>
+  </main>;
 
   return <main className="score-first">
     <Topbar right={<AccountBar me={me} nightId={id} role={role} onClaimed={()=>void reload()}/>}/>
