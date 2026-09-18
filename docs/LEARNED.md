@@ -152,3 +152,19 @@ Peanut Gallery posts inherit current session access but never grant video publis
 ## Soundboard mute must outrun slow audio downloads
 
 Do not await custom audio downloads in the session-state polling loop. Fetch independently, cancel older cues, and check the playback generation, current connection, enabled/listening state, recording state and ten-second freshness immediately before playing. Cancel downloads on mute, recording start, hide and disconnect. A short speaker lease needs a local deadline even when a renewal request hangs. Serialize release then claim so an old release cannot erase a newer claim. Native permission prompts can temporarily make the scene inactive; preserve a pending permission request while still stopping on background.
+
+## Gary's Hdcp column is next week's handicap
+
+The BLS sheet prints each bowler's handicap already recalculated from the new average. The handicap bowled with that week is (hdcp total - scratch total) / games; the two differed on 600 of 1000 historical rows. Use `usedHandicap` in `lib/league/bls-parse.ts` for anything about a past week. Once a week's sheet is ingested, its points come from the sheet (`lib/league/official.ts`), never from live scoring. Keep one ingest module: a duplicated CLI copy missed the handicap sync and left Week 1 scored scratch.
+
+## New opponents get handicaps from the night they bowl
+
+When a team fields bowlers with no prior week, Gary applies `handicapFor(that night's average)` retroactively, the same way Week 1 handicapped everyone. Record such a night with those handicaps in `match.opponent.bowlers` (see `web/scripts/import-week-2.ts`) so `/api/season` scores it correctly until his sheet ingests and takes over. Week 2 vs Finger Depth Check: 26-10 with handicaps, 34-2 scratch.
+
+## A pre-bowl folds into its week once the team bowls it
+
+`/api/season` hides a pre-bowl card when a finished full-team night carries the same `match.week`; the pre-bowl scorebook stays intact. Never pass an empty string as a night's date into `summarizeWeek`: `localDate("")` throws and took the whole season endpoint down for one deploy.
+
+## The Score tab means "the newest night", not "the last one this phone opened"
+
+`/night?latest=1` makes `useScorebook` ignore the remembered `last-team` id so the page redirects to `me.scorebooks[0]`. The redirect must carry `latest` through, or the page forgets how it arrived. A finished night from an earlier Central calendar date (not a fixed hour window) shows the between-weeks "Ready for Thursday" state instead of a dead scorecard.
