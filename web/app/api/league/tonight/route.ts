@@ -30,10 +30,8 @@ export async function POST(request: Request) {
   try {
     const tonight = await loadTonight();
     if (!tonight) return Response.json({ error: "Gary's sheet does not list our next match yet." }, { status: 404 });
-    if (tonight.nightId) {
-      await database("scorebook_members?on_conflict=scorebook_id,user_id", { method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=minimal" }, body: JSON.stringify({ scorebook_id: tonight.nightId, user_id: identity.user.id, role: "editor", added_by: identity.user.id }) });
-      return Response.json({ id: tonight.nightId, created: false });
-    }
+    // Membership comes from the night's own sharing (shareWithTeam at creation), never from this lookup.
+    if (tonight.nightId) return Response.json({ id: tonight.nightId, created: false });
     const [row] = await database("scorebooks?select=id", { method: "POST", body: JSON.stringify({ state: tonightNight(tonight), owner_id: identity.user.id }) });
     await database("scorebook_members", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ scorebook_id: row.id, user_id: identity.user.id, role: "owner", added_by: identity.user.id }) });
     await shareWithTeam(row.id, identity.user.id).catch(e => console.error("Team share failed", e instanceof Error ? e.message : "unknown"));

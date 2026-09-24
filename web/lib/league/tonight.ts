@@ -57,8 +57,8 @@ export async function loadTonight(now = new Date()): Promise<Tonight | null> {
   const ourRoster = roster(ours.id);
   const today = localDate(now.toISOString());
   const date = addDays(latest.bowled_on, 7);
-  // Only a team-owned night counts: POST adds the caller to it, so an anonymous or legacy scorebook must never qualify.
-  const [night]: Row[] = await database(`scorebooks?select=id&state->match->>season=eq.${encodeURIComponent(season.name)}&state->match->>week=eq.${week}&state->prebowl=is.null&owner_id=not.is.null&order=updated_at.desc&limit=1`);
+  // Only a team-owned night counts: an anonymous or legacy scorebook, or one for another pairing, must never qualify.
+  const [night]: Row[] = await database(`scorebooks?select=id&state->match->>season=eq.${encodeURIComponent(season.name)}&state->match->>week=eq.${week}&state->match->opponent->>number=eq.${them.number}&state->prebowl=is.null&owner_id=not.is.null&order=updated_at.desc&limit=1`);
   return {
     today, date, leagueNight: today === date, time: "6:50 PM",
     season: season.name, week, lanes: m.lanes, lane: m.lane,
