@@ -29,7 +29,7 @@ export function AccountBar({ me, nightId, role, onClaimed }: { me: Me | null | f
   if (me === null) return null;
   if (me === false) return <a className="secondary account-link" href={`/login?next=${encodeURIComponent(next)}`}><LogIn size={15}/> Sign in</a>;
   const canManage = nightId && (role === "owner" || (role === "legacy" && me.admin));
-  const displayName = me.profile.displayName || me.profile.bowlerName || me.user.email.split("@")[0];
+  const displayName = leagueName(me.profile.displayName || me.profile.bowlerName || me.user.email.split("@")[0], me.profile.bowlerName);
   const initial = displayName.trim().charAt(0).toUpperCase() || "D";
   const signOut = async () => { await supabaseBrowser().auth.signOut(); window.location.reload(); };
   return <>
@@ -110,4 +110,13 @@ function Teammates({ nightId, role, admin, onClaimed }: { nightId: string; role:
     {note && <p className="photo-success" role="status">{note}</p>}
     {error && <p className="photo-error" role="alert">{error}</p>}
   </>;
+}
+
+/** Full names as Gary's sheet prints them. An account name like "dougkvamme" is a handle, not a name. */
+const LEAGUE_NAMES: Record<string, string> = { doug: "Doug Kvamme", mustafa: "Mustafa Sakhi", kyle: "Kyle Dickhaus", pete: "Pete Anderson" };
+export function leagueName(name: string, bowler: string | null) {
+  const b = bowler?.trim().toLowerCase(); if (b && LEAGUE_NAMES[b]) return LEAGUE_NAMES[b];
+  const n = name.trim(); if (n.includes(" ")) return n;
+  const first = Object.keys(LEAGUE_NAMES).find(k => n.toLowerCase().startsWith(k));
+  return first ? LEAGUE_NAMES[first] : n;
 }

@@ -40,7 +40,7 @@ export function TonightCard({ tonight, currentId }: { tonight: Tonight; currentI
     <div className="eyebrow"><Swords size={13}/> {tonight.leagueNight ? "LEAGUE NIGHT · TONIGHT" : `NEXT UP · ${dayLabel(tonight.date).toUpperCase()}`}</div>
     <h2>Week {tonight.week} vs <em>{title(tonight.opponent.name)}</em></h2>
     <p>Lanes {tonight.lanes} · {tonight.time} · {laneNote}</p>
-    {tonight.opponent.bowlers.length > 0 && <p className="tonight-roster">{tonight.opponent.bowlers.slice(0, 4).map(b => `${title(b.name.split(" ")[0])} ${b.average}`).join(" · ")}</p>}
+    {tonight.opponent.bowlers.length > 0 && <p className="tonight-roster">{tonight.opponent.bowlers.slice(0, 4).map(b => `${title(b.name.split(" ")[0])} ${b.average} +${b.handicap}`).join(" · ")}</p>}
     {tonight.leagueNight && !scoringIt && <StartTonight tonight={tonight}/>}
   </section>;
 }
