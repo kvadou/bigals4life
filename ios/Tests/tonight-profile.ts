@@ -15,7 +15,10 @@ check(TonightProfile(displayName:"Visitor",bowlerName:nil).bowlerIndex == nil)
 check(TonightProfile(displayName:"Doug",bowlerName:nil).bowlerIndex == nil)
 check(TonightProfile(displayName:"Visitor",bowlerName:"Someone else").bowlerIndex == nil)
 check(TonightProfile(displayName:"",bowlerName:nil).greeting == "Ready for the lanes?")
-check(TonightProfile(displayName:"Mustafa",bowlerName:"Mustafa").greeting == "Welcome, Mustafa.")
+check(TonightProfile(displayName:"Mustafa",bowlerName:"Mustafa").greeting == "Welcome, Mustafa Sakhi.")
+check(TonightProfile(displayName:"dougkvamme",bowlerName:nil).greeting == "Welcome, Doug Kvamme.")
+check(TonightProfile(displayName:"Douglas Kvamme",bowlerName:"Doug").greeting == "Welcome, Douglas Kvamme.")
+check(TonightProfile(displayName:"Visitor",bowlerName:nil).greeting == "Welcome, Visitor.")
 let first=UserDefaults(suiteName:"ba4l.profile.fixture.first")!, second=UserDefaults(suiteName:"ba4l.profile.fixture.second")!
 defer { first.removePersistentDomain(forName:"ba4l.profile.fixture.first"); second.removePersistentDomain(forName:"ba4l.profile.fixture.second") }
 first.set(2,forKey:"selectedBowler"); second.set(3,forKey:"selectedBowler")
