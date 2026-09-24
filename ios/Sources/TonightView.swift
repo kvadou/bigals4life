@@ -15,6 +15,47 @@ struct TonightProfile: Decodable {
     }
 }
 
+/// GET /api/league/tonight: the next scheduled league night and who we bowl.
+/// Every field is optional so a partial or newer payload still decodes.
+struct LeagueTonight: Decodable {
+    struct Bowler: Decodable { let name: String?; let average: Double?; let handicap: Double? }
+    struct Opponent: Decodable { let number: Int?; let name: String?; let bowlers: [Bowler]? }
+    let today: String?
+    let date: String?
+    let leagueNight: Bool?
+    let time: String?
+    let season: String?
+    let week: Int?
+    let lanes: String?
+    let lane: String?
+    let opponent: Opponent?
+    let nightId: String?
+
+    var isTonight: Bool { leagueNight == true }
+    var matchTitle: String {
+        let name = opponent?.name?.trimmingCharacters(in: .whitespacesAndNewlines).capitalized
+        let lead = week.map { "Week \($0)" } ?? "League night"
+        guard let name, !name.isEmpty else { return lead }
+        return "\(lead) vs \(name)"
+    }
+    var shortDate: String {
+        let parts = (date ?? "").split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3, let day = Calendar.current.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12)) else { return date ?? "" }
+        return day.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
+    }
+    var detail: String {
+        var parts: [String] = []
+        if let lanes, !lanes.isEmpty { parts.append("Lanes \(lanes)") }
+        if let time, !time.isEmpty { parts.append(time) }
+        switch lane {
+        case "odd": parts.append("odd lane, we hand names in first")
+        case "even": parts.append("even lane, we see their four first")
+        default: break
+        }
+        return parts.joined(separator: " · ")
+    }
+}
+
 /// An account's bowling-night home. Every number comes from the shared scorebook or season API.
 struct TonightView: View {
     @ObservedObject var store: ScorebookStore
@@ -39,6 +80,11 @@ struct TonightView: View {
     @State private var error: String?
     @State private var loading = false
     @State private var requestID = UUID()
+    @State private var tonight: LeagueTonight?
+    @State private var startingTonight = false
+    @State private var tonightError: String?
+    /// Pre-bowls this screen already stepped away from, so a deliberate reopen sticks.
+    @State private var leftPrebowls: Set<String> = []
 
     @ScaledMetric(relativeTo: .largeTitle) private var scoreSize = 48.0
 
@@ -53,6 +99,13 @@ struct TonightView: View {
     private var games: [[Int?]] { NativeMatchScoring.ourGames(store.night) }
     private var completed: Bool { participants.allSatisfy { index in games.allSatisfy { $0[index] != nil } } }
     private var points: NativeMatchPoints? { store.night.prebowl == nil ? NativeMatchScoring.points(store.night) : nil }
+    /// Matches the web home: the team night leads, pre-bowls are secondary.
+    private var teamWeek: SeasonWeek? { season?.weeks.first { $0.prebowl == nil } }
+    private var prebowlWeeks: [SeasonWeek] {
+        guard let season else { return [] }
+        let floor = teamWeek?.week ?? 0
+        return season.weeks.filter { $0.prebowl != nil && $0.id != store.teamID && ($0.week ?? 0) >= floor }
+    }
     private var previousResult: SeasonWeek? { season?.weeks.first { $0.id != store.teamID && $0.prebowl == nil && $0.finishedGames >= 3 } }
     private var nightState: String {
         if store.night.prebowl != nil { return completed ? "Pre-bowl complete" : "Pre-bowl in progress" }
@@ -149,6 +202,7 @@ struct TonightView: View {
 
     private var mainColumn: some View {
         VStack(alignment: .leading, spacing: 18) {
+            if let tonight { tonightCard(tonight) }
             VStack(alignment: .leading, spacing: 8) {
                 Text(store.night.prebowl != nil ? "Before league night." : completed ? "The night, together." : "Four bowlers. One night.")
                     .font(.system(.largeTitle, design: .serif, weight: .bold))
@@ -206,6 +260,7 @@ struct TonightView: View {
     private var sideColumn: some View {
         VStack(alignment: .leading, spacing: 20) {
             teamPanel
+            ForEach(prebowlWeeks) { prebowlPanel($0) }
             if let result = previousResult { previousPanel(result) }
             seasonPanel
         }
@@ -391,6 +446,57 @@ struct TonightView: View {
         }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
             .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 16))
     }
+    @ViewBuilder private func tonightCard(_ info: LeagueTonight) -> some View {
+        let hero = info.isTonight
+        VStack(alignment: .leading, spacing: 10) {
+            Text(hero ? "LEAGUE NIGHT · TONIGHT" : "NEXT UP · \(info.shortDate)")
+                .font(.caption.weight(.bold)).tracking(0.8)
+                .foregroundStyle(hero ? Color("BrandGreen") : BA4LTheme.secondary)
+            Text(info.matchTitle)
+                .font(hero ? .system(.title2, design: .serif, weight: .bold) : .headline)
+                .fixedSize(horizontal: false, vertical: true)
+            if !info.detail.isEmpty {
+                Text(info.detail).font(.subheadline).foregroundStyle(BA4LTheme.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if hero {
+                Button { startTonight() } label: {
+                    HStack {
+                        Text(info.nightId == nil ? "Start scoring tonight" : "Open tonight\u{2019}s scorebook").fixedSize(horizontal: false, vertical: true)
+                        if !dynamicTypeSize.isAccessibilitySize {
+                            Spacer(minLength: 8)
+                            if startingTonight { ProgressView() } else { Image(systemName: "arrow.right") }
+                        }
+                    }.font(.headline).frame(maxWidth: .infinity, minHeight: 48)
+                        .foregroundStyle(Color("OnBrandGreen"))
+                }.buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle(radius: 12))
+                    .tint(Color("BrandGreen")).foregroundStyle(Color("OnBrandGreen"))
+                    .disabled(startingTonight)
+                    .accessibilityIdentifier("tonightStartLeagueNight")
+                if let tonightError {
+                    Text(tonightError).font(.callout).foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .padding(hero ? 20 : 16).frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundStyle(.primary)
+        .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 16))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("tonightLeagueCard")
+    }
+    private func prebowlPanel(_ week: SeasonWeek) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("\(week.title) pre-bowl").font(.headline)
+            Text(week.participants.compactMap { Night.names.indices.contains($0) ? Night.names[$0] : nil }.joined(separator: ", "))
+                .font(.subheadline)
+            if let score = week.teamSeries { LabeledContent("Scratch pins", value: score.formatted()) }
+            Text(week.progressLabel).font(.caption).foregroundStyle(BA4LTheme.secondary)
+            Button("Open pre-bowl") { leftPrebowls.insert(week.id); openPreviousNight(week.id) }
+                .disabled(!store.canSwitchTeam).frame(minHeight: 44)
+        }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 16))
+    }
     private var seasonPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             Button { showSeason = true } label: { Label("All weeks & pre-bowls", systemImage: "calendar").frame(minHeight: 44) }
@@ -413,6 +519,62 @@ struct TonightView: View {
         }
     }
 
+    private func startTonight() {
+        guard !startingTonight else { return }
+        startingTonight = true; tonightError = nil
+        Task { @MainActor in
+            defer { startingTonight = false }
+            do {
+                var request = URLRequest(url: URL(string: ScorebookClient.origin + "/api/league/tonight")!, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
+                request.httpMethod = "POST"
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                request.setValue(ScorebookClient.origin, forHTTPHeaderField: "Origin")
+                request.httpBody = Data("{}".utf8)
+                let (data, response) = try await send(request)
+                struct Created: Decodable { let id: String }
+                struct Failure: Decodable { let error: String }
+                guard (200..<300).contains(response.statusCode) else {
+                    throw ScorebookError.server((try? JSONDecoder().decode(Failure.self, from: data))?.error ?? "Tonight\u{2019}s scorebook could not open. Try again.")
+                }
+                let id = try JSONDecoder().decode(Created.self, from: data).id
+                await store.start()
+                if store.teamID != id {
+                    guard store.canSwitchTeam else {
+                        tonightError = "Finish syncing this scorebook first, then try again."
+                        return
+                    }
+                    await store.openTeam(ScorebookClient.origin + "/season/" + id)
+                    guard store.teamID == id else {
+                        tonightError = store.error ?? "Tonight\u{2019}s scorebook could not open. Try again."
+                        return
+                    }
+                }
+                openScorecard()
+                await loadTonight()
+            } catch {
+                tonightError = error.localizedDescription
+            }
+        }
+    }
+    /// Optional card data. Any failure (404, offline, older server) just hides the card.
+    @MainActor private func loadTonight() async {
+        do {
+            let (data, response) = try await send(URLRequest(url: URL(string: ScorebookClient.origin + "/api/league/tonight")!, cachePolicy: .reloadIgnoringLocalCacheData))
+            guard response.statusCode == 200 else { tonight = nil; return }
+            tonight = try JSONDecoder().decode(LeagueTonight.self, from: data)
+        } catch {
+            if !Task.isCancelled { tonight = nil }
+        }
+    }
+    /// A finished pre-bowl should not stand in for the team night on this screen.
+    @MainActor private func preferTeamNight() async {
+        guard let id = store.teamID, store.night.prebowl != nil, completed, !leftPrebowls.contains(id),
+              let team = teamWeek, team.id != id, store.canSwitchTeam,
+              (team.week ?? 0) >= (store.night.prebowl?.week ?? 0) else { return }
+        leftPrebowls.insert(id)
+        await store.openTeam(ScorebookClient.origin + "/season/" + team.id)
+    }
+
     private func pointPair(_ values: [Double]) -> String { values[0] + values[1] == 0 ? "Open" : "\(formatted(values[0])) – \(formatted(values[1]))" }
 
     @MainActor private func refresh() async {
@@ -420,11 +582,17 @@ struct TonightView: View {
         defer { if requestID == token { loading = false } }
         await store.start()
         await store.refresh(force: true)
+        async let league: Void = loadTonight()
+        await loadSeason(token)
+        await league
+    }
+    @MainActor private func loadSeason(_ token: UUID) async {
         do {
             let (data, response) = try await send(URLRequest(url: URL(string: ScorebookClient.origin + "/api/season")!, cachePolicy: .reloadIgnoringLocalCacheData))
             guard !Task.isCancelled, requestID == token else { return }
             guard response.statusCode == 200 else { throw ScorebookError.server("Season history could not load. Your current scorebook is still available.") }
             season = try JSONDecoder().decode(SeasonResponse.self, from: data)
+            await preferTeamNight()
         } catch {
             guard !Task.isCancelled, requestID == token else { return }
             self.error = error.localizedDescription
