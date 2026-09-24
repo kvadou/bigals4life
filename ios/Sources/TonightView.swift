@@ -9,8 +9,17 @@ struct TonightProfile: Decodable {
         let name = bowlerName.trimmingCharacters(in: .whitespacesAndNewlines)
         return Night.names.firstIndex { $0.caseInsensitiveCompare(name) == .orderedSame }
     }
-    var greeting: String {
+    /// Full names as Gary's sheet prints them. An account name like "dougkvamme" is a handle, not a greeting.
+    static let leagueNames = ["Doug": "Doug Kvamme", "Mustafa": "Mustafa Sakhi", "Kyle": "Kyle Dickhaus", "Pete": "Pete Anderson"]
+    var fullName: String {
         let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if name.contains(" ") { return name } // a first and last name you set yourself wins
+        if let index = bowlerIndex, let full = Self.leagueNames[Night.names[index]] { return full }
+        if !name.contains(" "), let first = Night.names.first(where: { name.lowercased().hasPrefix($0.lowercased()) }), let full = Self.leagueNames[first] { return full }
+        return name
+    }
+    var greeting: String {
+        let name = fullName
         return name.isEmpty ? "Ready for the lanes?" : "Welcome, \(name)."
     }
 }
@@ -29,6 +38,7 @@ struct LeagueTonight: Decodable {
     let lanes: String?
     let lane: String?
     let opponent: Opponent?
+    let ours: [Bowler]?
     let nightId: String?
 
     var isTonight: Bool { leagueNight == true }
@@ -202,7 +212,6 @@ struct TonightView: View {
 
     private var mainColumn: some View {
         VStack(alignment: .leading, spacing: 18) {
-            if let tonight { tonightCard(tonight) }
             VStack(alignment: .leading, spacing: 8) {
                 Text(store.night.prebowl != nil ? "Before league night." : completed ? "The night, together." : "Four bowlers. One night.")
                     .font(.system(.largeTitle, design: .serif, weight: .bold))
@@ -210,6 +219,7 @@ struct TonightView: View {
                 Text(profile?.greeting ?? "Your team. Your scorebook.")
                     .font(.subheadline).foregroundStyle(Color("BrandGold"))
             }
+            if let tonight { tonightCard(tonight) }
             resultPanel
             ForEach(liveDiscovery.sessions) { live in
                 Button { watchingLive = live } label: {
@@ -459,7 +469,12 @@ struct TonightView: View {
                 Text(info.detail).font(.subheadline).foregroundStyle(BA4LTheme.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            if hero {
+            if hero { scouting(info) }
+            if hero && info.nightId != nil && info.nightId == store.teamID {
+                Label("Scoring tonight \u{00B7} Game \(store.night.game)", systemImage: "checkmark.circle.fill")
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(Color("BrandGreen"))
+                    .accessibilityIdentifier("tonightScoringNow")
+            } else if hero {
                 Button { startTonight() } label: {
                     HStack {
                         Text(info.nightId == nil ? "Start scoring tonight" : "Open tonight\u{2019}s scorebook").fixedSize(horizontal: false, vertical: true)
@@ -484,6 +499,41 @@ struct TonightView: View {
         .background(Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 16))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("tonightLeagueCard")
+    }
+    /// Their four and ours with average and handicap: the numbers the lineup order is decided on.
+    @ViewBuilder private func scouting(_ info: LeagueTonight) -> some View {
+        let theirs = Array((info.opponent?.bowlers ?? []).filter { ($0.average ?? 0) > 0 }.prefix(4))
+        let ours = (info.ours ?? []).filter { ($0.average ?? 0) > 0 }
+        if !theirs.isEmpty {
+            Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 6) {
+                GridRow {
+                    Text("Them").gridColumnAlignment(.leading)
+                    Text("Avg").gridColumnAlignment(.trailing)
+                    Text("Hdcp").gridColumnAlignment(.trailing)
+                    Text("Us").gridColumnAlignment(.leading)
+                    Text("Avg").gridColumnAlignment(.trailing)
+                    Text("Hdcp").gridColumnAlignment(.trailing)
+                }.font(.caption.weight(.semibold)).foregroundStyle(BA4LTheme.secondary)
+                ForEach(0..<max(theirs.count, ours.count), id: \.self) { i in
+                    GridRow {
+                        cell(theirs, i, \.name); number(theirs, i, \.average); number(theirs, i, \.handicap)
+                        cell(ours, i, \.name); number(ours, i, \.average); number(ours, i, \.handicap)
+                    }.font(.subheadline)
+                }
+            }
+            .padding(.vertical, 4)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Scouting: " + theirs.map { "\(firstName($0.name)) \(Int($0.average ?? 0)) average, \(Int($0.handicap ?? 0)) handicap" }.joined(separator: "; "))
+            Text("Handicap is 90% of 210 minus average, so everyone lands within a few pins. Form beats order.")
+                .font(.caption).foregroundStyle(BA4LTheme.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+    private func firstName(_ name: String?) -> String { (name ?? "").split(separator: " ").first.map { String($0).capitalized } ?? "" }
+    private func cell(_ rows: [LeagueTonight.Bowler], _ i: Int, _ key: KeyPath<LeagueTonight.Bowler, String?>) -> some View {
+        Text(i < rows.count ? firstName(rows[i][keyPath: key]) : "").lineLimit(1)
+    }
+    private func number(_ rows: [LeagueTonight.Bowler], _ i: Int, _ key: KeyPath<LeagueTonight.Bowler, Double?>) -> some View {
+        Text(i < rows.count ? "\(Int(rows[i][keyPath: key] ?? 0))" : "").monospacedDigit()
     }
     private func prebowlPanel(_ week: SeasonWeek) -> some View {
         VStack(alignment: .leading, spacing: 8) {

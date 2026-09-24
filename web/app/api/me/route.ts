@@ -1,5 +1,6 @@
 import { identify, isAdmin, unauthorized } from "@/lib/auth-server";
-import { database } from "@/lib/scorebook-server";
+import { z } from "zod";
+import { database, sameOrigin } from "@/lib/scorebook-server";
 
 type Row = Record<string, any>;
 export async function GET(request: Request) {
@@ -22,5 +23,24 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("Me failed", error instanceof Error ? error.message : "unknown");
     return Response.json({ error: "Account details are unavailable right now." }, { status: 503 });
+  }
+}
+
+const namePart = z.string().trim().min(1).max(30).regex(/^[\p{L}\p{M}' .-]+$/u);
+const nameUpdate = z.object({ firstName: namePart, lastName: namePart });
+
+/** Your own first and last name, shown in greetings and the account menu. Display only: never grants access or changes scores. */
+export async function PATCH(request: Request) {
+  const identity = await identify(request);
+  if (!identity) return unauthorized();
+  if (identity.viaCookie && !sameOrigin(request)) return Response.json({ error: "Use the website to change your name." }, { status: 403 });
+  let body; try { body = nameUpdate.parse(await request.json()); } catch { return Response.json({ error: "Enter a first and last name (letters, spaces, apostrophes, hyphens)." }, { status: 400 }); }
+  const displayName = `${body.firstName} ${body.lastName}`.replace(/\s+/g, " ");
+  try {
+    const [profile]: Row[] = await database(`profiles?on_conflict=user_id`, { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=representation" }, body: JSON.stringify({ user_id: identity.user.id, display_name: displayName }) });
+    return Response.json({ profile: { displayName: profile.display_name, bowlerName: profile.bowler_name ?? null } }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error("Name update failed", error instanceof Error ? error.message : "unknown");
+    return Response.json({ error: "Could not save your name. Try again." }, { status: 503 });
   }
 }

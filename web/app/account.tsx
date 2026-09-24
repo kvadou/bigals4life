@@ -115,8 +115,8 @@ function Teammates({ nightId, role, admin, onClaimed }: { nightId: string; role:
 /** Full names as Gary's sheet prints them. An account name like "dougkvamme" is a handle, not a name. */
 const LEAGUE_NAMES: Record<string, string> = { doug: "Doug Kvamme", mustafa: "Mustafa Sakhi", kyle: "Kyle Dickhaus", pete: "Pete Anderson" };
 export function leagueName(name: string, bowler: string | null) {
+  const n = name.trim(); if (n.includes(" ")) return n; // a first and last name you set yourself wins
   const b = bowler?.trim().toLowerCase(); if (b && LEAGUE_NAMES[b]) return LEAGUE_NAMES[b];
-  const n = name.trim(); if (n.includes(" ")) return n;
   const first = Object.keys(LEAGUE_NAMES).find(k => n.toLowerCase().startsWith(k));
   return first ? LEAGUE_NAMES[first] : n;
 }
