@@ -168,3 +168,7 @@ When a team fields bowlers with no prior week, Gary applies `handicapFor(that ni
 ## The Score tab means "the newest night", not "the last one this phone opened"
 
 `/night?latest=1` makes `useScorebook` ignore the remembered `last-team` id so the page redirects to `me.scorebooks[0]`. The redirect must carry `latest` through, or the page forgets how it arrived. A finished night from an earlier Central calendar date (not a fixed hour window) shows the between-weeks "Ready for Thursday" state instead of a dead scorecard.
+
+## Next week's opponent is on Gary's sheet, in the roster headers
+
+Each team's roster header reads `7 - BIG AL'S 4 LIFE Lane 5`: that is next week's lane, and lane n bowls lane n+1. The printed "Lane Assignments" grid is not always in the text (the 2026-27 Week 2 sheet omits it), so `nextMatchups` reads the roster headers instead. Stored in `league_weeks.next_matchups` (migration 202609240001); `lib/league/tonight.ts` falls back to a checked-in schedule for weeks ingested before that column existed. Remote migration history is missing 202609130001-3 (applied by hand), so `supabase db push` would re-run them and fail; repair the history with `supabase migration repair --status applied` for those three before pushing.

@@ -1,4 +1,4 @@
-import type { RosterBowler, StandingsWeek, TeamStanding, TeamWeekResult } from "./types";
+import type { NextMatchup, RosterBowler, StandingsWeek, TeamStanding, TeamWeekResult } from "./types";
 
 // Parses `pdftotext -layout` output of a BLS-2013 league standings sheet.
 // Columns are recognised by token shape (decimals are percentages, ½ marks points, a107 is an absent score,
@@ -104,7 +104,20 @@ export function parseStandings(text: string): StandingsWeek {
     const b = rosterRow(l, current.number, warnings); if (b) current.bowlers.push(b);
   }
 
-  return { season: h[6].trim(), date, week: Number(h[4]), weeksTotal: Number(h[5]), house, teams, results, rosters, matchPoints, warnings };
+  return { season: h[6].trim(), date, week: Number(h[4]), weeksTotal: Number(h[5]), house, teams, results, rosters, matchPoints, nextMatchups: nextMatchups(rosters, warnings), warnings };
+}
+
+/** Each roster header carries next week's lane. The team on the odd lane n bowls the team on lane n+1. */
+export function nextMatchups(rosters: { number: number; lane: number }[], warnings: string[] = []): NextMatchup[] {
+  const byLane = new Map(rosters.filter(r => r.lane > 0).map(r => [r.lane, r.number]));
+  const out: NextMatchup[] = [];
+  for (const [lane, odd] of [...byLane].sort((a, b) => a[0] - b[0])) {
+    if (lane % 2 === 0) continue;
+    const even = byLane.get(lane + 1);
+    if (even == null) { warnings.push(`Lane ${lane}: no team on lane ${lane + 1} next week.`); continue; }
+    out.push({ lanes: `${lane}-${lane + 1}`, odd, even });
+  }
+  return out;
 }
 
 /** The handicap a bowler actually bowled with that week. The sheet's Hdcp column is already recalculated from the new average (next week's), so derive it from the totals. */

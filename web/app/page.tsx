@@ -8,12 +8,14 @@ import { Topbar } from "./components/topbar";
 import LiveDiscovery from "./live/discovery";
 import { Crumbs } from "./components/crumbs";
 import { GameRows, MatchHero, fmt, isWeekFinished } from "./components/match-hero";
+import { TonightCard, useTonight } from "./components/tonight-card";
 
 type Standings = { season: { name: string }; week: { number: number; bowledOn: string }; teams: { name: string; place: number; pointsWon: number; pointsLost: number; ours: boolean }[]; roster: { name: string; average: number; games: number[] | null; total: number | null }[] };
 
 /** Home: the latest week as a matchup card (points hero + drill-in rows), standings and records at a glance, live entry one tap away. */
 export default function Home() {
   const me = useMe();
+  const tonight = useTonight();
   const [weeks, setWeeks] = useState<WeekSummary[] | null>(null);
   const [standings, setStandings] = useState<Standings | null>(null);
   const [error, setError] = useState("");
@@ -39,6 +41,7 @@ export default function Home() {
   return <main className="team-night">
     <Topbar right={<AccountBar me={me} nightId={week?.id ?? ""} role="" onClaimed={() => {}}/>}/>
     <Crumbs items={[{ label: "Tonight" }]}/>
+    {tonight && <TonightCard tonight={tonight} currentId={week?.id}/>}
     <LiveDiscovery/>
     {error && <p className="photo-error" role="alert">{error}</p>}
     {weeks && !week && <section className="intro"><div><div className="eyebrow">NO GAMES YET</div><h1>First frame is <em>yours.</em></h1><p>Open the live scorebook and the week fills in here as games finish.</p></div><Link className="primary start-button" href="/night">Open the scorebook</Link></section>}

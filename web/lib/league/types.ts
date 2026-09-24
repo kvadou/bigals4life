@@ -21,5 +21,8 @@ export type StandingsWeek = {
   results: TeamWeekResult[];
   rosters: { number: number; name: string; lane: number; bowlers: RosterBowler[] }[];
   matchPoints: { name: string; points: number }[];
+  /** Next week's pairings, from each roster's "Lane N" header (lanes n and n+1 bowl each other). */
+  nextMatchups: NextMatchup[];
   warnings: string[];
 };
+export type NextMatchup = { lanes: string; odd: number; even: number };

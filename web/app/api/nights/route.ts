@@ -1,5 +1,6 @@
 import { enforcing, identify, isTeammate, unauthorized } from "@/lib/auth-server";
 import { database, readUpdate, sameOrigin } from "@/lib/scorebook-server";
+import { shareWithTeam } from "@/lib/team-share";
 const recent = new Map<string, number>();
 
 export async function POST(request: Request) {
@@ -21,16 +22,4 @@ export async function POST(request: Request) {
     recent.set(key, now + 60_000);
     return Response.json({ ...rows[0], role: identity ? "owner" : "legacy" }, { status: 201 });
   } catch { return Response.json({ error: "Could not create shared scorebook. Your local scores are safe." }, { status: 503 }); }
-}
-
-/** A new night belongs to the team, not just whoever tapped first. One team, one app: everyone ever added to or invited to any scorebook can edit it. */
-async function shareWithTeam(scorebookId: string, creator: string) {
-  const [members, invites]: { user_id?: string; email?: string }[][] = await Promise.all([
-    database(`scorebook_members?scorebook_id=neq.${scorebookId}&user_id=neq.${creator}&select=user_id`),
-    database(`scorebook_invites?scorebook_id=neq.${scorebookId}&select=email`),
-  ]);
-  const users = [...new Set(members.map(m => m.user_id!))];
-  const emails = [...new Set(invites.map(i => i.email!.toLowerCase()))];
-  if (users.length) await database("scorebook_members?on_conflict=scorebook_id,user_id", { method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=minimal" }, body: JSON.stringify(users.map(u => ({ scorebook_id: scorebookId, user_id: u, role: "editor", added_by: creator }))) });
-  if (emails.length) await database("scorebook_invites?on_conflict=scorebook_id,email", { method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=minimal" }, body: JSON.stringify(emails.map(e => ({ scorebook_id: scorebookId, email: e, role: "editor", invited_by: creator }))) });
 }

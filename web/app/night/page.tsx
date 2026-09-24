@@ -15,6 +15,7 @@ import PrebowlPanel from "../prebowl-panel";
 import { AccountBar, useMe } from "../account";
 import { Topbar } from "../components/topbar";
 import { Crumbs } from "../components/crumbs";
+import { TonightCard, useTonight } from "../components/tonight-card";
 
 const names = ["Doug", "Mustafa", "Kyle", "Pete"];
 const fresh = (): Night => ({ rolls: names.map(() => []), game: 1, history: [] });
@@ -23,6 +24,7 @@ const key = "strike-ceiling-web-v1";
 export default function Home() {
   const {night,setNight,ready,status,error,shared,share,shareMessage,role,needsSignIn,id,retry,reload} = useScorebook(fresh,key);
   const me = useMe();
+  const tonight = useTonight();
   // Signed in with no scorebook selected: open the latest one you belong to (or, for the admin, the fullest unclaimed one).
   useEffect(() => {
     if (!ready || shared || !me) return;
@@ -60,9 +62,10 @@ export default function Home() {
   if (betweenWeeks) return <main className="score-first">
     <Topbar right={<AccountBar me={me} nightId={id} role={role} onClaimed={()=>void reload()}/>}/>
     <Crumbs items={[{label:"Season",href:"/season"},{label:"Score"}]}/>
+    {tonight && <TonightCard tonight={tonight} currentId={id}/>}
     <section className="intro"><div><div className="eyebrow">BETWEEN WEEKS</div><h1>Ready for <em>Thursday.</em></h1><p>{night.prebowl ? `The week ${night.prebowl.week} pre-bowl is in.` : `Last night is in the books: team series ${seriesSoFar}.`} Start the new night when you get to the lanes, or look back at the scorecards.</p></div></section>
     <div className="between-actions">
-      <Link className="primary start-button" href="/night?new=1"><CircleDot size={16}/> Start Thursday&rsquo;s night</Link>
+      {tonight?.leagueNight ? null : <Link className="primary start-button" href="/night?new=1"><CircleDot size={16}/> Start Thursday&rsquo;s night</Link>}
       <Link className="secondary" href={`/season/${id}`}><History size={16}/> Last week&rsquo;s scorecards</Link>
       <button className="text-button" onClick={()=>setViaLatest(false)}>Reopen the live scorebook</button>
     </div>
