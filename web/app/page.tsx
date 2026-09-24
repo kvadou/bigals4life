@@ -30,8 +30,11 @@ export default function Home() {
   }, []);
   const week = weeks?.find(w => !w.prebowl) ?? weeks?.[0] ?? null;
   const finished = week ? isWeekFinished(week) : false;
-  const scoreHref = week ? `/night?night=${week.id}` : "/night";
-  const modeHref = (mode: string) => `${scoreHref}${week ? "&" : "?"}mode=${mode}`;
+  // League night with tonight's scorebook started: the entry bar scores tonight, even while Home still shows last week.
+  const tonightId = tonight?.leagueNight && tonight.nightId && tonight.nightId !== week?.id ? tonight.nightId : null;
+  const entryId = tonightId ?? week?.id;
+  const scoreHref = entryId ? `/night?night=${entryId}` : "/night";
+  const modeHref = (mode: string) => `${scoreHref}${entryId ? "&" : "?"}mode=${mode}`;
   const prebowls = weeks?.filter(w => w.prebowl && w.id !== week?.id) ?? [];
   const us = standings?.teams.find(t => t.ours);
   const ahead = us && standings ? standings.teams.find(t => t.place === us.place - 1) : null;
@@ -63,7 +66,7 @@ export default function Home() {
         {weeks && weeks.length > 1 && <Link href="/season" className="text-button center-link">All {weeks.length} weeks ›</Link>}
       </aside>
     </div>}
-    {!finished && <div className="entry-bar" aria-label="Score tonight">
+    {(!finished || tonightId) && <div className="entry-bar" aria-label="Score tonight">
       <Link href={scoreHref} className="entry-tile"><ListPlus size={18}/> Tap pins</Link>
       <Link href={modeHref("scan")} className="entry-tile accent"><Camera size={18}/> Scan board</Link>
       <Link href={modeHref("voice")} className="entry-tile"><Mic size={18}/> Say a roll</Link>
