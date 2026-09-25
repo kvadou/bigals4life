@@ -1,4 +1,4 @@
-// bun --env-file=.env.local scripts/gmail-ingest.ts [--test-forward]
+// bun --env-file=.env.local scripts/gmail-ingest.ts [--test-forward | --forward-latest]
 // Pulls Gary's standings PDFs out of dougkvamme@gmail.com over IMAP, saves new ones to ../league-pdfs, ingests them,
 // then forwards Gary's email (with the PDF) to the team, the way Doug used to by hand.
 // Already-ingested files (league_weeks.source_file) are skipped, so it is safe on a schedule.
@@ -21,6 +21,9 @@ const query = `from:${gary} has:attachment filename:pdf newer_than:21d`;
 const forwardTo = (process.env.BAFL_FORWARD_TO ?? "").split(",").map(s => s.trim()).filter(Boolean);
 const LABEL = "BA4L/Forwarded";
 const testForward = process.argv.includes("--test-forward");
+// --forward-latest: Doug asked to send the newest Gary email to the team once (labelled, so never again).
+const forwardLatest = process.argv.includes("--forward-latest");
+const manual = testForward || forwardLatest;
 const stamp = () => new Date().toISOString();
 if (!pass) { console.error(`${stamp()} BAFL_GMAIL_APP_PASSWORD is not set in web/.env.local (a Gmail app password for ${user}).`); process.exit(1); }
 
@@ -63,7 +66,7 @@ try {
       const name = `${id}__${p.filename.replace(/[^\w .'-]+/g, "_")}`;
       const path = `${dir}/${name}`;
       const fresh = !known.has(name) && !known.has(p.filename);
-      if (fresh || testForward) { if (!await Bun.file(path).exists()) await Bun.write(path, await read(client, uid, p.part)); known.add(p.filename); }
+      if (fresh || manual) { if (!await Bun.file(path).exists()) await Bun.write(path, await read(client, uid, p.part)); known.add(p.filename); }
       entry.pdfs.push({ ...p, path, fresh });
     }
     found.push(entry);
@@ -73,7 +76,7 @@ try {
 const fromGary = (f: Found) => f.authentic && f.from === gary && !/^(re|fwd?):/i.test(f.subject.trim());
 const freshPaths = found.flatMap(f => f.pdfs.filter(p => p.fresh).map(p => p.path));
 
-if (freshPaths.length && !testForward) {
+if (freshPaths.length && !manual) {
   const proc = Bun.spawn(["bun", "--env-file=.env.local", `${import.meta.dir}/ingest-standings.ts`, ...freshPaths.sort()], { cwd: `${import.meta.dir}/..`, stdout: "inherit", stderr: "inherit", env: process.env });
   const code = await proc.exited;
   if (code) process.exit(code); // never forward a sheet that failed to ingest
@@ -83,8 +86,8 @@ const landed = new Set<string>((await database("league_weeks?select=source_file"
 const ingested = (p: { path: string }) => landed.has(p.path.split("/").pop()!);
 
 const recent = (f: Found) => Date.now() - f.date.getTime() < 4 * 86_400_000;
-const toForward = testForward
-  ? found.filter(fromGary).sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 1)
+const toForward = manual
+  ? found.filter(fromGary).sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 1).filter(f => testForward || !f.labels.has(LABEL))
   : found.filter(f => fromGary(f) && recent(f) && f.pdfs.some(p => p.fresh && ingested(p)) && !f.labels.has(LABEL));
 const recipients = testForward ? [user] : forwardTo;
 if (!toForward.length || !recipients.length) {
