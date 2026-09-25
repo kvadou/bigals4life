@@ -1,13 +1,16 @@
 // bun --env-file=.env.local scripts/gmail-ingest.ts
-// Pulls Gary's standings PDFs out of Gmail (the mailbox behind ~/.gmail-mcp), saves new ones to ../league-pdfs,
+// Pulls Gary's standings PDFs out of dougkvamme@gmail.com, saves new ones to ../league-pdfs,
 // and ingests them. Already-ingested files (league_weeks.source_file) are skipped, so it is safe on a schedule.
 import { database } from "../lib/scorebook-server";
 
 const home = process.env.HOME!;
 const dir = `${import.meta.dir}/../../league-pdfs`;
-const query = process.env.BAFL_GMAIL_QUERY ?? '(from:thursnitemens@gmail.com OR subject:TME OR subject:Standings) has:attachment filename:pdf newer_than:60d';
+const query = process.env.BAFL_GMAIL_QUERY ?? '(from:thursnitemens@gmail.com OR subject:TME OR subject:Standings) has:attachment filename:pdf newer_than:21d';
 
-const cred = await Bun.file(`${home}/.gmail-mcp/credentials.json`).json();
+// Gary's PDFs land in dougkvamme@gmail.com. Its read-only token comes from scripts/gmail-auth.ts, never the work mailbox behind ~/.gmail-mcp.
+const credPath = process.env.BAFL_GMAIL_CREDENTIALS ?? `${home}/.bafl-gmail/credentials.json`;
+if (!await Bun.file(credPath).exists()) { console.error(`${new Date().toISOString()} no Gmail token at ${credPath}; run: bun ~/BAFL/web/scripts/gmail-auth.ts`); process.exit(1); }
+const cred = await Bun.file(credPath).json();
 const keys = (await Bun.file(`${home}/.gmail-mcp/gcp-oauth.keys.json`).json()).installed;
 const token = await (await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ client_id: keys.client_id, client_secret: keys.client_secret, refresh_token: cred.refresh_token, grant_type: "refresh_token" }) })).json();
 if (!token.access_token) throw new Error(`Gmail token refresh failed: ${token.error ?? "unknown"}`);
@@ -21,7 +24,7 @@ for (const { id } of (list.messages ?? []) as { id: string }[]) {
   const parts: any[] = []; const walk = (p: any) => { if (!p) return; if (p.filename && p.body?.attachmentId) parts.push(p); (p.parts ?? []).forEach(walk); }; walk(msg.payload);
   for (const p of parts.filter(p => /\.pdf$/i.test(p.filename))) {
     const name = `${id}__${p.filename.replace(/[^\w .'-]+/g, "_")}`;
-    if (known.has(name)) continue;
+    if (known.has(name) || known.has(p.filename)) continue; // already ingested, from Gmail or a manual upload
     const path = `${dir}/${name}`;
     if (!await Bun.file(path).exists()) {
       const att = await gmail(`messages/${id}/attachments/${p.body.attachmentId}`);
