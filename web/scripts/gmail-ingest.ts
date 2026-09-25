@@ -5,7 +5,7 @@
 // Auth: a Gmail app password in BAFL_GMAIL_APP_PASSWORD (web/.env.local; scripts/set-gmail-password.sh), used for IMAP and SMTP.
 // The Google Cloud client behind ~/.gmail-mcp is the Story Time Chess GAM app, which Google restricts to that organization.
 //
-// Forwarding rules: only Gary's emails (never Doug's own "Fwd:"), only when this run ingested a new sheet from them,
+// Forwarding rules: only Gary's emails from BAFL_GARY_FROM that pass Gmail's DKIM + DMARC, only when this run ingested a new sheet from them,
 // only if sent in the last 4 days, and never twice: forwarded emails get the Gmail label BA4L/Forwarded.
 // Recipients: BAFL_FORWARD_TO (comma-separated) in web/.env.local. --test-forward sends the newest Gary email to Doug only, unlabeled.
 import { ImapFlow } from "imapflow";
@@ -15,7 +15,9 @@ import { database } from "../lib/scorebook-server";
 const dir = `${import.meta.dir}/../../league-pdfs`;
 const user = process.env.BAFL_GMAIL_USER ?? "dougkvamme@gmail.com";
 const pass = process.env.BAFL_GMAIL_APP_PASSWORD?.replace(/\s+/g, "");
-const query = process.env.BAFL_GMAIL_QUERY ?? "(from:thursnitemens@gmail.com OR subject:TME OR subject:Standings) has:attachment filename:pdf newer_than:21d";
+// Gary's league address is the only trusted source: it alone can trigger an ingest or a forward.
+const gary = (process.env.BAFL_GARY_FROM ?? "thursnitemens@gmail.com").toLowerCase();
+const query = `from:${gary} has:attachment filename:pdf newer_than:21d`;
 const forwardTo = (process.env.BAFL_FORWARD_TO ?? "").split(",").map(s => s.trim()).filter(Boolean);
 const LABEL = "BA4L/Forwarded";
 const testForward = process.argv.includes("--test-forward");
@@ -27,7 +29,7 @@ const walk = (node: Part | undefined, out: Part[] = []) => { if (!node) return o
 const filenameOf = (p: Part) => p.dispositionParameters?.filename ?? p.parameters?.name;
 const pdfParts = (root: Part | undefined) => walk(root).flatMap(p => { const f = filenameOf(p); return p.part && f && /\.pdf$/i.test(f) ? [{ part: p.part, filename: f }] : []; });
 
-type Found = { uid: number; from: string; fromName: string; subject: string; date: Date; labels: Set<string>; bodyPart: string | null; pdfs: { part: string; filename: string; path: string; fresh: boolean }[] };
+type Found = { uid: number; authentic: boolean; from: string; fromName: string; subject: string; date: Date; labels: Set<string>; bodyPart: string | null; pdfs: { part: string; filename: string; path: string; fresh: boolean }[] };
 
 const imap = () => new ImapFlow({ host: "imap.gmail.com", port: 993, secure: true, auth: { user, pass }, logger: false });
 const read = async (client: ImapFlow, uid: number, part: string) => {
@@ -47,10 +49,14 @@ let lock = await client.getMailboxLock(allMail);
 try {
   const uids = (await client.search({ gmraw: query }, { uid: true })) || [];
   for (const uid of uids) {
-    const msg = await client.fetchOne(String(uid), { bodyStructure: true, envelope: true, labels: true, internalDate: true }, { uid: true });
+    const msg = await client.fetchOne(String(uid), { bodyStructure: true, envelope: true, labels: true, internalDate: true, headers: ["authentication-results"] }, { uid: true });
     if (!msg) continue;
     const sender = msg.envelope?.from?.[0];
-    const entry: Found = { uid, from: (sender?.address ?? "").toLowerCase(), fromName: sender?.name ?? sender?.address ?? "", subject: msg.envelope?.subject ?? "", date: new Date(msg.internalDate ?? msg.envelope?.date ?? 0), labels: new Set([...(msg.labels ?? [])].map(String)), bodyPart: walk(msg.bodyStructure as Part).find(p => p.type === "text/plain" && !filenameOf(p))?.part ?? null, pdfs: [] };
+    // Gmail's own verdict on the From header: a spoofed "Gary" fails DMARC, so it is neither ingested nor forwarded.
+    const auth = (msg.headers?.toString("utf8") ?? "").toLowerCase();
+    const authentic = (sender?.address ?? "").toLowerCase() === gary && /dmarc=pass/.test(auth) && new RegExp(`dkim=pass[^;]*header\\.i=@${gary.split("@")[1].replace(/\./g, "\\.")}`).test(auth);
+    if (!authentic) { console.log(`${stamp()} skipped a message claiming to be from ${gary} that failed Gmail's DKIM/DMARC check (uid ${uid})`); continue; }
+    const entry: Found = { uid, authentic, from: (sender?.address ?? "").toLowerCase(), fromName: sender?.name ?? sender?.address ?? "", subject: msg.envelope?.subject ?? "", date: new Date(msg.internalDate ?? msg.envelope?.date ?? 0), labels: new Set([...(msg.labels ?? [])].map(String)), bodyPart: walk(msg.bodyStructure as Part).find(p => p.type === "text/plain" && !filenameOf(p))?.part ?? null, pdfs: [] };
     // Same id shape as the old Gmail API names (hex message id), so earlier downloads still match.
     const id = msg.emailId ? BigInt(msg.emailId).toString(16) : `uid${uid}`;
     for (const p of pdfParts(msg.bodyStructure as Part)) {
@@ -64,7 +70,7 @@ try {
   }
 } finally { lock.release(); await client.logout(); }
 
-const fromGary = (f: Found) => f.from !== user.toLowerCase() && !/^(re|fwd?):/i.test(f.subject.trim());
+const fromGary = (f: Found) => f.authentic && f.from === gary && !/^(re|fwd?):/i.test(f.subject.trim());
 const freshPaths = found.flatMap(f => f.pdfs.filter(p => p.fresh).map(p => p.path));
 
 if (freshPaths.length && !testForward) {
@@ -72,11 +78,14 @@ if (freshPaths.length && !testForward) {
   const code = await proc.exited;
   if (code) process.exit(code); // never forward a sheet that failed to ingest
 }
+// ingest-standings.ts logs and skips a PDF that is not a BLS sheet, so confirm each fresh file really landed in league_weeks.
+const landed = new Set<string>((await database("league_weeks?select=source_file") as { source_file: string }[]).map(r => r.source_file));
+const ingested = (p: { path: string }) => landed.has(p.path.split("/").pop()!);
 
 const recent = (f: Found) => Date.now() - f.date.getTime() < 4 * 86_400_000;
 const toForward = testForward
   ? found.filter(fromGary).sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 1)
-  : found.filter(f => fromGary(f) && recent(f) && f.pdfs.some(p => p.fresh) && !f.labels.has(LABEL));
+  : found.filter(f => fromGary(f) && recent(f) && f.pdfs.some(p => p.fresh && ingested(p)) && !f.labels.has(LABEL));
 const recipients = testForward ? [user] : forwardTo;
 if (!toForward.length || !recipients.length) {
   if (!recipients.length && toForward.length) console.log(`${stamp()} BAFL_FORWARD_TO is empty; not forwarding ${toForward.length} email(s).`);
