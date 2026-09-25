@@ -1,5 +1,7 @@
 # BA4L Live Studio release review
 
+**2026-09-25: production migrations 202609130001-3 applied with Doug's approval; field test (two real phones, revocation against a real LiveKit room) still pending.**
+
 **September13 engineering review: NO-GO.** Confirmed defects remain; see `../reviews/2026-09-13-release-review.md`. Earlier build/test results do not constitute release approval.
 
 Implemented locally, not deployed. Signed build 14 archive is ready locally; TestFlight 13 remains the published version. This update needs the authorization/schema review required by Doug's AGENTS.md before push or production migration.

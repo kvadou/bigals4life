@@ -175,7 +175,7 @@ Each team's roster header reads `7 - BIG AL'S 4 LIFE Lane 5`: that is next week'
 
 ## Unapplied migrations are held releases, not drift
 
-202609130001-3 (live sessions v2, gallery, soundboard) are deliberately NOT applied in prod: that release was held for schema review (docs/plans/2026-09-13-live-session-modes.md). Their tables do not exist, so never `migration repair --status applied` them. `supabase db push` would apply them along with anything newer; to push a single newer migration, move those three files aside, `db push`, and restore them.
+202609130001-3 (live sessions v2, gallery, soundboard) were held for the Sep 13 NO-GO review while `/studio` stayed deployed, so the page showed "Live session could not be checked". Doug approved applying them on 2026-09-25 after the SQL review (RLS on, service_role only, citext already installed). Before any migration that is not the newest, check `supabase migration list`; a gap there can be a held release, so never `migration repair --status applied` it blind. The remaining release gate is field evidence: a real two-phone broadcast and participant revocation against a real LiveKit room.
 
 ## The lane TV is not the final word
 
