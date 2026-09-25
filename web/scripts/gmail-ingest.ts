@@ -22,7 +22,8 @@ const pdfParts = (node: Part | undefined, out: { part: string; filename: string 
   return out;
 };
 
-const known = new Set<string>((await database("league_weeks?select=source_file") as { source_file: string }[]).map(r => r.source_file));
+// A sheet counts as ingested by its attachment name too, whichever email (Gary often sends twice) or manual upload it came from.
+const known = new Set<string>((await database("league_weeks?select=source_file") as { source_file: string }[]).flatMap(r => [r.source_file, r.source_file.replace(/^[0-9a-f]+__/, "")]));
 const client = new ImapFlow({ host: "imap.gmail.com", port: 993, secure: true, auth: { user, pass }, logger: false });
 await client.connect();
 const fresh: string[] = [];
