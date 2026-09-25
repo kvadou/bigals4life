@@ -172,3 +172,7 @@ When a team fields bowlers with no prior week, Gary applies `handicapFor(that ni
 ## Next week's opponent is on Gary's sheet, in the roster headers
 
 Each team's roster header reads `7 - BIG AL'S 4 LIFE Lane 5`: that is next week's lane, and lane n bowls lane n+1. The printed "Lane Assignments" grid is not always in the text (the 2026-27 Week 2 sheet omits it), so `nextMatchups` reads the roster headers instead. Stored in `league_weeks.next_matchups` (migration 202609240001); `lib/league/tonight.ts` falls back to a checked-in schedule for weeks ingested before that column existed. Remote migration history is missing 202609130001-3 (applied by hand), so `supabase db push` would re-run them and fail; repair the history with `supabase migration repair --status applied` for those three before pushing.
+
+## The lane TV is not the final word
+
+Week 3 vs Balls Deep: two opponent games on the lane TVs (Simon 167, Zach 133) became 151 and 139 on Gary's sheet, which flipped Kyle's series point (6-30 on the TVs, 5-31 official). Import TV readings as the live record, then let the standings ingest reconcile; `/league` lists the differences and `/api/season` shows Gary's points.

@@ -11,7 +11,11 @@ type Row = Record<string, any>;
 /** Week-N pairings read off Gary's sheets, for weeks ingested before league_weeks.next_matchups existed. */
 const KNOWN: Record<string, Record<number, NextMatchup[]>> = {
   // TME 2026-27 WEEK 2.pdf roster lanes, matching WEEK 1's "Next Week 5- 4 1- 8 7- 3 2- 6".
-  "Thursday Men's Early 2026-27": { 3: [{ lanes: "1-2", odd: 5, even: 4 }, { lanes: "3-4", odd: 1, even: 8 }, { lanes: "5-6", odd: 7, even: 3 }, { lanes: "7-8", odd: 2, even: 6 }] },
+  "Thursday Men's Early 2026-27": {
+    3: [{ lanes: "1-2", odd: 5, even: 4 }, { lanes: "3-4", odd: 1, even: 8 }, { lanes: "5-6", odd: 7, even: 3 }, { lanes: "7-8", odd: 2, even: 6 }],
+    // TME 2026-27 WEEK 3.pdf roster lanes.
+    4: [{ lanes: "1-2", odd: 3, even: 6 }, { lanes: "3-4", odd: 7, even: 2 }, { lanes: "5-6", odd: 1, even: 5 }, { lanes: "7-8", odd: 8, even: 4 }],
+  },
 };
 
 export type TonightBowler = { name: string; average: number; handicap: number };
