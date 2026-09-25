@@ -17,15 +17,17 @@
     "livekit-server-sdk": "^2.19.0",
     "lucide-react": "latest",
     "next": "latest",
+    "nodemailer": "7",
     "pdfjs-dist": "^6.3.289",
     "react": "latest",
     "react-dom": "latest",
     "zod": "^4.6.2"
   },
   "devDependencies": {
-    "typescript": "latest",
     "@types/node": "latest",
+    "@types/nodemailer": "^8.0.2",
     "@types/react": "latest",
-    "@types/react-dom": "latest"
+    "@types/react-dom": "latest",
+    "typescript": "latest"
   }
 }
