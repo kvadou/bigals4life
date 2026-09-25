@@ -76,10 +76,7 @@ export async function ingestStandingsText(text: string, sourceFile: string, opti
   const rosterRows = week.rosters.flatMap(r => r.bowlers);
   const bowlers = await upsert("league_bowlers", rosterRows.map(b => ({ season_id: season.id, bls_id: b.blsId, name: b.name, hand: b.hand, team_id: teamId(b.teamNumber) })), "season_id,bls_id");
   const bowlerId = (blsId: number) => bowlers.find((b: Row) => b.bls_id === blsId)?.id;
-  const weekRow = { season_id: season.id, week: week.week, bowled_on: week.date, source_file: basename(sourceFile), warnings: week.warnings, ingested_at: new Date().toISOString() };
-  // next_matchups arrives with migration 202609240001; until it is applied, ingest the week without it.
-  const [row] = await upsert("league_weeks", { ...weekRow, next_matchups: week.nextMatchups.length ? week.nextMatchups : null }, "season_id,week")
-    .catch(e => { if (/next_matchups/.test(String(e))) return upsert("league_weeks", weekRow, "season_id,week"); throw e; });
+  const [row] = await upsert("league_weeks", { season_id: season.id, week: week.week, bowled_on: week.date, source_file: basename(sourceFile), warnings: week.warnings, next_matchups: week.nextMatchups.length ? week.nextMatchups : null, ingested_at: new Date().toISOString() }, "season_id,week");
 
   await upsert("league_team_weeks", week.teams.map(t => {
     const result = week.results.find(x => x.number === t.number);

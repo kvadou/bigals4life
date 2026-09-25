@@ -171,7 +171,11 @@ When a team fields bowlers with no prior week, Gary applies `handicapFor(that ni
 
 ## Next week's opponent is on Gary's sheet, in the roster headers
 
-Each team's roster header reads `7 - BIG AL'S 4 LIFE Lane 5`: that is next week's lane, and lane n bowls lane n+1. The printed "Lane Assignments" grid is not always in the text (the 2026-27 Week 2 sheet omits it), so `nextMatchups` reads the roster headers instead. Stored in `league_weeks.next_matchups` (migration 202609240001); `lib/league/tonight.ts` falls back to a checked-in schedule for weeks ingested before that column existed. Remote migration history is missing 202609130001-3 (applied by hand), so `supabase db push` would re-run them and fail; repair the history with `supabase migration repair --status applied` for those three before pushing.
+Each team's roster header reads `7 - BIG AL'S 4 LIFE Lane 5`: that is next week's lane, and lane n bowls lane n+1. The printed "Lane Assignments" grid is not always in the text (the 2026-27 Week 2 sheet omits it), so `nextMatchups` reads the roster headers instead. Stored in `league_weeks.next_matchups` (migration 202609240001, applied 2026-09-25) at ingest, and `lib/league/tonight.ts` reads it from the latest week.
+
+## Unapplied migrations are held releases, not drift
+
+202609130001-3 (live sessions v2, gallery, soundboard) are deliberately NOT applied in prod: that release was held for schema review (docs/plans/2026-09-13-live-session-modes.md). Their tables do not exist, so never `migration repair --status applied` them. `supabase db push` would apply them along with anything newer; to push a single newer migration, move those three files aside, `db push`, and restore them.
 
 ## The lane TV is not the final word
 
