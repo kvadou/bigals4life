@@ -39,7 +39,7 @@ for(const name of readdirSync(sources).filter(name=>name.endsWith(".swift"))){
  const source=readFileSync(resolve(sources,name),"utf8");
  for(const match of source.matchAll(/\.buttonStyle\(\.borderedProminent\)/g)){
   const chain=source.slice(match.index!+match[0].length,match.index!+match[0].length+500).split(".buttonStyle(")[0].split(/\n\s*}/)[0];
-  assert(/\.foregroundStyle\([^\n]*(?:BA4LTheme\.onTint|Color\("OnBrandGreen"\))/.test(chain),`${name} prominent button at offset${match.index} needs explicit paired foreground after buttonStyle`);
+  assert(/\.foregroundStyle\([^\n]*(?:BA4LTheme\.onTint|Color\("OnBrandGreen"\)|Color\("OnGoldSurface"\))/.test(chain),`${name} prominent button at offset${match.index} needs explicit paired foreground after buttonStyle`);
   buttons++;
  }
 }

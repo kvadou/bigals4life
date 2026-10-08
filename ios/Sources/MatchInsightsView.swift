@@ -10,6 +10,20 @@ struct NativeMatchPoints: Codable {
 }
 
 enum NativeMatchScoring {
+    struct HeadToHead: Equatable { let opponent: String; let theirScore: Int?; let theirHandicap: Int; let ourHandicap: Int; let margin: Int? }
+    /// The selected bowler's pairing in the current game, handicap applied to both sides. Pairing is by lineup slot (points.ts), not roster order.
+    static func headToHead(_ night: Night, bowler index: Int) -> HeadToHead? {
+        guard let match = night.match, index < Night.names.count,
+              let slot = match.ours.firstIndex(where: { $0.name == Night.names[index] }), slot < match.opponent.bowlers.count else { return nil }
+        let them = match.opponent.bowlers[slot]
+        let game = night.game - 1
+        let theirScore: Int? = game >= 0 && game < match.opponentGames.count && slot < match.opponentGames[game].count ? match.opponentGames[game][slot] : nil
+        let ours = night.current.score(index) + match.ours[slot].handicap
+        let first = them.name.split(separator: " ").first.map { String($0).capitalized } ?? them.name
+        return HeadToHead(opponent: first, theirScore: theirScore, theirHandicap: them.handicap, ourHandicap: match.ours[slot].handicap, margin: theirScore.map { ours - ($0 + them.handicap) })
+    }
+    /// Spare is legal only on a second ball with pins standing: ball 2 of frames 1-9, or ball 2/3 of the tenth after a non-strike.
+    static func spareLegal(_ game: BowlingGame) -> Bool { !game.isComplete && game.ballNumber > 1 && game.pinsAvailable < 10 }
     static func ourGames(_ night: Night) -> [[Int?]] {
         let all = night.history + [night.current]
         return (1...3).map { number in

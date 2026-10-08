@@ -24,7 +24,26 @@ try {
   const bowling = await readFile(join(root,"ios/Sources/BowlingGame.swift"),"utf8");
   const file = await readFile(join(root,"ios/Sources/MatchInsightsView.swift"),"utf8");
   const pure = file.split("// MARK: - Pure match scoring")[1].split("// MARK: - End pure match scoring")[0];
-  const code = bowling + "\n// " + pure + `\n@main struct MatchParity { static func main() throws { let nights = try JSONDecoder().decode([Night].self, from: Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1]))); let values = nights.map { NativeMatchScoring.points($0) }; let data = try JSONEncoder().encode(values); FileHandle.standardOutput.write(data) } }`;
+  const code = bowling + "\n// " + pure + `\n@main struct MatchParity { static func main() throws {
+  // Head-to-head and spare legality (Score tab build 22): Pete in slot 3 vs Rachel, game 2 of the Week 4 night.
+  func check(_ ok: Bool, _ m: String) { if !ok { FileHandle.standardError.write(Data(("FAIL " + m + "\\n").utf8)); exit(1) } }
+  var n = Night(); n.game = 2; n.rolls[3] = Array(repeating: 10, count: 12); n.history = [RecordedGame(game: 1, rolls: [[], [], [], []], finals: [122, 107, 140, 227])]
+  n.match = LeagueMatch(season: "s", week: 4, opponent: MatchOpponent(number: 2, name: "X X X", bowlers: [MatchBowler(name: "MICHAEL DOLS", handicap: 81), MatchBowler(name: "LIZ BOOTH", handicap: 88), MatchBowler(name: "ROSS CARLSON", handicap: 100), MatchBowler(name: "RACHEL CARLSON", handicap: 86)]), ours: [MatchBowler(name: "Doug", handicap: 60), MatchBowler(name: "Mustafa", handicap: 78), MatchBowler(name: "Kyle", handicap: 56), MatchBowler(name: "Pete", handicap: 18)], opponentGames: [[88, 145, 111, 107], [149, 124, 67, 108]], lane: .odd)
+  let h = NativeMatchScoring.headToHead(n, bowler: 3)
+  check(h == .init(opponent: "Rachel", theirScore: 108, theirHandicap: 86, ourHandicap: 18, margin: 300 + 18 - 194), "Pete vs Rachel game 2")
+  check(NativeMatchScoring.headToHead(n, bowler: 0)?.theirScore == 149 && NativeMatchScoring.headToHead(n, bowler: 0)?.margin == 60 - 230, "Doug vs Michael, no pins yet")
+  n.game = 3; check(NativeMatchScoring.headToHead(n, bowler: 3)?.theirScore == nil, "Game 3 has no opponent score yet")
+  check(NativeMatchScoring.headToHead(Night(), bowler: 0) == nil, "No match, no pairing")
+  func g(_ r: [Int]) -> BowlingGame { var b = BowlingGame(); r.forEach { b.add($0) }; return b }
+  check(!NativeMatchScoring.spareLegal(g([])), "Ball 1 cannot spare")
+  check(NativeMatchScoring.spareLegal(g([7])), "Ball 2 after a 7 can spare")
+  check(!NativeMatchScoring.spareLegal(g([10])), "After a strike the next ball is ball 1")
+  let nine = Array(repeating: 0, count: 18)
+  check(!NativeMatchScoring.spareLegal(g(nine + [10])), "Tenth ball 2 after a strike is a fresh rack")
+  check(NativeMatchScoring.spareLegal(g(nine + [10, 7])), "Tenth ball 3 after strike then 7 can spare")
+  check(!NativeMatchScoring.spareLegal(g(nine + [7, 3])), "Tenth after a spare is a fresh rack")
+  check(!NativeMatchScoring.spareLegal(g(nine + [7, 3, 4])), "Complete game")
+  let nights = try JSONDecoder().decode([Night].self, from: Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1]))); let values = nights.map { NativeMatchScoring.points($0) }; let data = try JSONEncoder().encode(values); FileHandle.standardOutput.write(data) } }`;
   await writeFile(join(temp,"MatchParity.swift"), code);
   await writeFile(join(temp,"fixtures.json"),JSON.stringify(fixtures));
   const compile = Bun.spawn(["xcrun","swiftc","-parse-as-library",join(temp,"MatchParity.swift"),"-o",join(temp,"match-parity")],{stdout:"pipe",stderr:"pipe"});

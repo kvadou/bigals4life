@@ -11,6 +11,7 @@ struct ScoreboardView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .largeTitle) private var scoreSize = 64.0
     @Binding var selectedBowler: Int?
     var embeddedInNavigation = false
@@ -58,14 +59,14 @@ struct ScoreboardView: View {
                         .frame(width: min(360, geometry.size.width * 0.36))
                         .accessibilityIdentifier("teamPane")
                         Divider()
-                        List { gameSections }
+                        List { gameSections(compact: false) }
                             .accessibilityIdentifier("scorecardPane")
                     }
                 } else {
                     List {
                         if store.error != nil || store.pending || store.role == .viewer { syncSection }
-                        compactTeamSection
-                        gameSections
+                        teamStrip
+                        gameSections(compact: true)
                         if store.error == nil && !store.pending && store.role != .viewer { syncSection }
                     }
                 }
@@ -74,9 +75,19 @@ struct ScoreboardView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color("BrandIvory"))
-            .navigationTitle("Score")
+            .navigationTitle(store.night.match.map { "vs \($0.opponent.name.capitalized)" } ?? "Score")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                if let match = store.night.match {
+                    ToolbarItem(placement: .principal) {
+                        VStack(spacing: 0) {
+                            Text("Week \(match.week) · Game \(store.night.game)" + (match.lane.map { " · \($0.rawValue.capitalized) lane" } ?? ""))
+                                .font(.caption2.weight(.semibold)).textCase(.uppercase).tracking(0.6).foregroundStyle(BA4LTheme.secondary)
+                            Text("vs \(match.opponent.name.capitalized)").font(.headline)
+                        }
+                        .accessibilityElement(children: .combine)
+                    }
+                }
                 if let onReturnToSeason {
                     ToolbarItem(placement: .topBarLeading) {
                         Button(action: onReturnToSeason) { Label("Season", systemImage: "chevron.left") }
@@ -126,11 +137,12 @@ struct ScoreboardView: View {
     }
 
     @ViewBuilder
-    private var gameSections: some View {
+    private func gameSections(compact: Bool) -> some View {
         scoreSection
+        if compact { frameStrip }
         if !complete { entrySection }
         else { Section { undoButton; captureActions } }
-        framesSection
+        if compact { matchFooter } else { framesSection }
         Section("Game tools") {
             Button("Match, pre-bowl & targets", systemImage: "slider.horizontal.3") { showMatch = true }
                 .disabled(!store.canEdit)
@@ -178,22 +190,40 @@ struct ScoreboardView: View {
         }
     }
 
-    private var compactTeamSection: some View {
+    /// Four bowlers across the top with running game scores; the one being scored is marked gold. Replaces the "Bowling as" disclosure.
+    private var teamStrip: some View {
         Section {
-            DisclosureGroup(isExpanded: $teamExpanded) {
-                teamRows
-            } label: {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Bowling as \(Night.names[selected])")
-                        .font(.headline)
-                    Text("Tonight’s team · \(Night.names.indices.reduce(0) { $0 + store.night.current.score($1) }) scored")
-                        .font(.subheadline).foregroundStyle(BA4LTheme.secondary)
+            let cells = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 8))
+            cells {
+                ForEach(Night.names.indices, id: \.self) { index in
+                    let on = selected == index
+                    let out = store.night.prebowl.map { !$0.bowlers.contains(index) } ?? false
+                    let current = store.night.current
+                    Button { selectedBowler = index; teamExpanded = false } label: {
+                        VStack(spacing: 4) {
+                            Text(String(Night.names[index].prefix(1)))
+                                .font(.headline.weight(.heavy)).frame(width: 36, height: 36)
+                                .background(on ? Color("BrandGold") : BA4LTheme.tint, in: Circle())
+                                .foregroundStyle(on ? Color("OnGoldSurface") : BA4LTheme.onTint)
+                                .overlay(Circle().stroke(Color("BrandGold"), lineWidth: on ? 3 : 0).padding(-4))
+                            Text(on ? "Up now" : Night.names[index]).font(.caption)
+                                .foregroundStyle(on ? Color("BrandGold") : BA4LTheme.secondary)
+                            Text("\(current.score(index))").font(.subheadline.bold().monospacedDigit()).foregroundStyle(.primary)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .opacity(out ? 0.4 : 1)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(out)
+                    .accessibilityLabel("\(Night.names[index]), \(current.score(index)) scored, \(out ? "not in this pre-bowl" : current.complete(index) ? "game complete" : "frame \(current.bowling(index).frameNumber)")")
+                    .accessibilityAddTraits(on ? [.isSelected] : [])
+                    .accessibilityIdentifier("bowler-\(index)")
                 }
-                .frame(minHeight: 44, alignment: .leading)
             }
             .accessibilityIdentifier("teamSelector")
-            .accessibilityHint("Expand to choose a bowler or see everyone’s scores")
         }
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
     }
 
     private var teamSection: some View {
@@ -232,112 +262,186 @@ struct ScoreboardView: View {
         LabeledContent("Team potential", value: "\(Night.names.indices.reduce(0) { $0 + store.night.maximum($1) })")
     }
 
+    /// Forest card: the bowler's running score big, the head-to-head with handicap beside it, the team game line under it.
     private var scoreSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 12) {
+        let h2h = NativeMatchScoring.headToHead(store.night, bowler: selected)
+        let points = NativeMatchScoring.points(store.night)
+        let teamGame = points.flatMap { p in p.games.indices.contains(store.night.game - 1) ? p.games[store.night.game - 1] : nil }
+        return Section {
+            VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("Game \(store.night.game)").font(.subheadline.weight(.semibold))
+                    Text(complete ? "\(Night.names[selected]) · Final" : "\(Night.names[selected]) · Frame \(game.frameNumber) · Ball \(game.ballNumber)")
+                        .font(.caption.weight(.semibold)).textCase(.uppercase).tracking(0.6)
                     Spacer()
+                    if let h2h { Text("Hdcp +\(h2h.ourHandicap)").font(.caption.monospacedDigit()) }
                     if store.busy { ProgressView().tint(BA4LTheme.onTint).accessibilityLabel("Syncing") }
-                    else { Image(systemName: store.pending || store.error != nil ? "exclamationmark.triangle" : "checkmark.circle").accessibilityLabel(store.status) }
+                    else if store.pending || store.error != nil { Image(systemName: "exclamationmark.triangle").accessibilityLabel(store.status) }
                 }
                 ViewThatFits(in: .horizontal) {
-                    scoreTotals(stacked: false)
-                    scoreTotals(stacked: true)
+                    HStack(alignment: .lastTextBaseline, spacing: 16) { bigScore; Spacer(); headToHead(h2h) }
+                    VStack(alignment: .leading, spacing: 8) { bigScore; headToHead(h2h) }
                 }
-                Text(complete ? "Game complete" : "Frame \(game.frameNumber) · Ball \(game.ballNumber)")
-                    .font(.headline)
+                if let teamGame {
+                    Text(teamGame.theirs.map { "Team game \(teamGame.game): \(teamGame.ours.map(String.init) ?? "in progress") to their \($0) with handicap" } ?? "Their game \(teamGame.game) scores come after the game")
+                        .font(.caption).opacity(0.85)
+                }
                 if store.night.finals?[selected] != nil {
                     Text("Final total recorded. Frame marks may be incomplete.").font(.caption)
                 }
             }
             .foregroundStyle(BA4LTheme.onTint)
-            .padding(.vertical, 8)
-            .accessibilityElement(children: .contain)
+            .padding(.vertical, 6)
+            .accessibilityElement(children: .combine)
         }
         .listRowBackground(BA4LTheme.tint)
     }
 
-    private func scoreTotals(stacked: Bool) -> some View {
-        let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 24))
-        return layout {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(complete ? "Final score" : "Actual score").font(.subheadline)
-                Text("\(store.night.current.score(selected))")
-                    .font(.system(size: scoreSize, weight: .heavy, design: .rounded).monospacedDigit())
-                    .accessibilityIdentifier("actualScore")
-            }
-            if !complete {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Possible finish").font(.subheadline)
-                    Text("\(store.night.maximum(selected))")
-                        .font(.title2.monospacedDigit())
-                        .accessibilityIdentifier("maximumScore")
+    private var bigScore: some View {
+        Text("\(store.night.current.score(selected))")
+            .font(.system(size: scoreSize, weight: .heavy, design: .rounded).monospacedDigit())
+            .accessibilityIdentifier("actualScore")
+    }
+
+    @ViewBuilder private func headToHead(_ h2h: NativeMatchScoring.HeadToHead?) -> some View {
+        if let h2h {
+            VStack(alignment: .trailing, spacing: 2) {
+                if let theirs = h2h.theirScore { Text("vs \(h2h.opponent) \(theirs) +\(h2h.theirHandicap)").font(.caption.monospacedDigit()) }
+                else { Text("vs \(h2h.opponent) · hdcp \(h2h.theirHandicap)").font(.caption.monospacedDigit()) }
+                if let m = h2h.margin {
+                    Text(m > 0 ? "Up \(m) for the game point" : m < 0 ? "Down \(-m)" : "Tied")
+                        .font(.caption.weight(.bold)).foregroundStyle(Color("BrandGold"))
                 }
             }
+            .multilineTextAlignment(.trailing)
+        } else if !complete {
+            Text("\(store.night.maximum(selected)) possible").font(.caption.monospacedDigit()).accessibilityIdentifier("maximumScore")
         }
-        .fixedSize(horizontal: false, vertical: true)
     }
+
+    /// Ten frame boxes in a row, the current one on gold, scrolled into view as the game moves.
+    private var frameStrip: some View {
+        Section {
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 4) {
+                        ForEach(0..<10, id: \.self) { index in
+                            let current = !complete && index == game.frameNumber - 1
+                            let scored = index < game.cumulativeScores.count
+                            VStack(spacing: 2) {
+                                Text(index < game.frames.count ? game.symbols(for: game.frames[index]) : " ")
+                                    .font(.caption.monospaced().bold()).lineLimit(1).minimumScaleFactor(0.7)
+                                Text(scored ? game.cumulativeScores[index].map(String.init) ?? "·" : (index == 9 && !complete ? "\(store.night.maximum(selected))" : " "))
+                                    .font(.subheadline.bold().monospacedDigit())
+                                    .foregroundStyle(scored ? .primary : BA4LTheme.secondary)
+                                    .accessibilityIdentifier(index == 9 && !scored && !complete ? "maximumScore" : "frame-total-\(index)")
+                            }
+                            .frame(width: 46, height: 48)
+                            .background(current ? Color("BrandGoldSurface") : Color("BrandIvory"), in: RoundedRectangle(cornerRadius: 8))
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(current ? Color("BrandGold") : BA4LTheme.secondary.opacity(0.3), lineWidth: current ? 2 : 1))
+                            .id(index)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel("Frame \(index + 1)")
+                            .accessibilityValue(index == 9 && !scored && !complete ? "\(store.night.maximum(selected)) possible finish" : frameDescription(index))
+                        }
+                    }
+                    .padding(.horizontal, 2)
+                }
+                .onChange(of: game.frameNumber, initial: true) { _, frame in
+                    withAnimation(reduceMotion ? nil : .default) { proxy.scrollTo(min(9, frame - 1), anchor: .center) }
+                }
+            }
+            .accessibilityIdentifier("frameStrip")
+        }
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 16))
+    }
+
+    /// Match points so far, and the full scorecard for anyone who wants every frame listed.
+    private var matchFooter: some View {
+        Section {
+            if let points = NativeMatchScoring.points(store.night) {
+                LabeledContent("Match points so far") {
+                    Text("\(formatted(points.total[0])) – \(formatted(points.total[1]))").monospacedDigit()
+                }
+                .accessibilityIdentifier("matchSoFar")
+            }
+            DisclosureGroup("Scorecard") { framesRows }
+        }
+    }
+
+    private func formatted(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0...1))) }
 
     private var entrySection: some View {
         Section {
             if dynamicTypeSize.isAccessibilitySize {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                     ForEach(1...9, id: \.self) { pinButton($0) }
-                    pinButton(game.pinsAvailable, special: true)
                     pinButton(0)
+                    strikeButton
+                    spareButton
                     undoButton
                     scanButton
                     voiceButton
                 }
                 .buttonStyle(.bordered)
             } else {
+            // Dial layout: high numbers on top where the thumb lands, X and / in gold on the right.
             Grid(horizontalSpacing: 8, verticalSpacing: 8) {
-                GridRow {
-                    pinButton(1); pinButton(2); pinButton(3)
-                    pinButton(game.pinsAvailable, special: true)
-                }
-                GridRow {
-                    pinButton(4); pinButton(5); pinButton(6)
-                    undoButton
-                }
-                GridRow {
-                    pinButton(7); pinButton(8); pinButton(9)
-                    scanButton
-                }
-                GridRow {
-                    pinButton(0).gridCellColumns(2)
-                    voiceButton.gridCellColumns(2)
-                }
+                GridRow { pinButton(7); pinButton(8); pinButton(9); strikeButton }
+                GridRow { pinButton(4); pinButton(5); pinButton(6); spareButton }
+                GridRow { pinButton(1); pinButton(2); pinButton(3); undoButton }
+                GridRow { pinButton(0); scanButton; voiceButton.gridCellColumns(2) }
             }
             .buttonStyle(.bordered)
             .buttonBorderShape(.roundedRectangle(radius: 12))
             .padding(.vertical, 4)
             }
-        } footer: {
-            Text("Tap pins knocked down. X = strike, / = spare, 0 = miss. Strike and spare bonuses settle after the next rolls.")
         }
     }
 
-    private func pinButton(_ pins: Int, special: Bool = false) -> some View {
-        Button {
-            Task { await store.change { night in
-                guard !night.current.complete(selected) else { return }
-                var current = night.current.bowling(selected)
-                if current.add(pins) { night.rolls[selected] = current.rolls }
-            } }
-        } label: {
-            Text(special ? entryLabel(pins) : String(pins))
+    private func pinButton(_ pins: Int) -> some View {
+        Button { enter(pins) } label: {
+            Text(String(pins))
                 .font(.title3.bold().monospacedDigit())
-                .frame(maxWidth: .infinity, minHeight: 44)
+                .frame(maxWidth: .infinity, minHeight: 56)
         }
         .buttonStyle(.borderedProminent)
         .buttonBorderShape(.roundedRectangle(radius: 12))
-        .tint(special ? Color("BrandGold") : BA4LTheme.tint)
-        .foregroundStyle(special ? Color("BrandForest") : BA4LTheme.onTint)
+        .tint(BA4LTheme.tint)
+        .foregroundStyle(BA4LTheme.onTint)
         .disabled(!store.canEdit || pins > game.pinsAvailable)
-        .accessibilityLabel(special ? (entryLabel(pins) == "X" ? "Strike, 10 pins" : "Spare, \(pins) pins") : "\(pins) pins")
-        .accessibilityIdentifier(special ? "pins-10" : "pins-\(pins)")
+        .accessibilityLabel("\(pins) pins")
+        .accessibilityIdentifier("pins-\(pins)")
+    }
+
+    private var strikeButton: some View {
+        Button { enter(10) } label: { Text("X").font(.title3.bold()).frame(maxWidth: .infinity, minHeight: 56) }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.roundedRectangle(radius: 12))
+            .tint(Color("BrandGold"))
+            .foregroundStyle(Color("OnGoldSurface"))
+            .disabled(!store.canEdit || complete || game.pinsAvailable != 10)
+            .accessibilityLabel("Strike, 10 pins")
+            .accessibilityIdentifier("pins-10")
+    }
+
+    private var spareButton: some View {
+        Button { enter(game.pinsAvailable) } label: { Text("/").font(.title3.bold()).frame(maxWidth: .infinity, minHeight: 56) }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.roundedRectangle(radius: 12))
+            .tint(Color("BrandGoldSurface"))
+            .foregroundStyle(Color("OnGoldSurface"))
+            .disabled(!store.canEdit || !NativeMatchScoring.spareLegal(game))
+            .accessibilityLabel("Spare, \(game.pinsAvailable) pins")
+            .accessibilityIdentifier("pins-spare")
+    }
+
+    private func enter(_ pins: Int) {
+        Task { await store.change { night in
+            guard !night.current.complete(selected) else { return }
+            var current = night.current.bowling(selected)
+            if current.add(pins) { night.rolls[selected] = current.rolls }
+        } }
     }
 
     private var undoButton: some View {
@@ -374,11 +478,12 @@ struct ScoreboardView: View {
             Image(systemName: systemImage)
             Text(title).font(.caption)
         }
-        .frame(maxWidth: .infinity, minHeight: 44)
+        .frame(maxWidth: .infinity, minHeight: 56)
     }
 
-    private var framesSection: some View {
-        Section("Scorecard") {
+    private var framesSection: some View { Section("Scorecard") { framesRows } }
+
+    private var framesRows: some View {
             ForEach(0..<10, id: \.self) { index in
                 ViewThatFits(in: .horizontal) {
                     frameRow(index, stacked: false)
@@ -388,7 +493,6 @@ struct ScoreboardView: View {
                 .accessibilityLabel("Frame \(index + 1)")
                 .accessibilityValue(frameDescription(index))
             }
-        }
     }
 
     private func frameDescription(_ index: Int) -> String {
@@ -463,11 +567,6 @@ struct ScoreboardView: View {
         }
     }
 
-    private func entryLabel(_ pins: Int) -> String {
-        var projected = game
-        guard projected.add(pins), let frame = projected.frames.last else { return String(pins) }
-        return projected.symbols(for: frame).split(separator: " ").last.map(String.init) ?? String(pins)
-    }
 }
 
 struct HistoryView: View {
