@@ -617,10 +617,13 @@ struct TonightView: View {
         }
     }
     /// A finished pre-bowl should not stand in for the team night on this screen.
+    /// A finished pre-bowl, or a finished team night from an earlier week, gives way to the newest team night.
+    /// Nothing moves while a night is still being scored, and a night this screen already left can be reopened deliberately.
     @MainActor private func preferTeamNight() async {
-        guard let id = store.teamID, store.night.prebowl != nil, completed, !leftPrebowls.contains(id),
-              let team = teamWeek, team.id != id, store.canSwitchTeam,
-              (team.week ?? 0) >= (store.night.prebowl?.week ?? 0) else { return }
+        guard let id = store.teamID, completed, !leftPrebowls.contains(id),
+              let team = teamWeek, team.id != id, store.canSwitchTeam else { return }
+        let currentWeek = store.night.prebowl?.week ?? store.night.match?.week ?? summary?.week ?? 0
+        guard store.night.prebowl != nil ? (team.week ?? 0) >= currentWeek : (team.week ?? 0) > currentWeek else { return }
         leftPrebowls.insert(id)
         await store.openTeam(ScorebookClient.origin + "/season/" + team.id)
     }
