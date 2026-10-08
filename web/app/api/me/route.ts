@@ -40,6 +40,12 @@ export async function PATCH(request: Request) {
   if (body.firstName !== undefined) update.display_name = `${body.firstName} ${body.lastName}`.replace(/\s+/g, " ");
   if (body.bowlerName !== undefined) update.bowler_name = body.bowlerName;
   try {
+    if (body.bowlerName) {
+      // One account per bowler. Only the league admin can reassign a name another account already holds.
+      const holders: Row[] = await database(`profiles?bowler_name=eq.${body.bowlerName}&user_id=neq.${identity.user.id}&select=user_id`);
+      if (holders.length && !isAdmin(identity.user.email)) return Response.json({ error: `${body.bowlerName} is already claimed by another account. Ask Doug if that is wrong.` }, { status: 409 });
+      if (holders.length) await database(`profiles?bowler_name=eq.${body.bowlerName}&user_id=neq.${identity.user.id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ bowler_name: null }) });
+    }
     if (update.display_name === undefined) {
       // Keep the display name when only the bowler changes; a new row still needs one.
       const [existing]: Row[] = await database(`profiles?user_id=eq.${identity.user.id}&select=display_name`);

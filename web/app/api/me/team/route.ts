@@ -1,4 +1,4 @@
-import { identify, unauthorized } from "@/lib/auth-server";
+import { identify, isTeammate, unauthorized } from "@/lib/auth-server";
 import { database } from "@/lib/scorebook-server";
 import { loadStandings } from "@/lib/league/standings-server";
 import { teamCard } from "@/lib/team-card";
@@ -6,10 +6,11 @@ import { teamCard } from "@/lib/team-card";
 type Row = Record<string, any>;
 const FULL_NAMES: Record<string, string> = { Doug: "Doug Kvamme", Mustafa: "Mustafa Sakhi", Kyle: "Kyle Dickhaus", Pete: "Pete Anderson" };
 
-/** The four bowlers, who has signed in, and their access on the newest team scorebook. Any signed-in account may read it; it names bowlers, not emails. */
+/** The four bowlers, who has signed in, and their access on the newest team scorebook. Team members only; pending emails only for members of the book. */
 export async function GET(request: Request) {
   const identity = await identify(request);
   if (!identity) return unauthorized();
+  if (!await isTeammate(identity)) return Response.json({ error: "Team details are for team members. Ask Doug to add you." }, { status: 403 });
   try {
     const [profiles, [book], standings]: [Row[], Row[], Awaited<ReturnType<typeof loadStandings>>] = await Promise.all([
       database("profiles?select=user_id,bowler_name&bowler_name=not.is.null"),
