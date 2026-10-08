@@ -24,6 +24,43 @@ enum NativeMatchScoring {
     }
     /// Spare is legal only on a second ball with pins standing: ball 2 of frames 1-9, or ball 2/3 of the tenth after a non-strike.
     static func spareLegal(_ game: BowlingGame) -> Bool { !game.isComplete && game.ballNumber > 1 && game.pinsAvailable < 10 }
+
+    struct Milestone: Equatable { let key: String; let text: String }
+    /// Strikes in a row ending at the latest roll. Each strike is one roll of 10 on a fresh rack.
+    static func strikeStreak(_ game: BowlingGame) -> Int {
+        var streak = 0
+        for frame in game.frames.reversed() {
+            if frame.count == 1 && frame[0] == 10 { streak += 1; continue }
+            // Tenth frame: trailing strikes count, then stop.
+            if game.frames.count == 10 && frame == game.frames.last {
+                for roll in frame.reversed() { if roll == 10 { streak += 1 } else { break } }
+                if frame.allSatisfy({ $0 == 10 }) { continue }
+            }
+            break
+        }
+        return streak
+    }
+    /// Moments worth a banner. Keys are stable per night and game so each fires once.
+    static func milestones(name: String, game: BowlingGame, score: Int, gameNumber: Int, seasonHigh: Int?, leagueHigh: Int?, leagueHolder: String?) -> [Milestone] {
+        var out: [Milestone] = []
+        let streak = strikeStreak(game)
+        let names = [5: "a five-bagger", 6: "a six-pack", 7: "seven in a row", 8: "eight in a row", 9: "nine in a row", 10: "ten in a row", 11: "eleven in a row"]
+        if streak == 12 { out.append(.init(key: "g\(gameNumber)-perfect", text: "\(name) just bowled a perfect game.")) }
+        else if let label = names[streak] { out.append(.init(key: "g\(gameNumber)-streak\(streak)", text: "\(name) is on \(label).")) }
+        guard game.isComplete else { return out }
+        let opens = game.frames.enumerated().filter { index, frame in
+            if index < 9 { return frame.first != 10 && frame.reduce(0, +) < 10 }
+            return frame.first! < 10 && frame.prefix(2).reduce(0, +) < 10
+        }.count
+        if opens == 0 && streak < 12 { out.append(.init(key: "g\(gameNumber)-clean", text: "\(name) bowled a clean game. Every frame marked.")) }
+        if let leagueHigh, score > leagueHigh {
+            let past = leagueHolder.map { " past \($0)'s \(leagueHigh)" } ?? ""
+            out.append(.init(key: "g\(gameNumber)-league", text: "\(name)'s \(score) is the league's high game this season\(past)."))
+        } else if let seasonHigh, score > seasonHigh {
+            out.append(.init(key: "g\(gameNumber)-season", text: "\(name)'s \(score) is a new season best, past \(seasonHigh)."))
+        }
+        return out
+    }
     static func ourGames(_ night: Night) -> [[Int?]] {
         let all = night.history + [night.current]
         return (1...3).map { number in

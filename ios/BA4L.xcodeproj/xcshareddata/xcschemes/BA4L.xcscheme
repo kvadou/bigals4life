@@ -21,6 +21,20 @@
                ReferencedContainer = "container:BA4L.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "DCF506F40E5B0B8D5C43B7D2"
+               BuildableName = "BA4LWidgets.appex"
+               BlueprintName = "BA4LWidgets"
+               ReferencedContainer = "container:BA4L.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction

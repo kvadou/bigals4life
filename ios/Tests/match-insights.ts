@@ -43,6 +43,18 @@ try {
   check(NativeMatchScoring.spareLegal(g(nine + [10, 7])), "Tenth ball 3 after strike then 7 can spare")
   check(!NativeMatchScoring.spareLegal(g(nine + [7, 3])), "Tenth after a spare is a fresh rack")
   check(!NativeMatchScoring.spareLegal(g(nine + [7, 3, 4])), "Complete game")
+  // Milestones (build 26): strike strings, clean games, season and league highs.
+  let m = { (r: [Int], s: Int?, l: Int?) in NativeMatchScoring.milestones(name: "Pete", game: g(r), score: g(r).settledScore, gameNumber: 2, seasonHigh: s, leagueHigh: l, leagueHolder: "Ross Carlson") }
+  check(NativeMatchScoring.strikeStreak(g([10, 10, 10, 10, 10])) == 5, "five strikes streak")
+  check(NativeMatchScoring.strikeStreak(g([10, 10, 7, 3, 10, 10])) == 2, "spare breaks the streak")
+  check(NativeMatchScoring.strikeStreak(g(Array(repeating: 10, count: 12))) == 12, "perfect game streak counts the tenth")
+  check(m([10, 10, 10, 10, 10], nil, nil) == [.init(key: "g2-streak5", text: "Pete is on a five-bagger.")], "five-bagger banner")
+  check(m([10, 10, 10, 10], nil, nil).isEmpty, "four is not a banner")
+  check(m(Array(repeating: 10, count: 12), 250, 246).map { $0.key } == ["g2-perfect", "g2-league"], "perfect game then league high, no clean-game duplicate")
+  let clean = Array(repeating: [9, 1], count: 9).flatMap { $0 } + [9, 1, 9]
+  check(m(clean, 200, 246).map { $0.key } == ["g2-clean"], "190 of spares is clean but not a high")
+  check(m(clean, 180, 246) == [.init(key: "g2-clean", text: "Pete bowled a clean game. Every frame marked."), .init(key: "g2-season", text: "Pete's 190 is a new season best, past 180.")], "clean and season best")
+  check(m(nine + [7, 2], nil, nil).isEmpty, "open tenth is not clean")
   let nights = try JSONDecoder().decode([Night].self, from: Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1]))); let values = nights.map { NativeMatchScoring.points($0) }; let data = try JSONEncoder().encode(values); FileHandle.standardOutput.write(data) } }`;
   await writeFile(join(temp,"MatchParity.swift"), code);
   await writeFile(join(temp,"fixtures.json"),JSON.stringify(fixtures));

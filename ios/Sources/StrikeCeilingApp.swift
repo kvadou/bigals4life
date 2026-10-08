@@ -27,6 +27,11 @@ struct ScoreboardView: View {
     @State private var showVoice = false
     @State private var link = ""
     @State private var sheetError: String?
+    @State private var records: LeagueRecordBook?
+    @State private var shownMilestones: Set<String> = []
+    @State private var banner: NativeMatchScoring.Milestone?
+    @State private var bannerTask: Task<Void, Never>?
+    @State private var recapImage: UIImage?
 
     private var game: BowlingGame { store.night.current.bowling(selected) }
     private var complete: Bool { store.night.current.complete(selected) }
@@ -102,6 +107,13 @@ struct ScoreboardView: View {
             }
             .refreshable { await store.refresh(force: true) }
             .task { await store.start() }
+            .task(id: store.teamID) { shownMilestones = []; await loadRecords() }
+            .onChange(of: store.night) { _, night in
+                MatchActivityController.shared.sync(night, up: selected)
+                checkMilestones(night)
+            }
+            .onChange(of: selected) { _, value in MatchActivityController.shared.sync(store.night, up: value) }
+            .overlay(alignment: .top) { milestoneBanner }
             .task(id: scenePhase) {
                 guard scenePhase == .active else { return }
                 await store.refresh(force: true)
@@ -366,7 +378,71 @@ struct ScoreboardView: View {
                 .accessibilityIdentifier("matchSoFar")
             }
             DisclosureGroup("Scorecard") { framesRows }
+            if NativeMatchScoring.ourGames(store.night).contains(where: { $0.contains { $0 != nil } }) {
+                let done = NativeMatchScoring.ourGames(store.night).allSatisfy { $0.allSatisfy { $0 != nil } }
+                if let recapImage {
+                    ShareLink(item: Image(uiImage: recapImage), preview: SharePreview(done ? "Big Al's 4 Life tonight" : "Big Al's 4 Life so far", image: Image(uiImage: recapImage))) {
+                        Label(done ? "Share the night" : "Share the night so far", systemImage: "square.and.arrow.up")
+                    }
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("shareNight")
+                } else {
+                    Button { recapImage = NightRecapCard.render(night: store.night, bowledOn: Date()) } label: { Label("Make the recap card", systemImage: "photo") }
+                        .frame(minHeight: 44)
+                        .accessibilityIdentifier("makeRecap")
+                }
+            }
         }
+        .onChange(of: store.night) { _, _ in recapImage = nil }
+    }
+
+    // MARK: Milestones
+
+    @ViewBuilder private var milestoneBanner: some View {
+        if let banner {
+            HStack(spacing: 10) {
+                Image(systemName: "star.fill")
+                Text(banner.text).font(.subheadline.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .background(Color("BrandGold"), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .foregroundStyle(Color("OnGoldSurface"))
+            .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+            .padding(.horizontal, 16).padding(.top, 8)
+            .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
+            .onTapGesture { withAnimation { self.banner = nil } }
+            .accessibilityAddTraits(.isStaticText)
+            .accessibilityIdentifier("milestoneBanner")
+        }
+    }
+    private func checkMilestones(_ night: Night) {
+        let book = records
+        for index in Night.names.indices {
+            let name = Night.names[index]
+            let game = night.current.bowling(index)
+            guard !game.rolls.isEmpty else { continue }
+            let mine = book?.records.first { $0.name.split(separator: " ").first.map(String.init)?.caseInsensitiveCompare(name) == .orderedSame && $0.teamName == book?.ourTeam }
+            let top = book?.records.compactMap { r in r.highGame.map { (name: r.name, value: $0.value) } }.max { $0.value < $1.value }
+            let found = NativeMatchScoring.milestones(name: name, game: game, score: night.current.score(index), gameNumber: night.game, seasonHigh: mine?.highGame?.value, leagueHigh: top?.value, leagueHolder: top?.name.capitalized)
+            for m in found where !shownMilestones.contains("\(name)-\(m.key)") {
+                shownMilestones.insert("\(name)-\(m.key)")
+                show(m)
+            }
+        }
+    }
+    private func show(_ milestone: NativeMatchScoring.Milestone) {
+        bannerTask?.cancel()
+        withAnimation { banner = milestone }
+        bannerTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled else { return }
+            withAnimation { if banner == milestone { banner = nil } }
+        }
+    }
+    private func loadRecords() async {
+        guard store.teamID != nil else { return }
+        records = try? await LeagueAPI(send: store.transport).load("/api/league/records")
     }
 
     private func formatted(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0...1))) }

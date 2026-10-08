@@ -440,8 +440,8 @@ private struct LeagueStandingsView: View {
     }
 }
 
-private struct LeagueMark: Decodable { let value: Int; let seasonName: String; let week: Int; let bowledOn: String }
-private struct LeagueRecord: Decodable, Identifiable {
+struct LeagueMark: Decodable { let value: Int; let seasonName: String; let week: Int; let bowledOn: String }
+struct LeagueRecord: Decodable, Identifiable {
     struct Trend: Decodable { let seasonName: String; let week: Int; let average: Int }
     struct Night: Decodable {
         let seasonName: String; let week: Int; let bowledOn: String; let opponent: String?
@@ -453,7 +453,7 @@ private struct LeagueRecord: Decodable, Identifiable {
     let trend: [Trend]; let nights: [Night]
     var id: Int { blsId }
 }
-private struct LeagueRecordBook: Decodable {
+struct LeagueRecordBook: Decodable {
     struct Coverage: Decodable, Identifiable { let name: String; let have: Int; let weeksTotal: Int; let missing: [Int]; var id: String { name } }
     let seasons: [LeagueSeason]; let scope: String?; let records: [LeagueRecord]; let coverage: [Coverage]; let ourTeam: String
 }

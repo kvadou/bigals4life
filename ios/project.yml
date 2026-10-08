@@ -5,7 +5,7 @@ options:
 settings:
   base:
     MARKETING_VERSION: '1.0'
-    CURRENT_PROJECT_VERSION: '25'
+    CURRENT_PROJECT_VERSION: '26'
     SWIFT_VERSION: '5.0'
     DEVELOPMENT_TEAM: FM45AMFBNY
     CODE_SIGN_STYLE: Automatic
@@ -18,6 +18,7 @@ targets:
     type: application
     dependencies:
       - package: LiveKit
+      - target: BA4LWidgets
     configFiles:
       Debug: Config/Auth.xcconfig
       Release: Config/Auth.xcconfig
@@ -42,6 +43,7 @@ targets:
       properties:
         BA4LSupabaseURL: "https://aqrigyieuzceksptwfci.supabase.co"
         BA4LSupabaseAnonKey: "$(BA4L_SUPABASE_ANON_KEY)"
+        NSSupportsLiveActivities: true
         CFBundleDisplayName: BA4L
         ITSAppUsesNonExemptEncryption: false
         NSCameraUsageDescription: BA4L uses the camera for live lane observation and scoreboard photos.
@@ -57,11 +59,34 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
+  BA4LWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets
+      - path: Sources/MatchActivity.swift
+      - path: Resources/Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dougkvamme.StrikeCeiling.widgets
+        PRODUCT_NAME: BA4LWidgets
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: BA4L Match
+        TARGETED_DEVICE_FAMILY: '1,2'
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: WIDGET_EXTENSION
+        SKIP_INSTALL: YES
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: BA4L Match
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
 schemes:
   BA4L:
     build:
       targets:
         BA4L: all
+        BA4LWidgets: all
     run:
       config: Debug
     archive:
