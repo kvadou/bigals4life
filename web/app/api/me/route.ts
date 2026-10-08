@@ -27,17 +27,25 @@ export async function GET(request: Request) {
 }
 
 const namePart = z.string().trim().min(1).max(30).regex(/^[\p{L}\p{M}' .-]+$/u);
-const nameUpdate = z.object({ firstName: namePart, lastName: namePart });
+const nameUpdate = z.object({ firstName: namePart.optional(), lastName: namePart.optional(), bowlerName: z.enum(["Doug", "Mustafa", "Kyle", "Pete"]).nullable().optional() })
+  .refine(b => (b.firstName === undefined) === (b.lastName === undefined) && (b.firstName !== undefined || b.bowlerName !== undefined));
 
-/** Your own first and last name, shown in greetings and the account menu. Display only: never grants access or changes scores. */
+/** Your own first and last name, shown in greetings and the account menu, and the bowler you usually score as. Display only: never grants access or changes scores. */
 export async function PATCH(request: Request) {
   const identity = await identify(request);
   if (!identity) return unauthorized();
   if (identity.viaCookie && !sameOrigin(request)) return Response.json({ error: "Use the website to change your name." }, { status: 403 });
   let body; try { body = nameUpdate.parse(await request.json()); } catch { return Response.json({ error: "Enter a first and last name (letters, spaces, apostrophes, hyphens)." }, { status: 400 }); }
-  const displayName = `${body.firstName} ${body.lastName}`.replace(/\s+/g, " ");
+  const update: Row = { user_id: identity.user.id };
+  if (body.firstName !== undefined) update.display_name = `${body.firstName} ${body.lastName}`.replace(/\s+/g, " ");
+  if (body.bowlerName !== undefined) update.bowler_name = body.bowlerName;
   try {
-    const [profile]: Row[] = await database(`profiles?on_conflict=user_id`, { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=representation" }, body: JSON.stringify({ user_id: identity.user.id, display_name: displayName }) });
+    if (update.display_name === undefined) {
+      // Keep the display name when only the bowler changes; a new row still needs one.
+      const [existing]: Row[] = await database(`profiles?user_id=eq.${identity.user.id}&select=display_name`);
+      update.display_name = existing?.display_name ?? identity.user.email.split("@")[0];
+    }
+    const [profile]: Row[] = await database(`profiles?on_conflict=user_id`, { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=representation" }, body: JSON.stringify(update) });
     return Response.json({ profile: { displayName: profile.display_name, bowlerName: profile.bowler_name ?? null } }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Name update failed", error instanceof Error ? error.message : "unknown");

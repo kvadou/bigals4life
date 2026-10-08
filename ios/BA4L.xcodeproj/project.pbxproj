@@ -34,6 +34,7 @@
 		886FCD550D82E290831842A1 /* 03-BA.svg in Resources */ = {isa = PBXBuildFile; fileRef = FD76CC1106A2125FB48A57E1 /* 03-BA.svg */; };
 		937608170B1588FC13720CA3 /* NativeSoundboardModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D41AE8775E99035749CDBD5 /* NativeSoundboardModel.swift */; };
 		9701721564F6F85C28233F93 /* LiveLaneCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A394B777B30A778A4DF712C /* LiveLaneCamera.swift */; };
+		9E4EF6EA9B39CA6218EEF578 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2124C4934770A9A5AEE55C1 /* AccountView.swift */; };
 		A062733459C68F876C45787D /* LaneReplayWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C225AC459DC2E3038EB3F36 /* LaneReplayWriter.swift */; };
 		A119658D0DF390EEE83AB434 /* LaneReplayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BEB9043241AD479309D34A9 /* LaneReplayView.swift */; };
 		A17A8BD218DDCAB22BCA221A /* heating.wav in Resources */ = {isa = PBXBuildFile; fileRef = 0D4694FA9E48210E53D35813 /* heating.wav */; };
@@ -103,6 +104,7 @@
 		EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BowlingGame.swift; sourceTree = "<group>"; };
 		EE8FBC563B1D088E580EEC17 /* MatchInsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchInsightsView.swift; sourceTree = "<group>"; };
 		F1D19B84C44FC3CFDEA6B33C /* NativeSoundboardAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSoundboardAudio.swift; sourceTree = "<group>"; };
+		F2124C4934770A9A5AEE55C1 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		F6B33F7EF1FD008BC8E6191A /* StrikeCeilingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrikeCeilingApp.swift; sourceTree = "<group>"; };
 		FD76CC1106A2125FB48A57E1 /* 03-BA.svg */ = {isa = PBXFileReference; path = "03-BA.svg"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -157,6 +159,7 @@
 			isa = PBXGroup;
 			children = (
 				8791C06DCCCBE23B5207885F /* AccountSession.swift */,
+				F2124C4934770A9A5AEE55C1 /* AccountView.swift */,
 				3CF060769FA1850A56AA9E5E /* AppRootView.swift */,
 				2505DFFE18B4FF08A3BC432F /* BA4LBrandMark.swift */,
 				EC8318D397A11F8FC7A8EB65 /* BowlingGame.swift */,
@@ -316,6 +319,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CAE9C9F34EEF05DBAB294F8D /* AccountSession.swift in Sources */,
+				9E4EF6EA9B39CA6218EEF578 /* AccountView.swift in Sources */,
 				4BED72B1BF9A43A311308097 /* AppRootView.swift in Sources */,
 				AD0894893F885BF5FBC901CF /* BA4LBrandMark.swift in Sources */,
 				2D4B4EE47B862B0A40AAE868 /* BowlingGame.swift in Sources */,
@@ -391,7 +395,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = FM45AMFBNY;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -481,7 +485,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = FM45AMFBNY;
 				ENABLE_NS_ASSERTIONS = NO;

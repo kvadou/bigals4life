@@ -128,11 +128,6 @@ struct SignedInApp: View {
     private let preferences: UserDefaults
     @State private var waitingForTeam = false
     @State private var checkingAccess = false
-    @State private var password = ""
-    @State private var message: String?
-    @State private var firstName = ""
-    @State private var lastName = ""
-    @State private var savingName = false
     init(session: AccountSession, userID: String) {
         self.session = session
         self.accountID = userID
@@ -178,34 +173,7 @@ struct SignedInApp: View {
                 }
             }.tabItem { Label("Review", systemImage: "text.bubble") }.tag(3)
             NavigationStack {
-                Form {
-                    Section("Signed in") {
-                        Text(session.email ?? "Team member")
-                        TextField("First name", text: $firstName).textContentType(.givenName).autocorrectionDisabled()
-                        TextField("Last name", text: $lastName).textContentType(.familyName).autocorrectionDisabled()
-                        Button(savingName ? "Saving…" : "Save name") { Task { await saveName() } }
-                            .disabled(savingName || firstName.trimmingCharacters(in: .whitespaces).isEmpty || lastName.trimmingCharacters(in: .whitespaces).isEmpty || "\(firstName.trimmingCharacters(in: .whitespaces)) \(lastName.trimmingCharacters(in: .whitespaces))" == profile?.fullName)
-                            .accessibilityIdentifier("saveName")
-                        Picker("Preferred scorecard", selection: $selectedBowler) {
-                            Text("Choose a bowler").tag(nil as Int?)
-                            ForEach(Night.names.indices, id: \.self) { Text(Night.names[$0]).tag(Optional($0)) }
-                        }
-                    }
-                    Section {
-                        NavigationLink("Team access") { TeamAccessView(store: store) }
-                        NavigationLink("Original device scorecards") { DeviceArchiveView() }
-                    }
-                    Section("Password") {
-                        SecureField("New password", text: $password).textContentType(.newPassword)
-                        Button("Update password") { Task { if await session.updatePassword(password) { password = ""; message = "Password updated." } } }.disabled(password.count < 8 || session.busy)
-                    }
-                    if let message { Text(message) }
-                    if let error = session.error { Text(error).foregroundStyle(.red) }
-                    Section {
-                        Button("Sign out", role: .destructive) { Task { await session.signOut() } }.disabled(store.busy || session.busy)
-                    } footer: { Text(store.pending ? "Your pending edit stays backed up for this account. Sign back in to retry it." : "Scores stay with your team. Device backups are kept separately for each account.") }
-                    Section { Link("BA4L on the web", destination: URL(string: ScorebookClient.origin)!) }
-                }.navigationTitle("Account")
+                AccountView(session: session, store: store, selectedBowler: $selectedBowler, profile: $profile, accountID: accountID, preferences: preferences, send: send)
             }.tabItem { Label("Account", systemImage: "person.crop.circle") }.tag(4)
         }.tint(horizontalSizeClass == .regular && tab == 0 && homeIsRoot && !showSeason ? Color("BrandGold") : BA4LTheme.tint)
             .modifier(NativeTabScrollBehavior(compact: horizontalSizeClass == .compact))
@@ -241,33 +209,10 @@ struct SignedInApp: View {
             struct Identity: Decodable { let profile: TonightProfile }
             if let identity = try? JSONDecoder().decode(Identity.self, from: data) {
                 profile = identity.profile
-                fillName(identity.profile)
                 if selectedBowler == nil { selectedBowler = identity.profile.bowlerIndex }
             }
             waitingForTeam = !account.admin && account.scorebooks.isEmpty
         } catch { /* Offline accounts keep their account-scoped backups; APIs enforce access. */ }
-    }
-    private func fillName(_ profile: TonightProfile) {
-        guard firstName.isEmpty && lastName.isEmpty else { return }
-        let parts = profile.fullName.split(separator: " ", maxSplits: 1).map(String.init)
-        firstName = parts.first ?? ""
-        lastName = parts.count > 1 ? parts[1] : ""
-    }
-    private func saveName() async {
-        savingName = true
-        defer { savingName = false }
-        do {
-            var request = URLRequest(url: URL(string: ScorebookClient.origin + "/api/me")!)
-            request.httpMethod = "PATCH"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try JSONEncoder().encode(["firstName": firstName.trimmingCharacters(in: .whitespaces), "lastName": lastName.trimmingCharacters(in: .whitespaces)])
-            let (data, response) = try await send(request)
-            struct Saved: Decodable { let profile: TonightProfile?; let error: String? }
-            let saved = try? JSONDecoder().decode(Saved.self, from: data)
-            guard response.statusCode == 200, let updated = saved?.profile else { message = saved?.error ?? "Could not save your name."; return }
-            profile = updated
-            message = "Name saved."
-        } catch { message = "Could not save your name. Check your connection." }
     }
     private func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         guard session.userID == accountID else { throw ScorebookError.server("This account changed. Reopen this screen.") }

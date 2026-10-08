@@ -11,7 +11,7 @@ export type LeagueStandings = {
   seasons: { name: string }[];
   week: { number: number; bowledOn: string; ingestedAt: string; recap: string | null };
   teams: { number: number; name: string; place: number; percentWon: number; pointsWon: number; pointsLost: number; ytdWon: number; ytdLost: number; scratchPins: number; ours: boolean; gapToAbove: number | null; movement: number | null; lastWeek: { opponent: string; points: number; hdcpGames: number[]; hdcpTotal: number } | null }[];
-  roster: { name: string; blsId: number; average: number; handicap: number; toRaise: number; toDrop: number; games: number[] | null; total: number | null; matchPoints: number | null }[];
+  roster: { name: string; blsId: number; average: number; handicap: number; gamesBowled: number | null; toRaise: number; toDrop: number; games: number[] | null; total: number | null; matchPoints: number | null }[];
   leaderboard: { name: string; team: string; points: number; ours: boolean }[];
   history: { week: number; points: number | null; lost: number | null; opponent: string | null; place: number | null }[];
   reconciliation: { week: number; nights: Reconciliation[] }[];
@@ -49,7 +49,7 @@ export async function loadStandings(seasonName?: string): Promise<LeagueStanding
       gapToAbove: gapToAbove(lines, index), movement: movement(tw.place, previous.find(p => p.team_id === tw.team_id)?.place),
       lastWeek: tw.opponent_team_id ? { opponent: teamName(tw.opponent_team_id), points: Number(tw.week_points_won), hdcpGames: tw.hdcp_games ?? [], hdcpTotal: tw.hdcp_total } : null }; }),
     roster: bowlerWeeks.filter(bw => bw.team_id === ours?.id).map(bw => { const b = bowlers.find(x => x.id === bw.bowler_id); return {
-      name: displayName(b?.name ?? ""), blsId: b?.bls_id ?? 0, average: bw.average, handicap: bw.handicap, toRaise: bw.to_raise, toDrop: bw.to_drop, games: bw.scratch_games, total: bw.scratch_total, matchPoints: bw.match_points_ytd == null ? null : Number(bw.match_points_ytd) }; }).sort((a, b) => b.average - a.average),
+      name: displayName(b?.name ?? ""), blsId: b?.bls_id ?? 0, average: bw.average, handicap: bw.handicap, gamesBowled: bw.games ?? null, toRaise: bw.to_raise, toDrop: bw.to_drop, games: bw.scratch_games, total: bw.scratch_total, matchPoints: bw.match_points_ytd == null ? null : Number(bw.match_points_ytd) }; }).sort((a, b) => b.average - a.average),
     leaderboard: bowlerWeeks.filter(bw => bw.match_points_ytd != null).map(bw => { const b = bowlers.find(x => x.id === bw.bowler_id); return {
       name: displayName(b?.name ?? ""), team: teamName(bw.team_id), points: Number(bw.match_points_ytd), ours: bw.team_id === ours?.id }; }).sort((a, b) => b.points - a.points),
     history,
