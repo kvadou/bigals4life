@@ -5,6 +5,8 @@ import { uuidSchema } from "@/lib/scorebook";
 import { BOWLERS } from "@/lib/season";
 import { profileSchema, reviewSchema } from "@/lib/review/schema";
 import { bowlerGames } from "@/lib/review/facts";
+import { openingMessage } from "@/lib/review/opening";
+import { loadStandings } from "@/lib/league/standings-server";
 import { loadNight, loadReviewAndProfile, pickBowler } from "@/lib/review/server";
 
 import { prepareConditionalSave, ReviewConflict, conflictResponse } from "@/lib/review/conditional-save";
@@ -28,9 +30,20 @@ export async function GET(request: Request, context: Context) {
     // Missing/invalid query means use the saved bowler or account profile, never implicit column zero.
     const requestedBowler = requested !== null && /^[0-3]$/.test(requested) ? Number(requested) : Number.NaN;
     const bowler = pickBowler(requestedBowler, mine.bowler, mine.bowlerName, night);
+    const games = bowlerGames(night, bowler);
+    const name = BOWLERS[bowler];
+    // Pairing follows the lineup slot, not roster order. League numbers come from Gary's latest sheet; the review still loads without them.
+    const slot = night.match?.ours.findIndex(b => b.name.toLowerCase() === name.toLowerCase()) ?? -1;
+    const theirs = slot >= 0 ? night.match?.opponent.bowlers[slot] : undefined;
+    const paired = theirs ? { name: theirs.name, handicap: theirs.handicap } : null;
+    const handicap = slot >= 0 ? night.match?.ours[slot].handicap ?? null : null;
+    const standings = (await loadStandings(night.match?.season).catch(() => null)) ?? (await loadStandings().catch(() => null));
+    const row = standings?.roster.find(r => r.name.split(" ")[0].toLowerCase() === name.toLowerCase());
+    const league = row && row.average != null ? { average: row.average, handicap: row.handicap, toRaise: row.toRaise ?? null } : null;
+    const opening = openingMessage({ name, prebowl: !!night.prebowl, opponent: night.match?.opponent.name ?? null, paired, handicap, league, games, arsenal: mine.profile.arsenal });
     return Response.json({
-      night: { week: night.prebowl?.week ?? night.match?.week ?? null, bowledOn, prebowl: night.prebowl ?? null, opponent: night.match?.opponent.name ?? null, games: bowlerGames(night, bowler) },
-      bowler, names: BOWLERS, review: mine.review, profile: mine.profile,
+      night: { week: night.prebowl?.week ?? night.match?.week ?? null, bowledOn, prebowl: night.prebowl ?? null, opponent: night.match?.opponent.name ?? null, games },
+      bowler, names: BOWLERS, review: mine.review, profile: mine.profile, paired, league, opening,
     }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Review load failed", error instanceof Error ? error.message : "unknown");

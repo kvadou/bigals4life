@@ -64,10 +64,16 @@ struct BroPayload: Codable {
         let games: [BroGameFacts]
     }
     let night: NightInfo
+    struct Paired: Codable { let name: String; let handicap: Int }
+    struct League: Codable { let average: Int; let handicap: Int?; let toRaise: Int? }
+    struct Opening: Codable { let text: String; let question: String? }
     let bowler: Int
     let names: [String]
     var review: BroReview
     var profile: BroProfile
+    var paired: Paired?
+    var league: League?
+    var opening: Opening?
 }
 
 @MainActor
@@ -278,185 +284,344 @@ final class BroReviewModel: ObservableObject {
 }
 
 /// Parent supplies the NavigationStack. Every review is scoped to this account and night.
+/// Opens as a conversation: the coach speaks first from the data already in hand. Setup sits behind one link.
 struct ReviewView: View {
     @StateObject private var model: BroReviewModel
+    @State private var selectedGame = 0
+    @State private var pickedGame = false
+    @State private var composer = ""
+    @State private var showSetup = false
     @State private var newBall = ""
+    @FocusState private var composing: Bool
     init(nightID: String, accountID: String, send: @escaping SeasonTransport) {
         _model = StateObject(wrappedValue: BroReviewModel(nightID: nightID, accountID: accountID, send: send))
     }
+
     var body: some View {
-        Form {
-            if let error = model.error {
-                Section {
-                    Label(error, systemImage: "exclamationmark.circle").foregroundStyle(BA4LTheme.secondary)
-                    Button(model.localWriteFailed ? "Retry saving on this device" : model.payload == nil ? "Retry loading" : model.dirty ? "Retry saving" : "Reload review") {
-                        Task { if model.dirty || model.localWriteFailed { await model.save() } else { await model.load() } }
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    recovery
+                    if let p = model.payload {
+                        gameChips(p)
+                        conversation(p).disabled(model.conflict)
+                        observations(p).disabled(model.conflict)
+                        Color.clear.frame(height: 1).id("bottom")
+                    } else if model.busy {
+                        ProgressView("Opening your night…").frame(maxWidth: .infinity).padding(.top, 40)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .bottom) { if model.payload != nil { composerBar } }
+            .onChange(of: model.payload?.review.debrief.count ?? 0) { _, _ in withAnimation { proxy.scrollTo("bottom", anchor: .bottom) } }
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle("Bowling Bro’")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let p = model.payload {
+                ToolbarItem(placement: .principal) {
+                    VStack(spacing: 1) {
+                        Text(eyebrow(p)).font(.caption2.weight(.semibold)).textCase(.uppercase).tracking(0.6).foregroundStyle(BA4LTheme.secondary)
+                        Text("Bowling Bro’").font(.headline)
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    HStack(spacing: 4) {
+                        if p.night.prebowl?.bowlers.count != 1 {
+                            Menu {
+                                Picker("Bowler", selection: Binding(get: { p.bowler }, set: { value in Task { await model.load(bowler: value) } })) {
+                                    ForEach(Array(p.names.enumerated()), id: \.offset) { index, name in Text(name).tag(index) }
+                                }
+                            } label: { Label(model.name, systemImage: "person.crop.circle").labelStyle(.titleAndIcon) }
+                            .accessibilityIdentifier("reviewBowler")
+                        }
+                        Button("Setup") { showSetup = true }.accessibilityIdentifier("reviewSetup")
                     }
                 }
             }
-            if model.conflict {
-                Section("A newer version is on the server") {
-                    Text("Your draft is safe on this device. Keeping it replaces the server review only after you tap Save.")
-                    Button("Keep my draft") { model.resolveConflict(useDraft: true) }
-                    Button("Use server version", role: .destructive) { model.resolveConflict(useDraft: false) }
-                }
-            }
-            if model.localWriteFailed {
-                Section("Draft recovery") {
-                    Button("Reload saved draft", role: .destructive) { model.reloadSavedDraft() }
-                    Text("Reloading replaces this window’s unsaved changes with the last draft saved on this device.").font(.footnote)
-                }
-            }
-            if let p = model.payload {
-                header(p).disabled(model.conflict)
-                ForEach(Array(p.night.games.enumerated()), id: \.element.game) { index, game in
-                    gameSection(index, game).disabled(model.conflict)
-                }
-                contextSection(p).disabled(model.conflict)
-                profileSection(p).disabled(model.conflict)
-                conversation(p).disabled(model.conflict)
-            } else if model.busy {
-                ProgressView("Opening your night…")
-            }
-            if !model.status.isEmpty { Section { Text(model.status).font(.footnote).foregroundStyle(BA4LTheme.secondary).accessibilityLabel("Review status: \(model.status)") } }
         }
-        .navigationTitle("Bowling Bro’")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Save") { Task { await model.save() } }.disabled(!model.dirty || model.busy)
-            }
-        }
-        .disabled(model.busy)
-        .overlay { if model.busy { ProgressView().padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12)) } }
-        .task { await model.load() }
+        .sheet(isPresented: $showSetup) { setupSheet }
+        .task { await model.load(); pickDefaultGame() }
+        .onChange(of: model.payload?.night.games.filter(\.complete).count ?? 0) { _, _ in if !pickedGame { pickDefaultGame() } }
         .onDisappear { Task { await model.save() } }
     }
 
-    private func header(_ p: BroPayload) -> some View {
-        Section {
-            Text("How’d it go, \(model.name)?").font(.title2.weight(.semibold))
-            Text([p.night.week.map { "Week \($0)" }, p.night.bowledOn, p.night.prebowl != nil ? "Pre-bowl" : p.night.opponent.map { "vs \($0)" }].compactMap { $0 }.joined(separator: " · "))
-                .foregroundStyle(BA4LTheme.secondary)
-            if p.night.prebowl?.bowlers.count != 1 {
-                Picker("Bowler", selection: Binding(get: { p.bowler }, set: { value in
-                    Task { await model.load(bowler: value) }
-                })) { ForEach(Array(p.names.enumerated()), id: \.offset) { index, name in Text(name).tag(index) } }
-            }
-            let done = p.night.games.filter(\.complete)
-            if !done.isEmpty {
-                LabeledContent("Series", value: String(done.reduce(0) { $0 + $1.stats.score }))
-                LabeledContent("Games finished", value: String(done.count))
-            } else { Text("No finished games yet. You can add notes now and talk with the coach after a game.").foregroundStyle(BA4LTheme.secondary) }
-        } footer: { Text("Scores are already in. Everything else is optional.") }
+    private func eyebrow(_ p: BroPayload) -> String {
+        [p.night.week.map { "Week \($0)" }, p.night.prebowl != nil ? "Pre-bowl" : p.night.opponent.map { "vs \($0.capitalized)" }].compactMap { $0 }.joined(separator: " · ")
+    }
+    private func pickDefaultGame() {
+        guard let games = model.payload?.night.games, !games.isEmpty else { return }
+        selectedGame = games.lastIndex(where: \.complete) ?? games.count - 1
     }
 
-    private func gameSection(_ index: Int, _ game: BroGameFacts) -> some View {
-        Section("Game \(game.game) · \(game.stats.score)\(game.complete ? "" : " · unfinished")") {
-            if game.stats.framesPlayed > 0 {
-                Text("\(game.stats.strikes) strikes · \(game.stats.spares) spares · \(game.stats.opens) open").font(.subheadline)
-                DisclosureGroup("Frame statistics") {
-                    LabeledContent("Frames played", value: String(game.stats.framesPlayed))
-                    LabeledContent("Clean frames", value: String(game.stats.cleanFrames))
-                    LabeledContent("First ball average", value: game.stats.firstBallAvg.formatted(.number.precision(.fractionLength(0...1))))
-                    if !game.stats.tenth.isEmpty { LabeledContent("Tenth frame", value: game.stats.tenth) }
+    // MARK: Recovery
+
+    @ViewBuilder private var recovery: some View {
+        if let error = model.error {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(error, systemImage: "exclamationmark.circle").foregroundStyle(BA4LTheme.secondary)
+                Button(model.localWriteFailed ? "Retry saving on this device" : model.payload == nil ? "Retry loading" : model.dirty ? "Retry saving" : "Reload review") {
+                    Task { if model.dirty || model.localWriteFailed { await model.save() } else { await model.load() } }
+                }.frame(minHeight: 44)
+            }.card()
+        }
+        if model.conflict {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("A newer version is on the server").font(.headline)
+                Text("Your draft is safe on this device. Keeping it replaces the server review only after it next saves.")
+                HStack {
+                    Button("Keep my draft") { model.resolveConflict(useDraft: true) }.buttonStyle(.borderedProminent).tint(BA4LTheme.tint).foregroundStyle(BA4LTheme.onTint)
+                    Button("Use server version", role: .destructive) { model.resolveConflict(useDraft: false) }.buttonStyle(.bordered)
+                }.frame(minHeight: 44)
+            }.card()
+        }
+        if model.localWriteFailed {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Draft recovery").font(.headline)
+                Button("Reload saved draft", role: .destructive) { model.reloadSavedDraft() }.frame(minHeight: 44)
+                Text("Reloading replaces this window’s unsaved changes with the last draft saved on this device.").font(.footnote).foregroundStyle(BA4LTheme.secondary)
+            }.card()
+        }
+    }
+
+    // MARK: Game chips
+
+    @ViewBuilder private func gameChips(_ p: BroPayload) -> some View {
+        if p.night.games.isEmpty {
+            HStack(spacing: 10) {
+                Image(systemName: "figure.bowling").font(.title2).foregroundStyle(BA4LTheme.tint)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("No games yet").font(.subheadline.weight(.semibold))
+                    Text("Scores land here as they are bowled.").font(.caption).foregroundStyle(BA4LTheme.secondary)
                 }
-            } else { Text("Final score from the sheet. No frame detail.").font(.subheadline).foregroundStyle(BA4LTheme.secondary) }
-            Picker("Ball", selection: gameBinding(index, \.ball, fallback: nil)) {
-                Text("Not specified").tag(String?.none)
-                let existing = gameValue(index).ball
-                let arsenal = model.payload?.profile.arsenal ?? []
-                ForEach(arsenal, id: \.self) { Text($0).tag(Optional($0)) }
-                if let existing, !arsenal.contains(existing) { Text(existing).tag(Optional(existing)) }
-            }
-            DisclosureGroup("What you noticed") {
-                ForEach(broTags, id: \.self) { tag in
-                    Toggle(tag.capitalized, isOn: Binding(get: { gameValue(index).tags.contains(tag) }, set: { enabled in
-                        model.changeGame(index) { review in
-                            if enabled && !review.tags.contains(tag) && review.tags.count < 6 { review.tags.append(tag) }
-                            else if !enabled { review.tags.removeAll { $0 == tag } }
+            }.card()
+        } else {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(Array(p.night.games.enumerated()), id: \.element.game) { index, game in
+                        let on = index == selectedGame
+                        Button {
+                            selectedGame = index; pickedGame = true
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Game \(game.game) · \(game.stats.score)").font(.subheadline.weight(.semibold)).monospacedDigit()
+                                Text(game.stats.framesPlayed > 0 ? "\(game.stats.strikes)X · \(game.stats.spares)/ · \(game.stats.opens) open" : game.complete ? "From the sheet" : "In progress")
+                                    .font(.caption).foregroundStyle(on ? Color("OnGoldSurface").opacity(0.85) : BA4LTheme.secondary)
+                            }
+                            .padding(.horizontal, 12).padding(.vertical, 8)
+                            .background(on ? Color("BrandGoldSurface") : Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(on ? Color("BrandGold") : .clear, lineWidth: 1.5))
+                            .foregroundStyle(on ? Color("OnGoldSurface") : .primary)
                         }
-                    }))
-                    .disabled(!gameValue(index).tags.contains(tag) && gameValue(index).tags.count >= 6)
+                        .buttonStyle(.plain)
+                        .frame(minHeight: 44)
+                        .accessibilityLabel("Game \(game.game), \(game.stats.score)\(game.complete ? "" : ", in progress")")
+                        .accessibilityAddTraits(on ? .isSelected : [])
+                        .accessibilityIdentifier("reviewGame-\(game.game)")
+                    }
                 }
-                Text("Choose up to six observations.").font(.footnote).foregroundStyle(BA4LTheme.secondary)
-            }
-            TextField("Anything worth remembering", text: Binding(get: { gameValue(index).note }, set: { value in model.changeGame(index) { $0.note = String(value.prefix(600)) } }), axis: .vertical)
-                .lineLimit(3...8).accessibilityLabel("Game \(game.game) notes")
-        }
-    }
-
-    private func contextSection(_ p: BroPayload) -> some View {
-        Section {
-            DisclosureGroup("The lanes · optional") {
-                TextField("Lanes, e.g. 7 & 8", text: contextString(\.lanes, limit: 12))
-                Picker("Bowlers on the pair", selection: Binding(get: { model.payload?.review.context.onPair ?? 0 }, set: { value in model.change { $0.review.context.onPair = value == 0 ? nil : value } })) {
-                    Text("Not specified").tag(0)
-                    ForEach(2...10, id: \.self) { Text(String($0)).tag($0) }
-                }
-                optionalBool("Lefties on the pair", key: \.lefties)
-                optionalBool("High-rev bowlers on the pair", key: \.highRev)
-                TextField("Oil pattern, if known", text: contextString(\.oil, limit: 40))
             }
         }
     }
 
-    private func profileSection(_ p: BroPayload) -> some View {
-        Section {
-            DisclosureGroup("Your bowling profile") {
-                Picker("Bowling hand", selection: Binding(get: { model.payload?.profile.hand ?? "right" }, set: { value in model.change { $0.profile.hand = value } })) {
-                    Text("Right").tag("right"); Text("Left").tag("left")
-                }
-                Picker("Coaching language", selection: Binding(get: { model.payload?.profile.language ?? "plain" }, set: { value in model.change { $0.profile.language = value } })) {
-                    Text("Plain language").tag("plain"); Text("Technical").tag("technical")
-                }
-                ForEach(p.profile.arsenal, id: \.self) { Text($0) }
-                TextField("Add a ball", text: $newBall).onChange(of: newBall) { _, value in if value.count > 40 { newBall = String(value.prefix(40)) } }
-                Button("Add to arsenal") {
-                    let value = newBall.trimmingCharacters(in: .whitespacesAndNewlines)
-                    model.change { p in if !p.profile.arsenal.contains(value) && p.profile.arsenal.count < 12 { p.profile.arsenal.append(value) } }
-                    newBall = ""
-                }.disabled(newBall.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || p.profile.arsenal.count >= 12)
-            }
-        } footer: { Text("Your arsenal and preferences follow your account across devices.") }
-    }
+    // MARK: Conversation
 
     private func conversation(_ p: BroPayload) -> some View {
-        Section("Talk it through") {
+        VStack(alignment: .leading, spacing: 12) {
+            if p.review.debrief.isEmpty, let opening = p.opening {
+                bubble(coach: true, text: opening.text, question: opening.question, ideas: [])
+            }
             ForEach(Array(p.review.debrief.enumerated()), id: \.offset) { _, turn in
-                VStack(alignment: .leading, spacing: 12) {
-                    Label(turn.role == "coach" ? "Coach" : model.name, systemImage: turn.role == "coach" ? "bubble.left.and.text.bubble.right" : "person.crop.circle").font(.headline)
-                    Text(turn.text).textSelection(.enabled)
-                    if let question = turn.question, !question.isEmpty { Text(question).fontWeight(.semibold) }
-                    ForEach(turn.ideas ?? [], id: \.key) { idea in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(idea.text)
-                            if let url = URL(string: idea.url), ["https", "http"].contains(url.scheme?.lowercased() ?? "") {
-                                Link(destination: url) { Label(idea.source, systemImage: "arrow.up.right") }.font(.footnote)
-                            } else { Text(idea.source).font(.footnote).foregroundStyle(BA4LTheme.secondary) }
-                        }
-                    }
-                }.padding(.vertical, 6)
+                bubble(coach: turn.role == "coach", text: turn.text, question: turn.question, ideas: turn.ideas ?? [])
             }
             if p.review.closed {
                 Label("Review complete. Bring that target to your next night.", systemImage: "checkmark.circle")
-            } else if model.awaitingAnswer {
-                TextField("Your answer", text: Binding(get: { model.answer }, set: { model.changeAnswer($0) }), axis: .vertical).lineLimit(3...8)
-                Button("Send answer") { Task { await model.talk(answer: model.answer.trimmingCharacters(in: .whitespacesAndNewlines)) } }
-                    .disabled(model.answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !model.canTalk)
-            } else if p.review.debrief.isEmpty {
-                Text("Talk through the night now, or come back tomorrow. Your notes will still be here.").foregroundStyle(BA4LTheme.secondary)
-                Button("Talk with the coach") { Task { await model.talk(answer: nil) } }.disabled(!model.canTalk)
+                    .font(.footnote).foregroundStyle(BA4LTheme.secondary).padding(.top, 4)
+            } else if p.review.debrief.count >= 8 {
+                Text("That is plenty for one night. Pick it up next week.").font(.footnote).foregroundStyle(BA4LTheme.secondary)
             }
-            if p.review.debrief.count >= 8 && !p.review.closed { Text("That is plenty for one night. Pick it up next week.").foregroundStyle(BA4LTheme.secondary) }
         }
+    }
+
+    private func bubble(coach: Bool, text: String, question: String?, ideas: [BroIdea]) -> some View {
+        HStack(alignment: .bottom, spacing: 8) {
+            if coach {
+                Text("BB").font(.caption2.weight(.bold)).frame(width: 28, height: 28)
+                    .background(BA4LTheme.tint, in: Circle()).foregroundStyle(BA4LTheme.onTint)
+                    .accessibilityHidden(true)
+            } else { Spacer(minLength: 40) }
+            VStack(alignment: .leading, spacing: 8) {
+                Text(text).textSelection(.enabled)
+                if let question, !question.isEmpty { Text(question).fontWeight(.semibold) }
+                ForEach(ideas, id: \.key) { idea in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(idea.text).font(.subheadline)
+                        if let url = URL(string: idea.url), ["https", "http"].contains(url.scheme?.lowercased() ?? "") {
+                            Link(destination: url) { Label(idea.source, systemImage: "arrow.up.right") }.font(.footnote)
+                        } else { Text(idea.source).font(.footnote).foregroundStyle(BA4LTheme.secondary) }
+                    }
+                    .padding(10)
+                    .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .background(coach ? Color(.secondarySystemGroupedBackground) : Color("BrandGoldSurface"), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .foregroundStyle(coach ? Color.primary : Color("OnGoldSurface"))
+            if coach { Spacer(minLength: 40) }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(coach ? "Coach" : model.name): \(text)\(question.map { " " + $0 } ?? "")")
+    }
+
+    // MARK: Observations
+
+    @ViewBuilder private func observations(_ p: BroPayload) -> some View {
+        if p.night.games.indices.contains(selectedGame) {
+            let game = p.night.games[selectedGame]
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Add what the sheet can't see · Game \(game.game)").font(.caption.weight(.semibold)).textCase(.uppercase).tracking(0.5).foregroundStyle(BA4LTheme.secondary)
+                FlowChips {
+                    ForEach(broTags, id: \.self) { tag in
+                        let on = gameValue(selectedGame).tags.contains(tag)
+                        let full = !on && gameValue(selectedGame).tags.count >= 6
+                        Button(tag.capitalized) {
+                            model.changeGame(selectedGame) { review in
+                                if on { review.tags.removeAll { $0 == tag } } else if review.tags.count < 6 { review.tags.append(tag) }
+                            }
+                        }
+                        .chip(on: on)
+                        .disabled(full)
+                        .accessibilityAddTraits(on ? .isSelected : [])
+                    }
+                    Menu {
+                        Picker("Ball", selection: Binding(get: { gameValue(selectedGame).ball }, set: { value in model.changeGame(selectedGame) { $0.ball = value } })) {
+                            Text("Not specified").tag(String?.none)
+                            ForEach(p.profile.arsenal, id: \.self) { Text($0).tag(Optional($0)) }
+                            if let existing = gameValue(selectedGame).ball, !p.profile.arsenal.contains(existing) { Text(existing).tag(Optional(existing)) }
+                        }
+                        Button("Add a ball in Setup") { showSetup = true }
+                    } label: {
+                        Label(gameValue(selectedGame).ball ?? "Ball", systemImage: "circle.fill")
+                    }
+                    .chip(on: gameValue(selectedGame).ball != nil)
+                }
+                if !gameValue(selectedGame).note.isEmpty {
+                    Text("You said: \(gameValue(selectedGame).note)").font(.footnote).foregroundStyle(BA4LTheme.secondary)
+                }
+            }
+        }
+    }
+
+    // MARK: Composer
+
+    private var composerBar: some View {
+        VStack(spacing: 6) {
+            HStack(alignment: .bottom, spacing: 8) {
+                TextField(composerPrompt, text: $composer, axis: .vertical)
+                    .lineLimit(1...5)
+                    .focused($composing)
+                    .padding(.horizontal, 14).padding(.vertical, 10)
+                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .disabled(!canCompose)
+                    .accessibilityIdentifier("reviewComposer")
+                Button { Task { await sendComposer() } } label: {
+                    Image(systemName: "arrow.up").font(.headline).frame(width: 40, height: 40)
+                        .background(Color("BrandGold"), in: Circle()).foregroundStyle(Color("OnGoldSurface"))
+                }
+                .disabled(!canSend)
+                .accessibilityLabel(sendLabel)
+                .accessibilityIdentifier("reviewSend")
+            }
+            Text(statusLine).font(.caption2).foregroundStyle(BA4LTheme.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityLabel("Review status: \(statusLine)")
+        }
+        .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 6)
+        .background(.bar)
+    }
+
+    private var canCompose: Bool { !model.conflict && !model.localWriteFailed && model.payload?.review.closed == false }
+    private var composerPrompt: String {
+        guard let p = model.payload else { return "" }
+        if p.review.closed { return "Review complete" }
+        if !p.night.games.contains(where: \.complete) { return "Finish a game and the coach can answer" }
+        if model.awaitingAnswer { return "Reply to the coach…" }
+        if p.review.debrief.isEmpty { return "Anything to add before the coach weighs in?" }
+        return "Reply to the coach…"
+    }
+    private var canSend: Bool {
+        guard model.canTalk else { return false }
+        let text = composer.trimmingCharacters(in: .whitespacesAndNewlines)
+        return model.awaitingAnswer ? !text.isEmpty : model.payload?.review.debrief.isEmpty == true
+    }
+    private var sendLabel: String { model.awaitingAnswer ? "Send answer" : "Ask the coach" }
+    private var statusLine: String {
+        let turns = model.payload?.review.debrief.count ?? 0
+        let saved = model.status.isEmpty ? "Saved" : model.status
+        return "\(saved) · \(turns) of 8 turns"
+    }
+    @MainActor private func sendComposer() async {
+        let text = composer.trimmingCharacters(in: .whitespacesAndNewlines)
+        if model.awaitingAnswer {
+            guard !text.isEmpty else { return }
+            composer = ""
+            if !(await model.talk(answer: text)) { composer = text }
+        } else {
+            // First turn: what the bowler typed is a note on the selected game, and the coach opens on it.
+            if !text.isEmpty { model.changeGame(selectedGame) { $0.note = String(($0.note.isEmpty ? text : $0.note + " " + text).prefix(600)) } }
+            composer = ""
+            if !(await model.talk(answer: nil)) { composer = text }
+        }
+        composing = false
+    }
+
+    // MARK: Setup
+
+    private var setupSheet: some View {
+        NavigationStack {
+            Form {
+                if let p = model.payload {
+                    Section("The lanes") {
+                        TextField("Lanes, e.g. 7 & 8", text: contextString(\.lanes, limit: 12))
+                        Picker("Bowlers on the pair", selection: Binding(get: { model.payload?.review.context.onPair ?? 0 }, set: { value in model.change { $0.review.context.onPair = value == 0 ? nil : value } })) {
+                            Text("Not specified").tag(0)
+                            ForEach(2...10, id: \.self) { Text(String($0)).tag($0) }
+                        }
+                        optionalBool("Lefties on the pair", key: \.lefties)
+                        optionalBool("High-rev bowlers on the pair", key: \.highRev)
+                        TextField("Oil pattern, if known", text: contextString(\.oil, limit: 40))
+                    }
+                    Section {
+                        Picker("Bowling hand", selection: Binding(get: { model.payload?.profile.hand ?? "right" }, set: { value in model.change { $0.profile.hand = value } })) {
+                            Text("Right").tag("right"); Text("Left").tag("left")
+                        }
+                        Picker("Coaching language", selection: Binding(get: { model.payload?.profile.language ?? "plain" }, set: { value in model.change { $0.profile.language = value } })) {
+                            Text("Plain language").tag("plain"); Text("Technical").tag("technical")
+                        }
+                        ForEach(p.profile.arsenal, id: \.self) { Text($0) }
+                        TextField("Add a ball", text: $newBall).onChange(of: newBall) { _, value in if value.count > 40 { newBall = String(value.prefix(40)) } }
+                        Button("Add to arsenal") {
+                            let value = newBall.trimmingCharacters(in: .whitespacesAndNewlines)
+                            model.change { p in if !p.profile.arsenal.contains(value) && p.profile.arsenal.count < 12 { p.profile.arsenal.append(value) } }
+                            newBall = ""
+                        }.disabled(newBall.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || p.profile.arsenal.count >= 12)
+                    } header: { Text("Your bowling profile") } footer: { Text("Set once a season. Your arsenal and preferences follow your account across devices.") }
+                }
+            }
+            .navigationTitle("Setup")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showSetup = false } } }
+            .disabled(model.conflict)
+        }
+        .presentationDetents([.large])
     }
 
     private func gameValue(_ index: Int) -> BroGameReview {
         guard let games = model.payload?.review.games, games.indices.contains(index) else { return .empty }
         return games[index]
-    }
-    private func gameBinding<T>(_ index: Int, _ key: WritableKeyPath<BroGameReview, T>, fallback: T) -> Binding<T> {
-        Binding(get: { gameValue(index)[keyPath: key] }, set: { value in model.changeGame(index) { $0[keyPath: key] = value } })
     }
     private func contextString(_ key: WritableKeyPath<BroContext, String>, limit: Int) -> Binding<String> {
         Binding(get: { model.payload?.review.context[keyPath: key] ?? "" }, set: { value in model.change { $0.review.context[keyPath: key] = String(value.prefix(limit)) } })
@@ -469,3 +634,49 @@ struct ReviewView: View {
 }
 
 private let broTags = ["light", "high", "split", "bad break", "flush", "missed target", "washout", "pulled it", "fast feet"]
+
+/// Wrapping row of chips. Lays children out left to right and wraps when the row is full.
+private struct FlowChips<Content: View>: View {
+    @ViewBuilder let content: Content
+    var body: some View {
+        FlowLayout(spacing: 8) { content }
+    }
+}
+private struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? .infinity
+        var x: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if x > 0 && x + size.width > width { x = 0; y += rowHeight + spacing; rowHeight = 0 }
+            x += size.width + spacing; rowHeight = max(rowHeight, size.height)
+        }
+        return CGSize(width: width == .infinity ? x : width, height: y + rowHeight)
+    }
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX, y = bounds.minY, rowHeight: CGFloat = 0
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if x > bounds.minX && x + size.width > bounds.maxX { x = bounds.minX; y += rowHeight + spacing; rowHeight = 0 }
+            view.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + spacing; rowHeight = max(rowHeight, size.height)
+        }
+    }
+}
+
+private extension View {
+    func card() -> some View {
+        self.padding(14).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+    func chip(on: Bool) -> some View {
+        self.font(.subheadline.weight(.medium))
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .frame(minHeight: 36)
+            .background(on ? Color("BrandGoldSurface") : Color(.secondarySystemGroupedBackground), in: Capsule())
+            .overlay(Capsule().stroke(on ? Color("BrandGold") : Color.primary.opacity(0.12), lineWidth: 1))
+            .foregroundStyle(on ? Color("OnGoldSurface") : Color.primary)
+            .buttonStyle(.plain)
+    }
+}
