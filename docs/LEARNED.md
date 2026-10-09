@@ -180,3 +180,15 @@ Each team's roster header reads `7 - BIG AL'S 4 LIFE Lane 5`: that is next week'
 ## The lane TV is not the final word
 
 Week 3 vs Balls Deep: two opponent games on the lane TVs (Simon 167, Zach 133) became 151 and 139 on Gary's sheet, which flipped Kyle's series point (6-30 on the TVs, 5-31 official). Import TV readings as the live record, then let the standings ingest reconcile; `/league` lists the differences and `/api/season` shows Gary's points.
+
+## Production web is a manual Vercel deploy, and a native build can outrun it
+
+Builds 23-25 shipped to TestFlight calling API routes that were on `main` but not on bigals4life.com, because nothing deploys the web on push. Before uploading an iOS build that calls a new route, deploy the web (`npx vercel --prod --yes` from `web/`, outside the sandbox) and prove the route exists:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://bigals4life.com/api/me/team   # 401 means deployed, 404 means not
+```
+
+## An Apple agreement update blocks the App Store Connect API with a 403
+
+`FORBIDDEN.REQUIRED_AGREEMENTS_MISSING_OR_EXPIRED` on every call, including `status`, means the Account Holder has to accept the updated Program License Agreement at developer.apple.com/account (and any "New Agreement Available" row in App Store Connect's Agreements page). The API clears about ten minutes after acceptance. Nothing in the repo or the key fixes it; check `bun ios/Tools/testflight.ts status` before promising a TestFlight build.
